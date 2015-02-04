@@ -71,7 +71,8 @@ prevsect    = ul;
 
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
 % | =======================================================================
-S = put_figure(ol, ul); 
+printmsg(sprintf('Started %s', nicetime), 'BSPMVIEW');
+S = put_figure(ol, ul); shg; 
 % =========================================================================
 % *
 % * SUBFUNCTIONS
@@ -175,7 +176,10 @@ function preferences = default_preferences(initial)
         def = st.preferences; 
     end
     pos = get(st.fig, 'pos'); 
-    w = pos(3)*.65; 
+    w   = pos(3)*.65;
+    atlasoptions = {  'AnatomyToolbox', ...
+                    'HarvardOxford-cort-maxprob-thr0', ...
+                    'HarvardOxford-sub-maxprob-thr0'}; 
     [preferences, button] = settingsdlg(...
         'title'                     ,   'Settings', ...
         'WindowWidth'               ,   w,    ...
@@ -184,7 +188,7 @@ function preferences = default_preferences(initial)
         {'Corrected Alpha'; 'alphacorrect'}, def.alphacorrect, ...
         {'Peak Separation'; 'separation'},   def.separation, ...
         'separator'                 ,   'ATLAS Labeling', ...
-        {'Name'; 'atlasname'}          , {'AnatomyToolbox' 'IIT_GM_Destrieux'}, ...
+        {'Name'; 'atlasname'}          , atlasoptions, ...
         'separator'                 ,   'Render', ...
         {'Surfaces to Render'; 'surfshow'}  ,   {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'}, ...
         {'Surface Type'; 'surface'}      ,   {'Inflated' 'Pial' 'White'}, ...
@@ -205,7 +209,8 @@ function preferences = default_preferences(initial)
         atlasvol = single(round(atlasvol(:)))'; 
         load(atlas_labels);
         st.ol.atlaslabels = atlas; 
-        st.ol.atlas0 = atlasvol;    
+        st.ol.atlas0 = atlasvol;
+        setvoxelinfo; 
     end
     st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow)); 
     
@@ -302,6 +307,7 @@ function S = put_figure(ol, ul)
     setvoxelinfo;
     setcolormap;  
     setunitstonorm;
+    check4design;  
     if nargout==1, S.handles = gethandles; end
 function put_upperpane(varargin)
     global st
@@ -313,7 +319,7 @@ function put_upperpane(varargin)
     tag          = {'label' 'direct' 'direct' 'direct' 'colormaplist' 'maxval'};  
     ph = buipanel(panelh, panelabel{1}, panelabel{2}, relwidth, 'paneltitle', '', 'panelposition', cnamepos, 'tag', tag, 'uicontrolsep', .01, 'marginsep', .025, 'panelfontsize', st.fonts.sz4, 'labelfontsize', st.fonts.sz4, 'editfontsize', st.fonts.sz5); 
     
-   % | Check valid directions for contrast display
+    % | Check valid directions for contrast display
     allh    = findobj(st.fig, 'Tag', 'direct');
     allhstr = get(allh, 'String');
     if any(st.ol.null)
@@ -332,7 +338,6 @@ function put_upperpane(varargin)
     set(ph.edit(1), 'FontSize', st.fonts.sz3); 
     set(ph.edit(6), 'callback', @cb_maxval);
     set(ph.edit(5), 'String', st.cmap(:,2), 'Value', 1, 'callback', @setcolormap);
-    
     set(panelh, 'units', 'norm');
 function put_lowerpane(varargin)
 
@@ -487,7 +492,8 @@ function cb_updateoverlay(varargin)
         return
     end
     setthresh(C, find(di)); 
-    setthreshinfo(T);  
+    setthreshinfo(T);
+    figure(st.fig); 
 function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
@@ -500,6 +506,8 @@ function cb_loadol(varargin)
     setthreshinfo; 
     setcolormap; 
     setposition_axes;
+    check4design; 
+    figure(st.fig); 
 function cb_loadul(varargin)
     global st prevsect
     ul = uigetvol('Select an Image File for Underlay', 0);
@@ -518,20 +526,21 @@ function cb_loadul(varargin)
     h = findall(st.fig, 'Tag', 'Crosshairs'); 
     set(h,'Checked','on');
     bspm_orthviews('Xhairs','on') 
+    figure(st.fig); 
 function cb_clustminmax(varargin)
-global st
-str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
-if strcmp(str, 'n/a'), return; end
-[xyz, voxidx] = getnearestvoxel;
-clidx = spm_clusters(st.ol.XYZ);
-clidx = clidx==(clidx(voxidx)); 
-tmpXYZmm = st.ol.XYZmm(:,clidx); 
-if regexp(get(varargin{1}, 'label'), 'cluster max')
-    centre = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
-elseif regexp(get(varargin{1}, 'label'), 'cluster min')
-    centre = tmpXYZmm(:,st.ol.Z(clidx)==min(st.ol.Z(clidx)));
-end
-bspm_orthviews('reposition', centre);
+    global st
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    if strcmp(str, 'n/a'), return; end
+    [xyz, voxidx] = getnearestvoxel;
+    clidx = spm_clusters(st.ol.XYZ);
+    clidx = clidx==(clidx(voxidx)); 
+    tmpXYZmm = st.ol.XYZmm(:,clidx); 
+    if regexp(get(varargin{1}, 'label'), 'cluster max')
+        centre = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
+    elseif regexp(get(varargin{1}, 'label'), 'cluster min')
+        centre = tmpXYZmm(:,st.ol.Z(clidx)==min(st.ol.Z(clidx)));
+    end
+    bspm_orthviews('reposition', centre);
 function cb_minmax(varargin)
 global st
 lab = get(varargin{1}, 'label');
@@ -711,14 +720,16 @@ function cb_changeguisize(varargin)
     if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.1; end
     guipos = get(st.fig, 'pos');
     guipos(3:4) = guipos(3:4)*F; 
-    set(st.fig, 'pos', guipos);    
+    set(st.fig, 'pos', guipos);
+    pause(.50); 
 function cb_changefontsize(varargin)
     global st
     F = 0.95; 
     if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.05; end
     h   = findall(st.fig, '-property', 'FontSize'); 
-    fs  = cell2mat(get(h, 'fontsize'))*F; 
-    for i = 1:length(h), set(h(i), 'fontsize', fs(i)); end
+    fs  = cell2mat(get(h, 'fontsize'))*F;
+    arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
+    pause(.50); 
 function cb_changeskin(varargin)
     if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
     global st
@@ -883,14 +894,14 @@ function cb_report(varargin)
     % get table position
     ss = get(0, 'ScreenSize');
     ts = floor(ss/3);
-    fs = get(gcf, 'Position');
+    fs = get(st.fig, 'Position');
     if ss(3)-sum(fs([1 3])) > ts(3)
         ts(1) = sum(fs([1 3]));
     else
         ts(1) = fs(1)-ts(3);
     end
     ts([2 4]) = fs([2 4]);
-    
+
     % create table
     tfig  = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
     tfigmenu  = uimenu(tfig,'Label','Options');
@@ -905,9 +916,9 @@ function cb_report(varargin)
         'Pos', [0 0 1 1], ...
         'RearrangeableColumns', 'on', ...
         'ColumnWidth', colwidth, ...
-        'FontName', 'Arial', ...
+        'FontName', 'Fixed-Width', ...
         'FontUnits', 'Points', ...
-        'FontSize', floor(ss(4)/100), ...
+        'FontSize', st.fonts.sz4, ...
         'CellSelectionCallback',@cb_tablexyz);
     set(th, 'units', 'pix'); 
     tpos    = get(th, 'extent');
@@ -1338,7 +1349,7 @@ function OL = load_overlay(fname, pval, k)
             set(allh(strcmp(allhstr, opt{posneg})), 'Value', 0, 'Enable', 'inactive'); 
         end
     end
-    
+
     %% DEGREES OF FREEDOM
     try
         tmp = oh.descrip;
@@ -1762,6 +1773,18 @@ outmat = mat;
 
 % | MISC UTILITIES
 % =========================================================================
+function flag   = check4design
+    global st
+    flag = 0; 
+    if ~exist(fullfile(fileparts(st.ol.fname), 'I.mat'),'file') & ~exist(fullfile(fileparts(st.ol.fname), 'SPM.mat'),'file') 
+        flag = 1; 
+        printmsg('No SPM.mat or I.mat - Disabling threshold correction', 'WARNING');
+        set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'off'); 
+    else
+        set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'on'); 
+    end
+function str    = nicetime
+    str = strtrim(datestr(now,'HH:MM:SS PM on mmm. DD, YYYY'));
 function outmsg = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
 % PRINTMSG Create and print a formatted message with title
 %

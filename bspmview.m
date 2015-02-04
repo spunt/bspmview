@@ -571,7 +571,8 @@ function cb_directmenu(varargin)
         C = st.ol.C0(di,:);
         setthreshinfo(T); 
     end
-    setthresh(C, find(di));    
+    setthreshinfo(T); 
+    setthresh(C, find(di));
 function cb_opencode(varargin)
     open(mfilename('fullpath'));
 function cb_crosshair(varargin)
@@ -1025,6 +1026,7 @@ function setthreshinfo(T)
             'df',       st.ol.DF, ...
             'direct',   st.direct);
     end
+    st.direct = char(T.direct);
     Tval = [T.extent T.thresh T.pval T.df]; 
     Tstr = {'Extent' 'Thresh' 'P-Value' 'DF'};
     Tstrform = {'%d' '%2.2f' '%2.3f' '%d'}; 
@@ -3980,7 +3982,6 @@ function addcolourbar(vh,bh)
     else
         yltick = [ceil(min(yl)) floor(max(yl))];
     end
-    
     st.vols{vh}.blobs{bh}.cbar = axes('Parent', st.figax, 'ycolor', st.color.fg, ...
         'position', cbpos, 'YAxisLocation', 'right', 'fontsize', 12, ...
         'ytick', yltick, 'tag', 'colorbar', ...

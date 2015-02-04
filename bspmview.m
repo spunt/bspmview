@@ -50,7 +50,7 @@ function S = bspmview(ol, ul)
 supportdir = fullfile(fileparts(mfilename('fullpath')), 'supportfiles');
 if ~exist(supportdir, 'dir'), printmsg('The folder "supportfiles" was not found', 'ERROR'); return; end
 addpath(supportdir);
-spmdir = which('spmt'); 
+spmdir = which('spm'); 
 if isempty(spmdir), printmsg('SPM is not on your path. This may not work...', 'WARNING'); end
 
 % | CHECK INPUTS
@@ -84,18 +84,9 @@ function pos    = default_positions
     screensize      = get(0, 'ScreenSize');
     pos.ss          = screensize(3:4);
     pos.gui         = [pos.ss(1)*.5 pos.ss(2)*.20 pos.ss(2)*.55 pos.ss(2)*.5];
-    pos.gui(3:4)    = pos.gui(3:4)*1.05; 
+    pos.gui(3:4)    = pos.gui(3:4)*1.10; 
     pos.aspratio    = pos.gui(3)/pos.gui(4);
-%     h1 = 5; 
-%     h2 = pos.gui(4) - h1; 
-%     h = h2-h1;
-%     w1 = 5; 
-%     w2 = pos.gui(3) - w1; 
-%     w = w2 - w1; 
-%     h1up = round(h*.925);
-%     hup = h-h1up; 
-%     pos.pane.upper  = [w1 h1up w hup]; 
-%     pos.pane.axes   = [w1 h1 w h1up-h1];
+    if pos.gui(3) < 600, pos.gui(3) = 600; pos.gui(4) = pos.gui(3)*pos.aspratio; end
     guiss           = [pos.gui(3:4) pos.gui(3:4)]; 
     panepos         = getpositions(1, [12 1], .01, .01);
     pos.pane.upper  = panepos(2,3:end); 
@@ -318,7 +309,7 @@ function put_upperpane(varargin)
     prop         = default_properties('units', 'norm', 'fontu', 'norm', 'fonts', .55); 
     panelh       = uipanel('parent',st.fig, prop.panel{:}, 'pos', st.pos.pane.upper, 'tag', 'upperpanel'); 
     panelabel    = {{'Effect Direction' '+' '-' '+/-' 'Color Map' 'Color Max'}, {'Text' 'Radio' 'Radio' 'Radio' 'Popup' 'Edit'}}; 
-    relwidth     = [2 1 1 2 3 2]; 
+    relwidth     = [3 1 1 2 3 2]; 
     tag          = {'label' 'direct' 'direct' 'direct' 'colormaplist' 'maxval'};  
     ph = buipanel(panelh, panelabel{1}, panelabel{2}, relwidth, 'paneltitle', '', 'panelposition', cnamepos, 'tag', tag, 'uicontrolsep', .01, 'marginsep', .025, 'panelfontsize', st.fonts.sz4, 'labelfontsize', st.fonts.sz4, 'editfontsize', st.fonts.sz5); 
     
@@ -401,11 +392,11 @@ function put_figmenu
     S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', 'on', 'Callback', @cb_changeskin);
     S.changeskin(2) = uimenu(S.skin, 'Label', 'Light', 'Separator', 'on', 'Callback',@cb_changeskin);
     S.guisize       = uimenu(S.appear, 'Label','GUI Size','Separator', 'on'); 
-    S.gui(1)        = uimenu(S.guisize, 'Label', 'Increase', 'Callback', @cb_changeguisize);
-    S.gui(2)        = uimenu(S.guisize, 'Label', 'Decrease', 'Separator', 'on', 'Callback',@cb_changeguisize);
+    S.gui(1)        = uimenu(S.guisize, 'Label', 'Increase', 'Accelerator', 'i', 'Callback', @cb_changeguisize);
+    S.gui(2)        = uimenu(S.guisize, 'Label', 'Decrease', 'Accelerator', 'd', 'Separator', 'on', 'Callback',@cb_changeguisize);
     S.fontsize      = uimenu(S.appear, 'Label','Font Size', 'Separator', 'on'); 
-    S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', 'i', 'Callback', @cb_changefontsize);
-    S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', 'd', 'Separator', 'on', 'Callback',@cb_changefontsize);
+    S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
+    S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Separator', 'on', 'Callback',@cb_changefontsize);
     S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode); 
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
@@ -959,7 +950,6 @@ function setcolormap(varargin)
     global st
     val = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
     newmap = st.cmap{val, 1}; 
-    interval = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max]; 
     cbh = st.vols{1}.blobs{1}.cbar; 
     cmap = [gray(64); newmap];
     set(findobj(cbh, 'type', 'image'), 'CData', (65:128)', 'CdataMapping', 'direct');
@@ -3984,10 +3974,13 @@ function addcolourbar(vh,bh)
     cbpos(1) = cbpos(1) + (cbpos(3)/4); 
     yl = [st.vols{vh}.blobs{bh}.min st.vols{vh}.blobs{bh}.max];
     if range(yl) < 1
-        yltick = [min(yl) max(yl)]; 
+        yltick = [min(yl) max(yl)];
+    elseif strcmpi(st.direct, '+/-')
+        yltick = [ceil(min(yl)) 0 floor(max(yl))];
     else
         yltick = [ceil(min(yl)) floor(max(yl))];
     end
+    
     st.vols{vh}.blobs{bh}.cbar = axes('Parent', st.figax, 'ycolor', st.color.fg, ...
         'position', cbpos, 'YAxisLocation', 'right', 'fontsize', 12, ...
         'ytick', yltick, 'tag', 'colorbar', ...
@@ -4028,10 +4021,11 @@ function redraw_colourbar(vh,bh,interval,cdata)
     if ndims(cdata)==3 && max(cdata(:))>1
         cdata=cdata./max(cdata(:));
     end
-    % yl = [st.vols{vh}.blobs{bh}.min st.vols{vh}.blobs{bh}.max]; 
     yl = interval;
     if range(yl) < 1
         yltick = [min(yl) max(yl)]; 
+    elseif strcmpi(st.direct, '+/-')
+        yltick = [ceil(min(yl)) 0 floor(max(yl))];
     else
         yltick = [ceil(min(yl)) floor(max(yl))];
     end

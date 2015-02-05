@@ -744,13 +744,15 @@ function cb_changeguisize(varargin)
     drawnow;
 function cb_changefontsize(varargin)
     global st
-    F = 0.95; 
-    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.05; end
+    F = -1; 
+    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1; end
+    setfontunits('points'); 
     h   = findall(st.fig, '-property', 'FontSize'); 
-    fs  = cell2mat(get(h, 'FontSize'))*F;
+    fs  = cell2mat(get(h, 'FontSize')) + F;
     arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
     pause(.50);
-    drawnow; 
+    drawnow;
+    setfontunits('norm'); 
 function cb_changeskin(varargin)
     if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
     global st

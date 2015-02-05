@@ -341,6 +341,7 @@ function put_upperpane(varargin)
     set(ph.edit(6), 'callback', @cb_maxval);
     set(ph.edit(5), 'String', st.cmap(:,2), 'Value', 1, 'callback', @setcolormap);
     set(panelh, 'units', 'norm');
+    drawnow;
 function put_lowerpane(varargin)
 
     global st
@@ -390,6 +391,7 @@ function put_lowerpane(varargin)
     set(ph{5}.label, 'FontSize', st.fonts.sz2); 
     set(ph{5}.edit, 'enable', 'inactive', 'str', 'n/a'); 
     set(panelh, 'units', 'norm');
+    drawnow;
 function put_figmenu
     global st
     
@@ -444,6 +446,7 @@ function put_axesmenu
     for a = 1:3
         set(h.ax(a), 'uicontextmenu', cmenu); 
     end
+    drawnow;
 function put_axesxyz
     global st
     h = gethandles_axes;
@@ -467,6 +470,7 @@ function put_axesxyz
                 'color', [1 1 1], 'string', xyzstr(a,:), 'rot', 0, 'tag', 'xyzlabel');
         end
     end
+    drawnow;
 
 % | GUI CALLBACKS
 % =========================================================================
@@ -501,7 +505,7 @@ function cb_updateoverlay(varargin)
     end
     setthresh(C, find(di)); 
     setthreshinfo(T);
-    figure(st.fig); 
+    drawnow;
 function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
@@ -515,7 +519,7 @@ function cb_loadol(varargin)
     setcolormap; 
     setposition_axes;
     check4design; 
-    figure(st.fig); 
+    drawnow;
 function cb_loadul(varargin)
     global st prevsect
     ul = uigetvol('Select an Image File for Underlay', 0);
@@ -534,7 +538,7 @@ function cb_loadul(varargin)
     h = findall(st.fig, 'Tag', 'Crosshairs'); 
     set(h,'Checked','on');
     bspm_orthviews('Xhairs','on') 
-    figure(st.fig); 
+    drawnow;
 function cb_clustminmax(varargin)
     global st
     str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
@@ -549,25 +553,30 @@ function cb_clustminmax(varargin)
         centre = tmpXYZmm(:,st.ol.Z(clidx)==min(st.ol.Z(clidx)));
     end
     bspm_orthviews('reposition', centre);
+    drawnow;
 function cb_minmax(varargin)
-global st
-lab = get(varargin{1}, 'label');
-if regexp(lab, 'global max')
-    centre = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
-elseif regexp(lab, 'global min')
-    centre = st.ol.XYZmm(:,st.ol.Z==min(st.ol.Z)); 
-end
-bspm_orthviews('reposition', centre); 
+    global st
+    lab = get(varargin{1}, 'label');
+    if regexp(lab, 'global max')
+        centre = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
+    elseif regexp(lab, 'global min')
+        centre = st.ol.XYZmm(:,st.ol.Z==min(st.ol.Z)); 
+    end
+    bspm_orthviews('reposition', centre); 
+    drawnow;
 function cb_maxval(varargin)
     val = str2num(get(varargin{1}, 'string')); 
     bspm_orthviews('SetBlobsMax', 1, 1, val)
+    drawnow;
 function cb_changexyz(varargin)
     xyz = str2num(get(varargin{1}, 'string')); 
     bspm_orthviews('reposition', xyz');
+    drawnow;
 function cb_tablexyz(varargin)
     tabrow  = varargin{2}.Indices(1);
     xyz     = cell2mat(varargin{2}.Source.Data(tabrow,4:6)); 
-    bspm_orthviews('reposition', xyz'); 
+    bspm_orthviews('reposition', xyz');
+    drawnow;
 function cb_directmenu(varargin)
     global st
     str     = get(varargin{1}, 'string');
@@ -575,6 +584,7 @@ function cb_directmenu(varargin)
     allhstr = get(allh, 'String');
     set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive'); 
     set(allh(~strcmp(allhstr, str)), 'Value', 0, 'Enable', 'on');
+    drawnow;
     T = getthresh;
     di = strcmpi({'+' '-' '+/-'}, T.direct);
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
@@ -604,6 +614,7 @@ function cb_crosshair(varargin)
         bspm_orthviews('Xhairs','on')
         set(h,'Checked','on');
     end
+    drawnow;
 function cb_saveimg(varargin)
     global st
     lab = get(varargin{1}, 'label');
@@ -769,6 +780,7 @@ function cb_changeskin(varargin)
     set(findall(st.fig, 'style', 'radio'), 'backg', st.color.bg, 'foreg', st.color.fg);
     set(h.colorbar, 'ycolor', st.color.fg); 
     set(varargin{1}, 'Checked', 'on'); 
+    drawnow;
 function cb_correct(varargin)
     global st
     str = get(varargin{1}, 'string');
@@ -796,6 +808,7 @@ function cb_correct(varargin)
     end
     setthresh(C, find(di)); 
     setthreshinfo(T);  
+    drawnow;
 function cb_preferences(varargin)
     global st
     preferences = default_preferences; 
@@ -810,7 +823,8 @@ function cb_reversemap(varargin)
     for i = 1:size(st.cmap, 1)
        st.cmap{i,1} = st.cmap{i,1}(end:-1:1,:); 
     end
-    setcolormap;     
+    setcolormap;  
+    drawnow;
 function cb_closegui(varargin)
    if length(varargin)==3, h = varargin{3};
    else h = varargin{1}; end
@@ -879,6 +893,7 @@ function cb_render(varargin)
     end
     obj.position = ts; 
     [h1, hh1] = surfPlot4(obj);
+    drawnow;
 function cb_report(varargin)
     global st
     T = getthresh;
@@ -937,6 +952,7 @@ function cb_report(varargin)
     set(th, 'units', 'norm');
     set(th, 'pos', [0 0 1 1]); 
     set(tfig, 'vis', 'on');
+    drawnow;
 function cb_savetable(varargin)
     global st
     T = getthresh;
@@ -1043,6 +1059,7 @@ function setposition_axes
     set(p, 'units', 'norm', 'pos', ppos); 
     set(p, 'units', unit0); 
     bspm_orthviews('Redraw');
+    drawnow;
 function setthreshinfo(T)
     global st
     if nargin==0
@@ -1060,6 +1077,7 @@ function setthreshinfo(T)
     for i = 1:length(Tstr)
         set(findobj(st.fig, 'Tag', Tstr{i}), 'String', sprintf(Tstrform{i}, Tval(i)));
     end
+    drawnow;
 function setthresh(C, di)
     global st
     if nargin==1, di = 3; end
@@ -1076,6 +1094,7 @@ function setthresh(C, di)
     bspm_orthviews('Register', st.registry.hReg);
     setcolormap; 
     bspm_orthviews('Reposition');
+    drawnow;
 function [voxval, clsize] = setvoxelinfo
     global st
     [nxyz,voxidx, d]    = getnearestvoxel; 
@@ -1096,21 +1115,24 @@ function [voxval, clsize] = setvoxelinfo
     set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
     set(findobj(st.fig, 'tag', 'xyz'), 'string', sprintf('%d, %d, %d', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM)));
     set(findobj(st.fig, 'tag', 'voxval'), 'string', voxval); 
-    set(findobj(st.fig, 'tag', 'clustersize'), 'string', clsize); 
+    set(findobj(st.fig, 'tag', 'clustersize'), 'string', clsize);
+    drawnow;
 function setbackgcolor(newcolor)
-global st
-if nargin==0, newcolor = [0 0 0]; end
-prop = {'backg' 'ycolor' 'xcolor' 'zcolor'}; 
-for i = 1:length(prop)
-    set(findobj(st.fig, prop{i}, st.color.bg), prop{i}, newcolor); 
-end
-h = gethandles_axes;
-set(h.ax, 'ycolor', newcolor, 'xcolor', newcolor); 
+    global st
+    if nargin==0, newcolor = [0 0 0]; end
+    prop = {'backg' 'ycolor' 'xcolor' 'zcolor'}; 
+    for i = 1:length(prop)
+        set(findobj(st.fig, prop{i}, st.color.bg), prop{i}, newcolor); 
+    end
+    h = gethandles_axes;
+    set(h.ax, 'ycolor', newcolor, 'xcolor', newcolor); 
+    drawnow;
 function setxhaircolor(varargin)
     global st
     h = gethandles_axes;
     set(h.lx, 'color', st.color.xhair); 
     set(h.ly, 'color', st.color.xhair);
+    drawnow;
 
 % | GETTERS
 % =========================================================================

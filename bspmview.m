@@ -405,6 +405,10 @@ function put_figmenu
     S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode); 
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
+    %% Make sure resize callbacks are registered one at a time
+    set(S.gui, 'BusyAction', 'cancel', 'Interruptible', 'off'); 
+    set(S.font, 'BusyAction', 'cancel', 'Interruptible', 'off');
+
     %% Load Menu
     S.load = uimenu(st.fig,'Label','Load');
     S.loadol = uimenu(S.load,'Label','Overlay Image','CallBack', @cb_loadol);
@@ -422,7 +426,7 @@ function put_figmenu
     S.report        = uimenu(S.options,'Label','Show Report', 'CallBack', @cb_report);
     S.render        = uimenu(S.options,'Label','Show Rendering', 'Separator', 'on', 'CallBack', @cb_render);
     S.crosshair     = uimenu(S.options,'Label','Show Crosshairs', 'Tag', 'Crosshairs', 'Separator', 'on','Checked', 'on', 'CallBack', @cb_crosshair);
-    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Separator', 'on', 'Checked', 'off', 'CallBack', @cb_reversemap);
+    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Separator', 'on', 'Checked', 'off', 'CallBack', @cb_reversemap);   
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;
@@ -721,7 +725,8 @@ function cb_changeguisize(varargin)
     guipos = get(st.fig, 'pos');
     guipos(3:4) = guipos(3:4)*F; 
     set(st.fig, 'pos', guipos);
-    pause(.50); 
+    pause(.75);
+    drawnow; 
 function cb_changefontsize(varargin)
     global st
     F = 0.95; 
@@ -729,7 +734,8 @@ function cb_changefontsize(varargin)
     h   = findall(st.fig, '-property', 'FontSize'); 
     fs  = cell2mat(get(h, 'fontsize'))*F;
     arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
-    pause(.50); 
+    pause(.75);
+    drawnow; 
 function cb_changeskin(varargin)
     if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
     global st
@@ -985,7 +991,7 @@ function setposition_axes
     
     h = gethandles_axes;
     axpos = cell2mat(get(h.ax, 'pos'));
-    CBPIXSIZE = 80; 
+    CBPIXSIZE = 85; 
     axpos(1:2, 1)   = 0; 
     axpos(1, 2)     = 0;
     axpos(3, 1)     = sum(axpos(2,[1 3]))+.005; 

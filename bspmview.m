@@ -73,6 +73,7 @@ prevsect    = ul;
 % | =======================================================================
 printmsg(sprintf('Started %s', nicetime), 'BSPMVIEW');
 S = put_figure(ol, ul); shg; 
+
 % =========================================================================
 % *
 % * SUBFUNCTIONS
@@ -306,7 +307,8 @@ function S = put_figure(ol, ul)
     setthresh(st.ol.C0(3,:), find(strcmpi({'+', '-', '+/-'}, st.direct))); 
     setvoxelinfo;
     setcolormap;  
-    setunitstonorm;
+    setunits;
+    setfontunits('points'); 
     check4design;  
     if nargout==1, S.handles = gethandles; end
 function put_upperpane(varargin)
@@ -356,19 +358,20 @@ function put_lowerpane(varargin)
     
     prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', 19);  
     panelh = uipanel('parent', st.figax, prop.panel{:}, 'pos',lowpos, 'tag', 'lowerpanel');
-
+    
     % | Create each subpanel 
-    panepos         = getpositions(1, [1 4 5 1 4 5], .025, .025);
+    panepos         = getpositions(1, [1 4 4 1 1 4 4], .025, .025);
     panepos(:,1:2)  = [];
-    panepos([1 4],:)    = []; 
-    panename        = {'' 'Thresholding Options' '' ''};
+    panepos([1 5],:)    = []; 
+    panename        = {'' '' '' '' ''};
     panelabel{1}    = {{'DF' 'Correction'}, {'Edit' 'Popup'}};  
     panelabel{2}    = {{'Extent' 'Thresh' 'P-Value'}, {'Edit' 'Edit' 'Edit'}}; 
-    panelabel{3}    = {{'Value' 'Coordinate' 'Cluster Size'}, {'Edit' 'Edit' 'Edit'}};
-    panelabel{4}    = {{'Current Location'}, {'Edit'}}; 
-    relwidth        = {[4 8] [3 4 5] [3 5 3] [1]};
-    relheight       = {[6 7] [6 7] [6 7] [6 10]}; 
-    tag             = {panelabel{1}{1}, panelabel{2}{1}, {'voxval' 'xyz' 'clustersize'}, {'Location'}};  
+    panelabel{3}    = {{'Thresholding Options'}, {'Text'}}; 
+    panelabel{4}    = {{'Value' 'Coordinate' 'Cluster Size'}, {'Edit' 'Edit' 'Edit'}};
+    panelabel{5}    = {{'Current Location'}, {'Edit'}}; 
+    relwidth        = {[4 8] [3 4 5] [1] [3 5 3] [1]};
+    relheight       = {[6 6] [6 6] [6 6] [6 6] [6 6]}; 
+    tag             = {panelabel{1}{1}, panelabel{2}{1}, panelabel{3}{1}, {'voxval' 'xyz' 'clustersize'}, {'Location'}};  
     
     for i = 1:length(panename)
         ph{i} = buipanel(panelh, panelabel{i}{1}, panelabel{i}{2}, relwidth{i}, 'paneltitle', panename{i}, 'panelposition', panepos(i,:), 'tag', tag{i}, 'relheight', relheight{i}); 
@@ -381,10 +384,11 @@ function put_lowerpane(varargin)
     Tdefvalues  = [st.ol.K st.ol.U st.ol.P st.ol.DF];
     Tstrform = {'%d' '%2.2f' '%2.3f' '%d'}; 
     for i = 1:length(Tdefvalues), set(hndl(i), 'str', sprintf(Tstrform{i}, Tdefvalues(i))); end
-    arrayset(ph{3}.edit([1 3]), 'enable', 'inactive'); 
-    set(ph{3}.edit(2), 'callback', @cb_changexyz); 
-    set(ph{4}.label, 'FontSize', st.fonts.sz2); 
-    set(ph{4}.edit, 'enable', 'inactive', 'str', 'n/a'); 
+    arrayset(ph{4}.edit([1 3]), 'enable', 'inactive'); 
+    set(ph{3}.edit, 'FontSize', st.fonts.sz2); 
+    set(ph{4}.edit(2), 'callback', @cb_changexyz); 
+    set(ph{5}.label, 'FontSize', st.fonts.sz2); 
+    set(ph{5}.edit, 'enable', 'inactive', 'str', 'n/a'); 
     set(panelh, 'units', 'norm');
 function put_figmenu
     global st
@@ -725,16 +729,16 @@ function cb_changeguisize(varargin)
     guipos = get(st.fig, 'pos');
     guipos(3:4) = guipos(3:4)*F; 
     set(st.fig, 'pos', guipos);
-    pause(.75);
-    drawnow; 
+    pause(.50);
+    drawnow;
 function cb_changefontsize(varargin)
     global st
     F = 0.95; 
     if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.05; end
     h   = findall(st.fig, '-property', 'FontSize'); 
-    fs  = cell2mat(get(h, 'fontsize'))*F;
+    fs  = cell2mat(get(h, 'FontSize'))*F;
     arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
-    pause(.75);
+    pause(.50);
     drawnow; 
 function cb_changeskin(varargin)
     if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
@@ -974,10 +978,16 @@ function setcolormap(varargin)
     set(st.fig,'Colormap', cmap);
     bspm_orthviews('SetBlobsMax', 1, 1, max(st.ol.Z))
     set(findobj(st.fig, 'tag', 'maxval'), 'str',  sprintf('%2.3f',max(st.ol.Z)));
-function setunitstonorm
+function setfontunits(unitstr)
+    if nargin==0, unitstr = 'norm'; end
+    global st
+    arrayset(findall(st.fig, '-property', 'fontunits'), 'fontunits', unitstr);
+    drawnow; 
+function setunits
     global st
     arrayset(findall(st.fig, '-property', 'units'), 'units', 'norm');
     set(st.fig, 'units', 'pixels'); 
+    drawnow; 
 function setposition_axes
     global st
     %% Handles for axes

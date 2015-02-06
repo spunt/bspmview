@@ -261,7 +261,8 @@ end
 function [num,typ,rgb] = cbSelect(tok)
 % Return the raw colorscheme values.
 %
-assert(ischar(tok)&&isrow(tok),'Token must be a ColorBrewer scheme name. Forgotten to save one?')
+
+assert(ischar(tok)&&size(tok,1)==1,'Token must be a ColorBrewer scheme name. Forgotten to save one?')
 %
 switch tok % ColorName
     case 'Accent'

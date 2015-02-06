@@ -574,7 +574,8 @@ function cb_changexyz(varargin)
     drawnow;
 function cb_tablexyz(varargin)
     tabrow  = varargin{2}.Indices(1);
-    xyz     = cell2mat(varargin{2}.Source.Data(tabrow,4:6)); 
+    tabdata = get(varargin{1}, 'data'); 
+    xyz     = cell2mat(tabdata(tabrow,4:6)); 
     bspm_orthviews('reposition', xyz');
     drawnow;
 function cb_directmenu(varargin)
@@ -630,7 +631,8 @@ function cb_saveimg(varargin)
     [p,n] = fileparts(outhdr.fname); 
     deffn = sprintf('%s/Thresh_%s.nii', p, n);  
     if regexp(lab, 'Save as mask')
-        outimg(outimg>0) = 1; 
+        outimg(outimg>0)    = 1;
+        outimg(~outimg)     = 0; 
         outhdr.descrip = 'Thresholded Mask Image'; 
         putmsg = 'Save mask image as'; 
         deffn = sprintf('%s/Mask_%s.nii', p, n);  
@@ -655,12 +657,13 @@ function cb_saveclust(varargin)
     outhdr = st.ol.hdr; 
     outimg(clidx==0) = NaN;
     putmsg = 'Save cluster'; 
-    outhdr.descrip = 'Thresholded Cluster Image'; 
+    outhdr.descrip = 'Intensity Thresholded Cluster Image'; 
     [p,n] = fileparts(outhdr.fname); 
     deffn = sprintf('%s/Cluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);  
     if regexp(lab, 'binary mask')
         outimg(outimg>0) = 1; 
-        outhdr.descrip = 'Thresholded Mask Image'; 
+        outimg(~outimg)  = 0; 
+        outhdr.descrip = 'Binary Mask Cluster Image'; 
         putmsg = 'Save mask image as'; 
         deffn = sprintf('%s/ClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);   
     end
@@ -744,11 +747,14 @@ function cb_changeguisize(varargin)
     drawnow;
 function cb_changefontsize(varargin)
     global st
+    minsize = 5; 
     F = -1; 
     if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1; end
     setfontunits('points'); 
-    h   = findall(st.fig, '-property', 'FontSize'); 
+    h   = findall(st.fig, '-property', 'FontSize');
     fs  = cell2mat(get(h, 'FontSize')) + F;
+    h(fs<minsize) = []; 
+    fs(fs<minsize)  = [];
     arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
     pause(.50);
     drawnow;
@@ -1293,9 +1299,8 @@ propadd     = {'tag'};
 pos         = getpositions(relwidth, relheight, marginsep, uicontrolsep);
 editpos     = pos(pos(:,1)==1,3:6); 
 labelpos    = pos(pos(:,1)==2, 3:6); 
-hc          = zeros(length(uilabels), 1); 
-he          = gobjects(length(uilabels), 1); 
-
+hc          = zeros(length(uilabels), 1);
+he          = zeros(length(uilabels), 1); 
 for i = 1:length(uilabels)
     ctag = ~cellfun('isempty', regexpi({'editbox', 'slider', 'listbox', 'popup'}, uistyles{i}));
     ttag = ~cellfun('isempty', regexpi({'text'}, uistyles{i}));

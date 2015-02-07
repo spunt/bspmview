@@ -1,7 +1,7 @@
 function S = bspmview(ol, ul)
 % BSPMVIEW Program for viewing fMRI statistical maps
 %
-%  USAGE: S = bspmview(ol*, ul*)       *optional input
+%   USAGE: S = bspmview(ol*, ul*)       *optional inputs
 %
 % Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre
 % for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search
@@ -40,9 +40,10 @@ function S = bspmview(ol, ul)
 %   have been included in the distribution of the main BSPMVIEW function.
 % 
 
-% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
+% ------ Copyright (C) Bob Spunt, California Institute of Technology ------
+%   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
-%	Email:    spunt@caltech.edu
+%   GitHub:   https://github.com/spunt/bspmview
 % _________________________________________________________________________
 
 % | CHECK FOR SUPPORTFILES AND SPM FOLDER
@@ -185,12 +186,12 @@ function preferences = default_preferences(initial)
         'title'                     ,   'Settings', ...
         'WindowWidth'               ,   w,    ...
         'ControlWidth'              ,   w/2,    ...
-        'separator'                 ,   'Thresholding Options', ...
+        'separator'                 ,   'Thresholding', ...
         {'Corrected Alpha'; 'alphacorrect'}, def.alphacorrect, ...
         {'Peak Separation'; 'separation'},   def.separation, ...
-        'separator'                 ,   'ATLAS Labeling', ...
+        'separator'                 ,   'Anatomical Labeling', ...
         {'Name'; 'atlasname'}          , atlasoptions, ...
-        'separator'                 ,   'Render', ...
+        'separator'                 ,   'Surface Rendering', ...
         {'Surfaces to Render'; 'surfshow'}  ,   {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'}, ...
         {'Surface Type'; 'surface'}      ,   {'Inflated' 'Pial' 'White'}, ...
         {'Shading Type'; 'shading'}      ,   {'Sulc' 'Curv' 'Thk'}, ...
@@ -223,7 +224,7 @@ function S = put_figure(ol, ul)
 
     % | Check for open GUI, close if one is found
     delete(findobj(0, 'tag', 'bspmview')); 
-    
+
     % | Setup new fig
     fonts   = default_fonts; 
     pos     = default_positions; 
@@ -397,8 +398,7 @@ function put_figmenu
     
     %% Main Menu
     S.menu1         = uimenu('Parent', st.fig, 'Label', 'bspmVIEW');
-    S.prefs         = uimenu(S.menu1, 'Label','Settings', 'Callback', @cb_preferences); 
-    S.appear        = uimenu(S.menu1, 'Label','Appearance', 'Separator', 'on'); 
+    S.appear        = uimenu(S.menu1, 'Label','Appearance'); 
     S.skin          = uimenu(S.appear, 'Label', 'Skin');
     S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', 'on', 'Callback', @cb_changeskin);
     S.changeskin(2) = uimenu(S.skin, 'Label', 'Light', 'Separator', 'on', 'Callback',@cb_changeskin);
@@ -428,11 +428,19 @@ function put_figmenu
     S.savetable         = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable);
     
     %% Options Menu
-    S.options       = uimenu(st.fig,'Label','Options');
-    S.report        = uimenu(S.options,'Label','Show Report', 'CallBack', @cb_report);
-    S.render        = uimenu(S.options,'Label','Show Rendering', 'Separator', 'on', 'CallBack', @cb_render);
-    S.crosshair     = uimenu(S.options,'Label','Show Crosshairs', 'Tag', 'Crosshairs', 'Separator', 'on','Checked', 'on', 'CallBack', @cb_crosshair);
-    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Separator', 'on', 'Checked', 'off', 'CallBack', @cb_reversemap);   
+    S.options       = uimenu(st.fig,'Label','Display Options');
+    S.prefs         = uimenu(S.options, 'Label','Display Settings', 'Callback', @cb_preferences); 
+    S.report        = uimenu(S.options,'Label','Show Results Table', 'Separator', 'on', 'CallBack', @cb_report);
+    S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'CallBack', @cb_render);
+    S.crosshair     = uimenu(S.options,'Label','Show Crosshairs', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
+    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);   
+    
+    %% Web Menu
+    S.web(1)        = uimenu(st.fig,'Label','Web');
+    S.web(2)        = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
+    S.web(3)        = uimenu(S.web(1),'Label','SPM Extensions', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
+    S.web(4)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'Separator', 'on', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
+    S.web(5)        = uimenu(S.web(1),'Label','Peak_Nii', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});   
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;
@@ -833,11 +841,6 @@ function cb_reversemap(varargin)
     end
     setcolormap;  
     drawnow;
-function cb_closegui(varargin)
-   if length(varargin)==3, h = varargin{3};
-   else h = varargin{1}; end
-   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
-   delete(h); % Bye-bye figure
 function cb_render(varargin)
     global st
     T = getthresh; 
@@ -989,7 +992,13 @@ function cb_savetable(varargin)
     outname = ['save_table_' imname '_I' num2str(peaknii.thresh) '_C' num2str(peaknii.cluster) '_S' num2str(peaknii.separation) '.csv'];
     [fname, pname] = uiputfile({'*.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
     writereport(allcell, fullfile(pname, fname)); 
-
+function cb_web(varargin)
+    stat = web(varargin{3}, '-browser');
+function cb_closegui(varargin)
+   global st
+   rmpath(st.supportpath); 
+   delete(st.fig); 
+   
 % | SETTERS
 % =========================================================================
 function setcolormap(varargin)
@@ -1127,7 +1136,7 @@ function [voxval, clsize] = setvoxelinfo
     drawnow;
 function setbackgcolor(newcolor)
     global st
-    if nargin==0, newcolor = [0 0 0]; end
+    if nargin==0, newcolor = st.color.bg; end
     prop = {'backg' 'ycolor' 'xcolor' 'zcolor'}; 
     for i = 1:length(prop)
         set(findobj(st.fig, prop{i}, st.color.bg), prop{i}, newcolor); 

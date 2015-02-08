@@ -995,9 +995,10 @@ function cb_savetable(varargin)
 function cb_web(varargin)
     stat = web(varargin{3}, '-browser');
 function cb_closegui(varargin)
-   global st
-   rmpath(st.supportpath); 
-   delete(st.fig); 
+   if length(varargin)==3, h = varargin{3};
+   else h = varargin{1}; end
+   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
+   delete(h); % Bye-bye figure
    
 % | SETTERS
 % =========================================================================

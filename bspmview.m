@@ -1469,37 +1469,6 @@ function OL = load_overlay(fname, pval, k)
     OL.atlaslabels = atlas; 
     OL.atlas0 = atlasvol;    
     set(st.fig, 'Name', abridgepath(OL.fname)); 
-function t  = bob_p2t(alpha, df)
-% BOB_P2T Get t-value from p-value + df
-%
-%   USAGE: t = bob_p2t(alpha, df)
-%       
-%   OUTPUT
-%       t = crtical t-value
-%
-%   ARGUMENTS
-%       alpha = p-value
-%       df = degrees of freedom
-%
-% =========================================
-if nargin<2, disp('USAGE: bob_p2t(p, df)'); return, end
-t = tinv(1-alpha, df);
-function p  = bob_t2p(t, df)
-% BOB_T2P Get p-value from t-value + df
-%
-%   USAGE: p = bob_t2p(t, df)
-%       
-%   OUTPUT
-%       p = p-value
-%
-%   ARGUMENTS
-%       t = t-value
-%       df = degrees of freedom
-%
-% =========================================
-if nargin<2, disp('USAGE: bob_t2p(p, df)'); return, end
-p = tcdf(t, df);
-p = 1 - p;
 function u  = voxel_correct(im,alpha)
 if nargin < 1, error('USAGE: u = voxel_correct(im,alpha)'); end
 if nargin < 2, alpha = .05; end
@@ -2112,6 +2081,138 @@ h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.
 h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
     'pos', [.4 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
 if wait4resp, uiwait(h(1)); end
+function t      = bob_p2t(alpha, df)
+% BOB_P2T Get t-value from p-value + df
+%
+%   USAGE: t = bob_p2t(alpha, df)
+%       
+%   OUTPUT
+%       t = crtical t-value
+%
+%   ARGUMENTS
+%       alpha = p-value
+%       df = degrees of freedom
+%
+% =========================================
+    if nargin<2, disp('USAGE: bob_p2t(p, df)'); return, end
+    t = tinv(1-alpha, df);
+function p      = bob_t2p(t, df)
+% BOB_T2P Get p-value from t-value + df
+%
+%   USAGE: p = bob_t2p(t, df)
+%       
+%   OUTPUT
+%       p = p-value
+%
+%   ARGUMENTS
+%       t = t-value
+%       df = degrees of freedom
+%
+% =========================================
+    if nargin<2, disp('USAGE: bob_t2p(p, df)'); return, end
+    p = tcdf(t, df);
+p = 1 - p;
+function p      = tcdf(x,n)
+% TCDF returns student cumulative distribtion function
+%
+% cdf = tcdf(x,DF);
+%
+% Computes the CDF of the students distribution 
+%    with DF degrees of freedom 
+% x,DF must be matrices of same size, or any one can be a scalar. 
+%
+% see also: NORMCDF, NORMPDF, NORMINV 
+
+% Reference(s):
+
+%	$Revision: 1.1 $
+%	$Id: tcdf.m,v 1.1 2003/09/12 12:14:45 schloegl Exp $
+%	Copyright (c) 2000-2003 by  Alois Schloegl <a.schloegl@ieee.org>	
+
+%    This program is free software; you can redistribute it and/or modify
+%    it under the terms of the GNU General Public License as published by
+%    the Free Software Foundation; either version 2 of the License, or
+%    (at your option) any later version.
+%
+%    This program is distributed in the hope that it will be useful,
+%    but WITHOUT ANY WARRANTY; without even the implied warranty of
+%    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%    GNU General Public License for more details.
+%
+%    You should have received a copy of the GNU General Public License
+%    along with this program; if not, write to the Free Software
+%    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
+% check size of arguments
+n = x+n-x;	  % if this line causes an error, size of input arguments do not fit. 
+z = n ./ (n + x.^2);
+
+% allocate memory
+p = z;
+p(x==Inf) = 1;
+
+% workaround for invalid arguments in BETAINC
+tmp   = isnan(z) | ~(n>0);
+p(tmp)= NaN;
+ix    = (~tmp);
+p(ix) = betainc (z(ix), n(ix)/2, 1/2) / 2;
+
+ix    = find(x>0);
+p(ix) = 1 - p(ix);
+
+% shape output
+p = reshape(p,size(z));
+function y      = tinv(x,n)
+% TINV returns inverse cumulative function of the student distribution
+%
+% x = tinv(p,v);
+%
+% Computes the quantile (inverse of the CDF) of a the student
+%    cumulative distribution with mean m and standard deviation s
+% p,v must be matrices of same size, or any one can be a scalar.
+%
+% see also: TPDF, TCDF, NORMPDF, NORMCDF, NORMINV
+ 
+% Reference(s):
+ 
+%   $Revision: 1.1 $
+%   $Id: tinv.m,v 1.1 2003/09/12 12:14:45 schloegl Exp $
+%   Version 1.28   Date: 13 Mar 2003
+%   Copyright (c) 2000-2003 by  Alois Schloegl <a.schloegl@ieee.org> 
+ 
+%    This program is free software; you can redistribute it and/or modify
+%    it under the terms of the GNU General Public License as published by
+%    the Free Software Foundation; either version 2 of the License, or
+%    (at your option) any later version.
+%
+%    This program is distributed in the hope that it will be useful,
+%    but WITHOUT ANY WARRANTY; without even the implied warranty of
+%    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%    GNU General Public License for more details.
+%
+%    You should have received a copy of the GNU General Public License
+%    along with this program; if not, write to the Free Software
+%    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ 
+ 
+% allocate output memory and check size of arguments
+y = x+n-n;  % if this line causes an error, size of input arguments do not fit.
+n = n+x-x;
+y = norminv(x); % do special cases, like x<=0, x>=1, isnan(x), n > 10000;
+y(~(n>0)) = NaN;
+ix = find(~isnan(x) & (n>0) & (n<10000));
+if ~isempty(ix)
+        if exist('betainv')==2,
+            z = betainv(2*min(x(ix), 1-x(ix)), n(ix)/2, 1/2);
+        elseif exist('beta_inv')==2,
+            z = beta_inv(2*min(x(ix), 1-x(ix)), n(ix)/2, 1/2);
+        end;               
+        y(ix) = (sign(x(ix) - 1/2).*sqrt(n(ix)./z - n(ix)));
+end;
+y = reshape(y,size(x));
+function y      = range(x)
+y = nanmax(x) - nanmin(x); 
 function cb_ok(varargin)
     delete(findobj(0, 'Tag', 'headsup'));
 function writereport(incell, outname)

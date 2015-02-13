@@ -44,6 +44,7 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
+%   Version:  20150211
 % _________________________________________________________________________
 
 % | CHECK FOR SPM FOLDER
@@ -447,13 +448,18 @@ function put_figmenu
     S.web(1)        = uimenu(st.fig,'Label','Web');
     S.web(2)        = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
     S.web(3)        = uimenu(S.web(1),'Label','SPM Extensions', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
-    S.web(4)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'Separator', 'on', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
-    S.web(5)        = uimenu(S.web(1),'Label','Peak_Nii', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});   
+    S.web(4)        = uimenu(S.web(1),'Label','SPM Archives Search', 'Separator', 'on', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
+    S.web(5)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'Separator', 'on', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
+    S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'}); 
+    S.web(7)        = uimenu(S.web(1),'Label','NeuroVault', 'Separator', 'on', 'Callback',{@cb_web, 'http://neurovault.org'}); 
+    S.web(8)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth',  'Separator', 'on','CallBack', @cb_neurosynth);   
+    
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;
     ctmax       = uimenu(cmenu, 'Label', 'Go to global max', 'callback', @cb_minmax, 'separator', 'off');
     ctclustmax  = uimenu(cmenu, 'Label', 'Go to cluster max', 'callback', @cb_clustminmax);
+    ctns        = uimenu(cmenu, 'Label', 'Search Coordinates in Neurosynth',  'CallBack', @cb_neurosynth);  
     ctsavemap   = uimenu(cmenu, 'Label', 'Save cluster', 'callback', @cb_saveclust, 'separator', 'on');
     ctsavemask  = uimenu(cmenu, 'Label', 'Save cluster (binary mask)', 'callback', @cb_saveclust);
     ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Coordinates', 'callback', @cb_saveroi);
@@ -1002,6 +1008,11 @@ function cb_savetable(varargin)
     writereport(allcell, fullfile(pname, fname)); 
 function cb_web(varargin)
     stat = web(varargin{3}, '-browser');
+    if stat, headsup('Could not open a browser window.', 1); end
+function cb_neurosynth(varargin)
+    baseurl = 'http://neurosynth.org/locations/?x=%d&y=%d&z=%d&r=6';
+    stat = web(sprintf(baseurl, getroundvoxel), '-browser');
+    if stat, headsup('Could not open a browser window..', 1); end
 function cb_closegui(varargin)
    if length(varargin)==3, h = varargin{3};
    else h = varargin{1}; end

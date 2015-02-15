@@ -44,8 +44,9 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150211
+%   Version:  20150215
 % _________________________________________________________________________
+version = '20150215'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -81,7 +82,7 @@ prevsect    = ul;
 
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
 % | =======================================================================
-printmsg(sprintf('Started %s', nicetime), 'BSPMVIEW');
+printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', version));
 S = put_figure(ol, ul); shg; 
 
 % =========================================================================

@@ -1,7 +1,6 @@
-# bspmview
-MATLAB program for viewing 3D fMRI statistical images
+BSPMVIEW Program for viewing fMRI statistical maps
 
- USAGE: S = bspmview(ol*, ul*)       *optional input
+  USAGE: S = bspmview(ol*, ul*)       *optional inputs
 
 Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre
 for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search
@@ -13,8 +12,8 @@ is launched, it will look for these files in a folder called
 
 _________________________________________________________________________
  INPUTS
-    ol: filename for statistical image to overlay
-    ul: filename for anatomical image to use as underlay
+  ol: filename for statistical image to overlay
+  ul: filename for anatomical image to use as underlay
 
 _________________________________________________________________________
  EXAMPLES
@@ -25,16 +24,23 @@ _________________________________________________________________________
   
 _________________________________________________________________________
  CREDITS
-    This software heavily relies on functions contained within the SPM
-    software, and is essentially an attempt to translate some of it into a
-    simpler and more user-friendly format. In addition, this software was
-    inspired by and in some cases uses code from two other statistical
-    image viewers: XJVIEW.m by Xu Cui, Jian Li, and Xiaowei Song
-    (http://www.alivelearn.net/xjview8/developers/), and FIVE.m by Aaron P.
-    Schultz (http://mrtools.mgh.harvard.edu/index.php/Main_Page). This also
-    employs some of the functionality of PEAK_NII.m by Donald McLaren
-    (http://www.nmr.mgh.harvard.edu/~mclaren/ftp/Utilities_DGM/). Finally,
-    several contributions to the MATLAB File Exchange
-    (http://www.mathworks.com/matlabcentral/fileexchange/) are called by
-    the code. These are included in the "supporting files" folder that should 
-    have been included in the distribution of the main BSPMVIEW function.
+  This software heavily relies on functions contained within the SPM
+  software, and is essentially an attempt to translate some of it into a
+  simpler and more user-friendly format. In addition, this software was
+  inspired by and in some cases uses code from two other statistical
+  image viewers: XJVIEW.m by Xu Cui, Jian Li, and Xiaowei Song
+  (http://www.alivelearn.net/xjview8/developers/), and FIVE.m by Aaron P.
+  Schultz (http://mrtools.mgh.harvard.edu/index.php/Main_Page). This also
+  employs some of the functionality of PEAK_NII.m by Donald McLaren
+  (http://www.nmr.mgh.harvard.edu/~mclaren/ftp/Utilities_DGM/). Finally,
+  several contributions to the MATLAB File Exchange
+  (http://www.mathworks.com/matlabcentral/fileexchange/) are called by
+  the code. These are included in the "supporting files" folder that should 
+  have been included in the distribution of the main BSPMVIEW function.
+
+
+------ Copyright (C) Bob Spunt, California Institute of Technology ------
+  Email:    bobspunt@gmail.com
+  Created:  2014-09-27
+  GitHub:   https://github.com/spunt/bspmview
+_________________________________________________________________________

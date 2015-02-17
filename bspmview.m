@@ -44,9 +44,9 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150215
+%   Version:  20150217
 % _________________________________________________________________________
-version = '20150215'; 
+version = '20150217'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -83,7 +83,12 @@ prevsect    = ul;
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
 % | =======================================================================
 printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', version));
-S = put_figure(ol, ul); shg; 
+try
+    S = put_figure(ol, ul); shg;
+catch err
+    save_error(err);
+    rethrow(err)
+end
 
 % =========================================================================
 % *
@@ -165,7 +170,7 @@ function cmap   = default_colormaps(depth)
         cmap{anchor+i,1} = cmap_upsample(brewermap(bnum2(i), bmap2{i}), depth); 
         cmap{anchor+i,2} = sprintf('%s (%d)', bmap2{i}, bnum2(i));
     end
-function preferences = default_preferences(initial)
+function prefs  = default_preferences(initial)
     if nargin==0, initial = 0; end
     global st
     if ~isfield(st, 'preferences')
@@ -189,10 +194,22 @@ function preferences = default_preferences(initial)
     end
     pos = get(st.fig, 'pos'); 
     w   = pos(3)*.65;
-    atlasoptions = {  'AnatomyToolbox', ...
-                    'HarvardOxford-cort-maxprob-thr0', ...
-                    'HarvardOxford-sub-maxprob-thr0'}; 
-    [preferences, button] = settingsdlg(...
+    opt             = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'};
+    optmap          = [4 2 1.9 2.1 -1 1]; 
+    opt             = [opt(optmap==def.surfshow) opt(optmap~=def.surfshow)]; 
+    optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)]; 
+    surftypeopt     = {'Inflated' 'Pial' 'White'}; 
+    surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))]; 
+    surftypeshade   = {'Sulc' 'Curv' 'Thk'};
+    surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))]; 
+    nvertopt        = [40962 642 2562 10242 163842]; 
+    nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
+    atlasopt        = {'AnatomyToolbox'                    ,...
+                    'HarvardOxford-cort-maxprob-thr0'   ,...
+                    'HarvardOxford-sub-maxprob-thr0'     ...
+                    }; 
+    atlasopt     = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];             
+    [prefs, button] = settingsdlg(...
         'title'                     ,   'Settings', ...
         'WindowWidth'               ,   w,    ...
         'ControlWidth'              ,   w/2,    ...
@@ -200,19 +217,17 @@ function preferences = default_preferences(initial)
         {'Corrected Alpha'; 'alphacorrect'}, def.alphacorrect, ...
         {'Peak Separation'; 'separation'},   def.separation, ...
         'separator'                 ,   'Anatomical Labeling', ...
-        {'Name'; 'atlasname'}          , atlasoptions, ...
+        {'Name'; 'atlasname'}          , atlasopt, ...
         'separator'                 ,   'Surface Rendering', ...
-        {'Surfaces to Render'; 'surfshow'}  ,   {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'}, ...
-        {'Surface Type'; 'surface'}      ,   {'Inflated' 'Pial' 'White'}, ...
-        {'Shading Type'; 'shading'}      ,   {'Sulc' 'Curv' 'Thk'}, ...
-        {'N Vertices'; 'nverts'}    ,   num2cell([40962 642 2562 10242 163842]), ...
+        {'Surfaces to Render'; 'surfshow'}  , opt, ...
+        {'Surface Type'; 'surface'}      ,   surftypeopt, ...
+        {'Shading Type'; 'shading'}      ,   surftypeshade, ...
+        {'N Vertices'; 'nverts'}    ,   num2cell(nvertopt), ...
         {'Shading Min'; 'shadingmin'},      def.shadingmin, ...
         {'Shading Max'; 'shadingmax'},      def.shadingmax, ...
         {'Add Color Bar'; 'colorbar'},      logical(def.colorbar), ...
         {'Round Values?'; 'round'}   ,      logical(def.round)); 
-    if strcmpi(button, 'cancel'), return; else st.preferences = preferences; end
-    opt     = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'}; 
-    optmap  = [4 2 1.9 2.1 -1 1]; 
+    if strcmpi(button, 'cancel'), return; else st.preferences = prefs; end
     if ~strcmpi(st.preferences.atlasname, def.atlasname)
         %% LABEL MAP
         atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); 
@@ -426,35 +441,34 @@ function put_figmenu
     set(S.font, 'BusyAction', 'cancel', 'Interruptible', 'off');
 
     %% Load Menu
-    S.load = uimenu(st.fig,'Label','Load');
-    S.loadol = uimenu(S.load,'Label','Overlay Image','CallBack', @cb_loadol);
-    S.loadul = uimenu(S.load,'Label','Underlay Image', 'Separator', 'on', 'CallBack', @cb_loadul);
+    S.load = uimenu(st.fig,'Label','Load', 'Separator', 'on');
+    S.loadol = uimenu(S.load,'Label','Overlay Image', 'Accelerator', 'o', 'CallBack', @cb_loadol);
+    S.loadul = uimenu(S.load,'Label','Underlay Image', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
     
     %% Save Menu
-    S.save              = uimenu(st.fig,'Label','Save');
+    S.save              = uimenu(st.fig,'Label','Save', 'Separator', 'on');
     S.saveintensity     = uimenu(S.save,'Label','Save as intensity image','CallBack', @cb_saveimg);
     S.savemask          = uimenu(S.save,'Label','Save as mask', 'Separator', 'on', 'CallBack', @cb_saveimg);
     S.saveroi           = uimenu(S.save,'Label','Save ROI at current location', 'Separator', 'on', 'CallBack', @cb_saveroi);
     S.savetable         = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable);
     
     %% Options Menu
-    S.options       = uimenu(st.fig,'Label','Display Options');
-    S.prefs         = uimenu(S.options, 'Label','Display Settings', 'Callback', @cb_preferences); 
-    S.report        = uimenu(S.options,'Label','Show Results Table', 'Separator', 'on', 'CallBack', @cb_report);
-    S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'CallBack', @cb_render);
-    S.crosshair     = uimenu(S.options,'Label','Show Crosshairs', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
+    S.options       = uimenu(st.fig,'Label','Display', 'Separator', 'on');
+    S.prefs         = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
+    S.report        = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
+    S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
+    S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
     S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);   
     
     %% Web Menu
-    S.web(1)        = uimenu(st.fig,'Label','Web');
+    S.web(1)        = uimenu(st.fig,'Label','Web', 'Separator', 'on');
     S.web(2)        = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
-    S.web(3)        = uimenu(S.web(1),'Label','SPM Extensions', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
-    S.web(4)        = uimenu(S.web(1),'Label','SPM Archives Search', 'Separator', 'on', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
-    S.web(5)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'Separator', 'on', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
-    S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'Separator', 'on', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'}); 
-    S.web(7)        = uimenu(S.web(1),'Label','NeuroVault', 'Separator', 'on', 'Callback',{@cb_web, 'http://neurovault.org'}); 
-    S.web(8)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth',  'Separator', 'on','CallBack', @cb_neurosynth);   
-    
+    S.web(3)        = uimenu(S.web(1),'Label','SPM Extensions', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
+    S.web(4)        = uimenu(S.web(1),'Label','SPM Archives Search', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
+    S.web(5)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
+    S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'}); 
+    S.web(7)        = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
+    S.web(8)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth', 'CallBack', @cb_neurosynth);      
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;
@@ -465,7 +479,7 @@ function put_axesmenu
     ctsavemask  = uimenu(cmenu, 'Label', 'Save cluster (binary mask)', 'callback', @cb_saveclust);
     ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Coordinates', 'callback', @cb_saveroi);
     ctsavergb   = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb, 'separator', 'on');
-    ctxhair     = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
+    ctxhair     = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
     for a = 1:3
         set(h.ax(a), 'uicontextmenu', cmenu); 
     end
@@ -505,12 +519,14 @@ function cb_updateoverlay(varargin)
     di = strcmpi({'+' '-' '+/-'}, T.direct); 
     switch tag
         case {'Thresh'}
-            T.pval = bob_t2p(T.thresh, T.df);
+            if T.df~=Inf, T.pval = bob_t2p(T.thresh, T.df); end
         case {'P-Value'}
-            T.thresh = spm_invTcdf(1-T.pval, T.df); 
+            if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
         case {'DF'}
-            T.thresh = spm_invTcdf(1-T.pval, T.df); 
-            T.pval = bob_t2p(T.thresh, T.df);
+            if ~any([T.pval T.df]==Inf)
+                T.thresh = spm_invTcdf(1-T.pval, T.df); 
+                T.pval = bob_t2p(T.thresh, T.df);
+            end
         case {'Extent'}
             if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
                 headsup('No clusters survived. Defaulting to largest cluster at this voxelwise threshold.');
@@ -532,7 +548,7 @@ function cb_updateoverlay(varargin)
 function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
-    if isempty(fname), disp('Must select an overlay!'); return; end
+    if isempty(fname), disp('An overlay image was not selected.'); return; end
     T0  = getthresh;
     T   = T0; 
     di  = strcmpi({'+' '-' '+/-'}, T.direct); 
@@ -544,8 +560,10 @@ function cb_loadol(varargin)
     check4design; 
     drawnow;
 function cb_loadul(varargin)
-    global st prevsect
+    
     ul = uigetvol('Select an Image File for Underlay', 0);
+    if isempty(ul), disp('An underlay image was not selected.'); return; end
+    global st prevsect
     prevsect    = ul;
     h = gethandles_axes; 
     delete(h.ax);
@@ -603,7 +621,8 @@ function cb_tablexyz(varargin)
     drawnow;
 function cb_directmenu(varargin)
     global st
-    str     = get(varargin{1}, 'string');
+    if ischar(varargin{1}), str = varargin{1}; 
+    else str = get(varargin{1}, 'string'); end
     allh = findobj(st.fig, 'Tag', 'direct'); 
     allhstr = get(allh, 'String');
     set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive'); 
@@ -647,15 +666,15 @@ function cb_saveimg(varargin)
     clustidx = st.ol.C0(di,:);
     opt = [1 -1 1]; 
     outimg = st.ol.Y*opt(di);
-    outhdr = st.ol.hdr; 
+    outhdr = st.ol.hdr;
     outimg(clustidx==0) = NaN;
     putmsg = 'Save intensity image as'; 
     outhdr.descrip = 'Thresholded Intensity Image'; 
     [p,n] = fileparts(outhdr.fname); 
     deffn = sprintf('%s/Thresh_%s.nii', p, n);  
     if regexp(lab, 'Save as mask')
-        outimg(outimg>0)    = 1;
-        outimg(~outimg)     = 0; 
+        outimg(isnan(outimg))   = 0; 
+        outimg(outimg~=0)       = 1;
         outhdr.descrip = 'Thresholded Mask Image'; 
         putmsg = 'Save mask image as'; 
         deffn = sprintf('%s/Mask_%s.nii', p, n);  
@@ -684,8 +703,8 @@ function cb_saveclust(varargin)
     [p,n] = fileparts(outhdr.fname); 
     deffn = sprintf('%s/Cluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);  
     if regexp(lab, 'binary mask')
-        outimg(outimg>0) = 1; 
-        outimg(~outimg)  = 0; 
+        outimg(isnan(outimg))   = 0; 
+        outimg(outimg~=0)       = 1;
         outhdr.descrip = 'Binary Mask Cluster Image'; 
         putmsg = 'Save mask image as'; 
         deffn = sprintf('%s/ClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);   
@@ -839,10 +858,9 @@ function cb_correct(varargin)
     end
     setthresh(C, find(di)); 
     setthreshinfo(T);  
-    drawnow;
 function cb_preferences(varargin)
     global st
-    preferences = default_preferences; 
+    default_preferences; 
 function cb_reversemap(varargin)
     state = get(varargin{1},'Checked');
     if strcmpi(state,'on');
@@ -855,7 +873,6 @@ function cb_reversemap(varargin)
        st.cmap{i,1} = st.cmap{i,1}(end:-1:1,:); 
     end
     setcolormap;  
-    drawnow;
 function cb_render(varargin)
     global st
     T = getthresh; 
@@ -1032,6 +1049,7 @@ function setcolormap(varargin)
     set(st.fig,'Colormap', cmap);
     bspm_orthviews('SetBlobsMax', 1, 1, max(st.ol.Z))
     set(findobj(st.fig, 'tag', 'maxval'), 'str',  sprintf('%2.3f',max(st.ol.Z)));
+    drawnow;
 function setfontunits(unitstr)
     if nargin==0, unitstr = 'norm'; end
     global st
@@ -1044,6 +1062,7 @@ function setunits
     drawnow; 
 function setposition_axes
     global st
+    CBPIXSIZE = 100; 
     %% Handles for axes
     % 1 - transverse
     % 2 - coronal
@@ -1052,10 +1071,8 @@ function setposition_axes
     % st.vols{1}.ax{1}.d    - image
     % st.vols{1}.ax{1}.lx   - crosshair (x)
     % st.vols{1}.ax{1}.ly   - crosshair (y)
-    
     h = gethandles_axes;
     axpos = cell2mat(get(h.ax, 'pos'));
-    CBPIXSIZE = 85; 
     axpos(1:2, 1)   = 0; 
     axpos(1, 2)     = 0;
     axpos(3, 1)     = sum(axpos(2,[1 3]))+.005; 
@@ -1097,7 +1114,6 @@ function setposition_axes
     set(p, 'units', 'norm', 'pos', ppos); 
     set(p, 'units', unit0); 
     bspm_orthviews('Redraw');
-    drawnow;
 function setthreshinfo(T)
     global st
     if nargin==0
@@ -1108,14 +1124,13 @@ function setthreshinfo(T)
             'df',       st.ol.DF, ...
             'direct',   st.direct);
     end
-    st.direct = char(T.direct);
+    st.direct = char(T.direct); 
     Tval = [T.extent T.thresh T.pval T.df]; 
     Tstr = {'Extent' 'Thresh' 'P-Value' 'DF'};
     Tstrform = {'%d' '%2.2f' '%2.3f' '%d'}; 
     for i = 1:length(Tstr)
         set(findobj(st.fig, 'Tag', Tstr{i}), 'String', sprintf(Tstrform{i}, Tval(i)));
     end
-    drawnow;
 function setthresh(C, di)
     global st
     if nargin==1, di = 3; end
@@ -1132,7 +1147,6 @@ function setthresh(C, di)
     bspm_orthviews('Register', st.registry.hReg);
     setcolormap; 
     bspm_orthviews('Reposition');
-    drawnow;
 function [voxval, clsize] = setvoxelinfo
     global st
     [nxyz,voxidx, d]    = getnearestvoxel; 
@@ -1151,10 +1165,14 @@ function [voxval, clsize] = setvoxelinfo
         clsize = sprintf('%d', st.ol.C(voxidx));
     end
     set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
-    set(findobj(st.fig, 'tag', 'xyz'), 'string', sprintf('%d, %d, %d', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM)));
+    set(findobj(st.fig, 'tag', 'xyz'), 'string', sprintf('%d, %d, %d', xyz)); 
     set(findobj(st.fig, 'tag', 'voxval'), 'string', voxval); 
     set(findobj(st.fig, 'tag', 'clustersize'), 'string', clsize);
-    drawnow;
+    axidx = [3 2 1];
+    for a = 1:length(axidx)
+        set(st.vols{1}.ax{axidx(a)}.xyz, 'string', num2str(xyz(a)));
+    end
+    drawnow; 
 function setbackgcolor(newcolor)
     global st
     if nargin==0, newcolor = st.color.bg; end
@@ -1413,42 +1431,37 @@ function OL = load_overlay(fname, pval, k)
     end
 
     %% CHECK IMAGE
+    allh = findobj(st.fig, 'Tag', 'direct'); 
+    if ~isempty(allh), cb_directmenu(st.direct); end
     posneg = [sum(od(:)>0) sum(od(:)<0)]==0; 
     if any(posneg)
         opt = {'+' '-'}; 
-        st.direct = lower(opt{posneg==0}); 
-        allh = findobj(st.fig, 'Tag', 'direct'); 
+        st.direct = lower(opt{posneg==0});
         if ~isempty(allh)
             allhstr = get(allh, 'String');
             set(allh(strcmp(allhstr, '+/-')), 'Value', 0, 'Enable', 'inactive');
-            set(allh(strcmp(allhstr, opt{posneg})), 'Value', 0, 'Enable', 'inactive'); 
+            set(allh(strcmp(allhstr, opt{posneg})), 'Value', 0, 'Enable', 'inactive');
+            set(allh(strcmp(allhstr, opt{~posneg})), 'Value', 1, 'Enable', 'inactive'); 
         end
     end
 
     %% DEGREES OF FREEDOM
-    try
-        tmp = oh.descrip;
-        idx1 = regexp(tmp,'[','ONCE');
-        idx2 = regexp(tmp,']','ONCE');
-        df = str2num(tmp(idx1+1:idx2-1));
-        u = spm_invTcdf(1-pval, df);  
-    catch
-        headsup('Degrees of freedom could not be found in image header! Showing unthresholded image.')
+    tmp = oh.descrip;
+    idx{1} = regexp(tmp,'[','ONCE');
+    idx{2} = regexp(tmp,']','ONCE');
+    if any(cellfun('isempty', idx))
+        headsup('Degrees of freedom not found in image header. Showing unthresholded image.')
         u = 0.01;
         k = 1;
         df = Inf;
         pval = Inf; 
-    end
-    if isempty(u)
-        u = 0.01;
-        k = 1; 
-        df = Inf; 
-        pval = Inf; 
+    else
+        df = str2num(tmp(idx{1}+1:idx{2}-1));
+        u = spm_invTcdf(1-pval, df);  
     end
     [C, I] = getclustidx(od, u, k);
-    
     if ~any(C(:))
-        headsup('No suprathreshold voxels! Showing unthresholded image.'); 
+        headsup('No suprathreshold voxels. Showing unthresholded image.'); 
         u = 0; 
         pval = bob_t2p(u, df);
         k = 1; 
@@ -1920,6 +1933,27 @@ function vol    = uiputvol(defname, prompt)
     else
         vol = fullfile(pname, imname); 
     end
+function out    = cellnum2str(in, ndec)
+% NEW2PVAL Convert numeric array of p-values to formatted cell array of p-values
+%
+%  USAGE: out = num2pval(in)
+% __________________________________________________________________________
+%  INPUTS
+%	in: numeric array of p-values
+%   ndec: number of decimal points to display
+%
+
+% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
+%	Created:  2015-01-13
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 2, ndec = 2; end
+if nargin < 1, disp('USAGE: out = num2pval(in)'); return; end
+if ~iscell(in), error('Input array must be cell!'); end
+n   = cell2mat(in); 
+out = cellfun(@sprintf, repmat({['%2.' num2str(ndec) 'f']}, size(in)), in, 'Unif', false); 
+out = regexprep(out, '0\.', '\.');
+out(mod(n,1)==0) = cellfun(@num2str, in(mod(n,1)==0), 'unif', false);
 function out    = adjustbrightness(in)
     lim = .5;
     dat.min = min(in(in>0)); 
@@ -2153,6 +2187,18 @@ function mfile_showhelp(varargin)
 ST = dbstack('-completenames');
 if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
 eval(sprintf('help %s', ST(2).file));  
+function save_error(err)
+    global st
+    errdata     = getReport(err);
+    errlogname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorMsg.txt'); 
+    errmatname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorDat.mat'); 
+    errfigname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorFig.fig');
+    hgsave(errfigname); 
+    eid         = fopen(errlogname, 'w');
+    fwrite(eid, errdata);
+    fclose(eid);
+    save(errmatname, 'st');
+    fprintf('\nERROR INFORMATION WRITTEN TO:\n\t%s\n\t%s\n\t%s\n\n', errlogname, errmatname, errfigname);
 function arrayset(harray, propname, propvalue) 
 % ARRAYGET Set property values for array of handles
 %
@@ -2319,35 +2365,24 @@ switch lower(action)
             fnm = spm_file(st.vols{i}.fname, 'number', st.vols{i}.n);
             st.vols{i}.mat = spm_get_space(fnm);
         end
-        % redraw_all (done in bspm_orthviews('reorient','context_quit'))
         
     case 'reposition'
 
         if isempty(varargin), tmp = findcent;
         else tmp = varargin{1}; end
         if numel(tmp) == 3
-            h = valid_handles(st.snap);
-            if ~isempty(h)
-                tmp = st.vols{h(1)}.mat * ...
-                    round(st.vols{h(1)}.mat\[tmp(:); 1]);
-            end
+            if isequal(round(tmp),round(st.centre)), return; end
             st.centre = tmp(1:3);
         end
         redraw_all;
         callback;
-        if isfield(st,'registry')
-            xyz = bspm_XYZreg('SetCoords',bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM),st.registry.hReg,st.registry.hMe);
-        end
         cm_pos;
-        xyzstr = num2str([-99; round(xyz)]); 
-        xyzstr(1,:) = [];
-        axidx = [3 2 1];
-        for a = 1:length(axidx)
-            set(st.vols{1}.ax{axidx(a)}.xyz, 'string', xyzstr(a,:));
+        setvoxelinfo;
+        if isfield(st,'registry')
+            bspm_XYZreg('SetCoords',st.centre,st.registry.hReg,st.registry.hMe);
         end
-        setvoxelinfo; 
-
-           
+        drawnow; 
+        
     case 'setcoords'
         st.centre = varargin{1};
         st.centre = st.centre(:);
@@ -2536,7 +2571,6 @@ switch lower(action)
             feval(['spm_ov_' st.plugins{addonaction}],varargin{:});
         end
 end
-
 spm('Pointer','Arrow');
 function H  = specify_image(img)
 global st
@@ -2618,40 +2652,40 @@ end
 function m  = max_img
 m = 24;
 function centre = findcent
-global st
-obj    = get(st.fig,'CurrentObject');
-centre = [];
-cent   = [];
-cp     = [];
-for i=valid_handles
-    for j=1:3
-        if ~isempty(obj)
-            if (st.vols{i}.ax{j}.ax == obj),
-                cp = get(obj,'CurrentPoint');
+    global st
+    obj    = get(st.fig,'CurrentObject');
+    centre = [];
+    cent   = [];
+    cp     = [];
+    for i=valid_handles
+        for j=1:3
+            if ~isempty(obj)
+                if (st.vols{i}.ax{j}.ax == obj),
+                    cp = get(obj,'CurrentPoint');
+                end
+            end
+            if ~isempty(cp)
+                cp   = cp(1,1:2);
+                is   = inv(st.Space);
+                cent = is(1:3,1:3)*st.centre(:) + is(1:3,4);
+                switch j
+                    case 1
+                        cent([1 2])=[cp(1)+st.bb(1,1)-1 cp(2)+st.bb(1,2)-1];
+                    case 2
+                        cent([1 3])=[cp(1)+st.bb(1,1)-1 cp(2)+st.bb(1,3)-1];
+                    case 3
+                        if st.mode ==0
+                            cent([3 2])=[cp(1)+st.bb(1,3)-1 cp(2)+st.bb(1,2)-1];
+                        else
+                            cent([2 3])=[st.bb(2,2)+1-cp(1) cp(2)+st.bb(1,3)-1];
+                        end
+                end
+                break;
             end
         end
-        if ~isempty(cp)
-            cp   = cp(1,1:2);
-            is   = inv(st.Space);
-            cent = is(1:3,1:3)*st.centre(:) + is(1:3,4);
-            switch j
-                case 1
-                    cent([1 2])=[cp(1)+st.bb(1,1)-1 cp(2)+st.bb(1,2)-1];
-                case 2
-                    cent([1 3])=[cp(1)+st.bb(1,1)-1 cp(2)+st.bb(1,3)-1];
-                case 3
-                    if st.mode ==0
-                        cent([3 2])=[cp(1)+st.bb(1,3)-1 cp(2)+st.bb(1,2)-1];
-                    else
-                        cent([2 3])=[st.bb(2,2)+1-cp(1) cp(2)+st.bb(1,3)-1];
-                    end
-            end
-            break;
-        end
+        if ~isempty(cent), break; end
     end
-    if ~isempty(cent), break; end
-end
-if ~isempty(cent), centre = st.Space(1:3,1:3)*cent(:) + st.Space(1:3,4); end
+    if ~isempty(cent), centre = st.Space(1:3,1:3)*cent(:) + st.Space(1:3,4); end
 function handles = valid_handles(handles)
     global st
     if ~nargin, handles = 1:max_img; end
@@ -3108,16 +3142,6 @@ redraw_all;
 if isfield(st.vols{1},'sdip')
     spm_eeg_inv_vbecd_disp('RedrawDip');
 end
-function repos_start(varargin)
-    % don't use right mouse button to start reposition
-    if ~strcmpi(get(gcbf,'SelectionType'),'alt')
-        set(gcbf,'windowbuttonmotionfcn',@repos_move, 'windowbuttonupfcn',@repos_end);
-        bspm_orthviews('reposition');
-    end
-function repos_move(varargin)
-    bspm_orthviews('reposition');
-function repos_end(varargin)
-    set(gcbf,'windowbuttonmotionfcn','', 'windowbuttonupfcn','');
 function bbox
 global st
 Dims = diff(st.bb)'+1;
@@ -3178,384 +3202,375 @@ for i=valid_handles
     end
 end
 function redraw(arg1)
-global st
-bb   = st.bb;
-Dims = round(diff(bb)'+1);
-is   = inv(st.Space);
-cent = is(1:3,1:3)*st.centre(:) + is(1:3,4);
-
-for i = valid_handles(arg1)
-    M = st.Space\st.vols{i}.premul*st.vols{i}.mat;
-    TM0 = [ 1 0 0 -bb(1,1)+1
-            0 1 0 -bb(1,2)+1
-            0 0 1 -cent(3)
-            0 0 0 1];
-    TM = inv(TM0*M);
-    TD = Dims([1 2]);
-    
-    CM0 = [ 1 0 0 -bb(1,1)+1
-            0 0 1 -bb(1,3)+1
-            0 1 0 -cent(2)
-            0 0 0 1];
-    CM = inv(CM0*M);
-    CD = Dims([1 3]);
-    
-    if st.mode ==0
-        SM0 = [ 0 0 1 -bb(1,3)+1
+    global st
+    bb   = st.bb;
+    Dims = round(diff(bb)'+1);
+    is   = inv(st.Space);
+    cent = is(1:3,1:3)*st.centre(:) + is(1:3,4);
+    for i = valid_handles(arg1)
+        M = st.Space\st.vols{i}.premul*st.vols{i}.mat;
+        TM0 = [ 1 0 0 -bb(1,1)+1
                 0 1 0 -bb(1,2)+1
-                1 0 0 -cent(1)
+                0 0 1 -cent(3)
                 0 0 0 1];
-        SM = inv(SM0*M); 
-        SD = Dims([3 2]);
-    else
-        SM0 = [ 0 -1 0 +bb(2,2)+1
-                0  0 1 -bb(1,3)+1
-                1  0 0 -cent(1)
-                0  0 0 1];
-        SM = inv(SM0*M);
-        SD = Dims([2 3]);
-    end
-    
-    try
-        imgt = spm_slice_vol(st.vols{i},TM,TD,st.hld)';
-        imgc = spm_slice_vol(st.vols{i},CM,CD,st.hld)';
-        imgs = spm_slice_vol(st.vols{i},SM,SD,st.hld)';
-        imgc2 = adjustbrightness(imgc); 
-        imgs2 = adjustbrightness(imgs); 
-        imgt2 = adjustbrightness(imgt); 
-        ok   = true;
-    catch
-        fprintf('Cannot access file "%s".\n', st.vols{i}.fname);
-        fprintf('%s\n',getfield(lasterror,'message'));
-        ok   = false;
-    end
-    
-    if ok
-        % get min/max threshold
-        if strcmp(st.vols{i}.window,'auto')
-            mn = -Inf;
-            mx = Inf;
+        TM = inv(TM0*M);
+        TD = Dims([1 2]);
+
+        CM0 = [ 1 0 0 -bb(1,1)+1
+                0 0 1 -bb(1,3)+1
+                0 1 0 -cent(2)
+                0 0 0 1];
+        CM = inv(CM0*M);
+        CD = Dims([1 3]);
+        if st.mode ==0
+            SM0 = [ 0 0 1 -bb(1,3)+1
+                    0 1 0 -bb(1,2)+1
+                    1 0 0 -cent(1)
+                    0 0 0 1];
+            SM = inv(SM0*M); 
+            SD = Dims([3 2]);
         else
-            mn = min(st.vols{i}.window);
-            mx = max(st.vols{i}.window);
+            SM0 = [ 0 -1 0 +bb(2,2)+1
+                    0  0 1 -bb(1,3)+1
+                    1  0 0 -cent(1)
+                    0  0 0 1];
+            SM = inv(SM0*M);
+            SD = Dims([2 3]);
         end
-        % threshold images
-        imgt = max(imgt,mn); imgt = min(imgt,mx);
-        imgc = max(imgc,mn); imgc = min(imgc,mx);
-        imgs = max(imgs,mn); imgs = min(imgs,mx);
-        % compute intensity mapping, if histeq is available
-        if license('test','image_toolbox') == 0
-            st.vols{i}.mapping = 'linear';
+        try
+            imgt = spm_slice_vol(st.vols{i},TM,TD,st.hld)';
+            imgc = spm_slice_vol(st.vols{i},CM,CD,st.hld)';
+            imgs = spm_slice_vol(st.vols{i},SM,SD,st.hld)';
+            imgc2 = adjustbrightness(imgc); 
+            imgs2 = adjustbrightness(imgs); 
+            imgt2 = adjustbrightness(imgt); 
+            ok   = true;
+        catch
+            fprintf('Cannot access file "%s".\n', st.vols{i}.fname);
+            fprintf('%s\n',getfield(lasterror,'message'));
+            ok   = false;
         end
-        switch st.vols{i}.mapping
-            case 'linear'
-            case 'histeq'
-                % scale images to a range between 0 and 1
-                imgt1=(imgt-min(imgt(:)))/(max(imgt(:)-min(imgt(:)))+eps);
-                imgc1=(imgc-min(imgc(:)))/(max(imgc(:)-min(imgc(:)))+eps);
-                imgs1=(imgs-min(imgs(:)))/(max(imgs(:)-min(imgs(:)))+eps);
-                img  = histeq([imgt1(:); imgc1(:); imgs1(:)],1024);
-                imgt = reshape(img(1:numel(imgt1)),size(imgt1));
-                imgc = reshape(img(numel(imgt1)+(1:numel(imgc1))),size(imgc1));
-                imgs = reshape(img(numel(imgt1)+numel(imgc1)+(1:numel(imgs1))),size(imgs1));
-                mn = 0;
-                mx = 1;
-            case 'quadhisteq'
-                % scale images to a range between 0 and 1
-                imgt1=(imgt-min(imgt(:)))/(max(imgt(:)-min(imgt(:)))+eps);
-                imgc1=(imgc-min(imgc(:)))/(max(imgc(:)-min(imgc(:)))+eps);
-                imgs1=(imgs-min(imgs(:)))/(max(imgs(:)-min(imgs(:)))+eps);
-                img  = histeq([imgt1(:).^2; imgc1(:).^2; imgs1(:).^2],1024);
-                imgt = reshape(img(1:numel(imgt1)),size(imgt1));
-                imgc = reshape(img(numel(imgt1)+(1:numel(imgc1))),size(imgc1));
-                imgs = reshape(img(numel(imgt1)+numel(imgc1)+(1:numel(imgs1))),size(imgs1));
-                mn = 0;
-                mx = 1;
-            case 'loghisteq'
-                sw = warning('off','MATLAB:log:logOfZero');
-                imgt = log(imgt-min(imgt(:)));
-                imgc = log(imgc-min(imgc(:)));
-                imgs = log(imgs-min(imgs(:)));
-                warning(sw);
-                imgt(~isfinite(imgt)) = 0;
-                imgc(~isfinite(imgc)) = 0;
-                imgs(~isfinite(imgs)) = 0;
-                % scale log images to a range between 0 and 1
-                imgt1=(imgt-min(imgt(:)))/(max(imgt(:)-min(imgt(:)))+eps);
-                imgc1=(imgc-min(imgc(:)))/(max(imgc(:)-min(imgc(:)))+eps);
-                imgs1=(imgs-min(imgs(:)))/(max(imgs(:)-min(imgs(:)))+eps);
-                img  = histeq([imgt1(:); imgc1(:); imgs1(:)],1024);
-                imgt = reshape(img(1:numel(imgt1)),size(imgt1));
-                imgc = reshape(img(numel(imgt1)+(1:numel(imgc1))),size(imgc1));
-                imgs = reshape(img(numel(imgt1)+numel(imgc1)+(1:numel(imgs1))),size(imgs1));
-                mn = 0;
-                mx = 1;
-        end
-        % recompute min/max for display
-        if strcmp(st.vols{i}.window,'auto')
-            mx = -inf; mn = inf;
-        end
-        if ~isempty(imgt)
-            tmp = imgt(isfinite(imgt));
-            mx = max([mx max(max(tmp))]);
-            mn = min([mn min(min(tmp))]);
-        end
-        if ~isempty(imgc)
-            tmp = imgc(isfinite(imgc));
-            mx = max([mx max(max(tmp))]);
-            mn = min([mn min(min(tmp))]);
-        end
-        if ~isempty(imgs)
-            tmp = imgs(isfinite(imgs));
-            mx = max([mx max(max(tmp))]);
-            mn = min([mn min(min(tmp))]);
-        end
-        if mx==mn, mx=mn+eps; end
-        
-        if isfield(st.vols{i},'blobs')
-            if ~isfield(st.vols{i}.blobs{1},'colour')
-                % Add blobs for display using the split colourmap
+        if ok
+            % get min/max threshold
+            if strcmp(st.vols{i}.window,'auto')
+                mn = -Inf;
+                mx = Inf;
+            else
+                mn = min(st.vols{i}.window);
+                mx = max(st.vols{i}.window);
+            end
+            % threshold images
+            imgt = max(imgt,mn); imgt = min(imgt,mx);
+            imgc = max(imgc,mn); imgc = min(imgc,mx);
+            imgs = max(imgs,mn); imgs = min(imgs,mx);
+            % compute intensity mapping, if histeq is available
+            if license('test','image_toolbox') == 0
+                st.vols{i}.mapping = 'linear';
+            end
+            switch st.vols{i}.mapping
+                case 'linear'
+                case 'histeq'
+                    % scale images to a range between 0 and 1
+                    imgt1=(imgt-min(imgt(:)))/(max(imgt(:)-min(imgt(:)))+eps);
+                    imgc1=(imgc-min(imgc(:)))/(max(imgc(:)-min(imgc(:)))+eps);
+                    imgs1=(imgs-min(imgs(:)))/(max(imgs(:)-min(imgs(:)))+eps);
+                    img  = histeq([imgt1(:); imgc1(:); imgs1(:)],1024);
+                    imgt = reshape(img(1:numel(imgt1)),size(imgt1));
+                    imgc = reshape(img(numel(imgt1)+(1:numel(imgc1))),size(imgc1));
+                    imgs = reshape(img(numel(imgt1)+numel(imgc1)+(1:numel(imgs1))),size(imgs1));
+                    mn = 0;
+                    mx = 1;
+                case 'quadhisteq'
+                    % scale images to a range between 0 and 1
+                    imgt1=(imgt-min(imgt(:)))/(max(imgt(:)-min(imgt(:)))+eps);
+                    imgc1=(imgc-min(imgc(:)))/(max(imgc(:)-min(imgc(:)))+eps);
+                    imgs1=(imgs-min(imgs(:)))/(max(imgs(:)-min(imgs(:)))+eps);
+                    img  = histeq([imgt1(:).^2; imgc1(:).^2; imgs1(:).^2],1024);
+                    imgt = reshape(img(1:numel(imgt1)),size(imgt1));
+                    imgc = reshape(img(numel(imgt1)+(1:numel(imgc1))),size(imgc1));
+                    imgs = reshape(img(numel(imgt1)+numel(imgc1)+(1:numel(imgs1))),size(imgs1));
+                    mn = 0;
+                    mx = 1;
+                case 'loghisteq'
+                    sw = warning('off','MATLAB:log:logOfZero');
+                    imgt = log(imgt-min(imgt(:)));
+                    imgc = log(imgc-min(imgc(:)));
+                    imgs = log(imgs-min(imgs(:)));
+                    warning(sw);
+                    imgt(~isfinite(imgt)) = 0;
+                    imgc(~isfinite(imgc)) = 0;
+                    imgs(~isfinite(imgs)) = 0;
+                    % scale log images to a range between 0 and 1
+                    imgt1=(imgt-min(imgt(:)))/(max(imgt(:)-min(imgt(:)))+eps);
+                    imgc1=(imgc-min(imgc(:)))/(max(imgc(:)-min(imgc(:)))+eps);
+                    imgs1=(imgs-min(imgs(:)))/(max(imgs(:)-min(imgs(:)))+eps);
+                    img  = histeq([imgt1(:); imgc1(:); imgs1(:)],1024);
+                    imgt = reshape(img(1:numel(imgt1)),size(imgt1));
+                    imgc = reshape(img(numel(imgt1)+(1:numel(imgc1))),size(imgc1));
+                    imgs = reshape(img(numel(imgt1)+numel(imgc1)+(1:numel(imgs1))),size(imgs1));
+                    mn = 0;
+                    mx = 1;
+            end
+            % recompute min/max for display
+            if strcmp(st.vols{i}.window,'auto')
+                mx = -inf; mn = inf;
+            end
+            if ~isempty(imgt)
+                tmp = imgt(isfinite(imgt));
+                mx = max([mx max(max(tmp))]);
+                mn = min([mn min(min(tmp))]);
+            end
+            if ~isempty(imgc)
+                tmp = imgc(isfinite(imgc));
+                mx = max([mx max(max(tmp))]);
+                mn = min([mn min(min(tmp))]);
+            end
+            if ~isempty(imgs)
+                tmp = imgs(isfinite(imgs));
+                mx = max([mx max(max(tmp))]);
+                mn = min([mn min(min(tmp))]);
+            end
+            if mx==mn, mx=mn+eps; end
+            if isfield(st.vols{i},'blobs')
+                if ~isfield(st.vols{i}.blobs{1},'colour')
+                    % Add blobs for display using the split colourmap
+                    scal = 64/(mx-mn);
+                    dcoff = -mn*scal;
+                    imgt = imgt*scal+dcoff;
+                    imgc = imgc*scal+dcoff;
+                    imgs = imgs*scal+dcoff;
+
+                    if isfield(st.vols{i}.blobs{1},'max')
+                        mx = st.vols{i}.blobs{1}.max;
+                    else
+                        mx = max([eps maxval(st.vols{i}.blobs{1}.vol)]);
+                        st.vols{i}.blobs{1}.max = mx;
+                    end
+                    if isfield(st.vols{i}.blobs{1},'min')
+                        mn = st.vols{i}.blobs{1}.min;
+                    else
+                        mn = min([0 minval(st.vols{i}.blobs{1}.vol)]);
+                        st.vols{i}.blobs{1}.min = mn;
+                    end
+
+                    vol  = st.vols{i}.blobs{1}.vol;
+                    M    = st.Space\st.vols{i}.premul*st.vols{i}.blobs{1}.mat;
+                    tmpt = spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])';
+                    tmpc = spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])';
+                    tmps = spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])';
+
+                    %tmpt_z = find(tmpt==0);tmpt(tmpt_z) = NaN;
+                    %tmpc_z = find(tmpc==0);tmpc(tmpc_z) = NaN;
+                    %tmps_z = find(tmps==0);tmps(tmps_z) = NaN;
+
+                    sc   = 64/(mx-mn);
+                    off  = 65.51-mn*sc;
+                    msk  = find(isfinite(tmpt)); imgt(msk) = off+tmpt(msk)*sc;
+                    msk  = find(isfinite(tmpc)); imgc(msk) = off+tmpc(msk)*sc;
+                    msk  = find(isfinite(tmps)); imgs(msk) = off+tmps(msk)*sc;
+
+
+                    cmap = get(st.fig,'Colormap');
+                    if size(cmap,1)~=128
+                        setcolormap(jet(64));
+    %                     spm_figure('Colormap','gray-hot')
+                    end
+                    figure(st.fig)
+                    redraw_colourbar(i,1,[mn mx],(1:64)'+64);
+                elseif isstruct(st.vols{i}.blobs{1}.colour)
+                    % Add blobs for display using a defined colourmap
+
+                    % colourmaps
+                    gryc = (0:63)'*ones(1,3)/63;
+
+                    % scale grayscale image, not isfinite -> black
+                    gimgt = scaletocmap(imgt,mn,mx,gryc,65);
+                    gimgc = scaletocmap(imgc,mn,mx,gryc,65);
+                    gimgs = scaletocmap(imgs,mn,mx,gryc,65);
+                    gryc  = [gryc; 0 0 0];
+                    cactp = 0;
+
+                    for j=1:numel(st.vols{i}.blobs)
+                        % colourmaps
+                        actc = st.vols{i}.blobs{j}.colour.cmap;
+                        actp = st.vols{i}.blobs{j}.colour.prop;
+
+                        % get min/max for blob image
+                        if isfield(st.vols{i}.blobs{j},'max')
+                            cmx = st.vols{i}.blobs{j}.max;
+                        else
+                            cmx = max([eps maxval(st.vols{i}.blobs{j}.vol)]);
+                        end
+                        if isfield(st.vols{i}.blobs{j},'min')
+                            cmn = st.vols{i}.blobs{j}.min;
+                        else
+                            cmn = -cmx;
+                        end
+
+                        % get blob data
+                        vol  = st.vols{i}.blobs{j}.vol;
+                        M    = st.Space\st.vols{i}.premul*st.vols{i}.blobs{j}.mat;
+                        tmpt = spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])';
+                        tmpc = spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])';
+                        tmps = spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])';
+
+                        % actimg scaled round 0, black NaNs
+                        topc = size(actc,1)+1;
+                        tmpt = scaletocmap(tmpt,cmn,cmx,actc,topc);
+                        tmpc = scaletocmap(tmpc,cmn,cmx,actc,topc);
+                        tmps = scaletocmap(tmps,cmn,cmx,actc,topc);
+                        actc = [actc; 0 0 0];
+
+                        % combine gray and blob data to truecolour
+                        if isnan(actp)
+                            if j==1, imgt = gryc(gimgt(:),:); end
+                            imgt(tmpt~=size(actc,1),:) = actc(tmpt(tmpt~=size(actc,1)),:);
+                            if j==1, imgc = gryc(gimgc(:),:); end
+                            imgc(tmpc~=size(actc,1),:) = actc(tmpc(tmpc~=size(actc,1)),:);
+                            if j==1, imgs = gryc(gimgs(:),:); end
+                            imgs(tmps~=size(actc,1),:) = actc(tmps(tmps~=size(actc,1)),:);
+                        else
+                            cactp = cactp + actp;
+                            if j==1, imgt = actc(tmpt(:),:)*actp; else imgt = imgt + actc(tmpt(:),:)*actp; end
+                            if j==numel(st.vols{i}.blobs), imgt = imgt + gryc(gimgt(:),:)*(1-cactp); end
+                            if j==1, imgc = actc(tmpc(:),:)*actp; else imgc = imgc + actc(tmpc(:),:)*actp; end
+                            if j==numel(st.vols{i}.blobs), imgc = imgc + gryc(gimgc(:),:)*(1-cactp); end
+                            if j==1, imgs = actc(tmps(:),:)*actp; else imgs = imgs + actc(tmps(:),:)*actp; end
+                            if j==numel(st.vols{i}.blobs), imgs = imgs + gryc(gimgs(:),:)*(1-cactp); end
+                        end
+                        if j==numel(st.vols{i}.blobs)
+                            imgt = reshape(imgt,[size(gimgt) 3]);
+                            imgc = reshape(imgc,[size(gimgc) 3]);
+                            imgs = reshape(imgs,[size(gimgs) 3]);
+                        end
+
+                         % colourbar
+                        csz   = size(st.vols{i}.blobs{j}.colour.cmap);
+                        cdata = reshape(st.vols{i}.blobs{j}.colour.cmap, [csz(1) 1 csz(2)]);
+                        redraw_colourbar(i,j,[cmn cmx],cdata);
+                    end
+
+                else
+                    % Add full colour blobs - several sets at once
+                    scal  = 1/(mx-mn);
+                    dcoff = -mn*scal;
+
+                    wt = zeros(size(imgt));
+                    wc = zeros(size(imgc));
+                    ws = zeros(size(imgs));
+
+                    imgt  = repmat(imgt*scal+dcoff,[1,1,3]);
+                    imgc  = repmat(imgc*scal+dcoff,[1,1,3]);
+                    imgs  = repmat(imgs*scal+dcoff,[1,1,3]);
+
+                    cimgt = zeros(size(imgt));
+                    cimgc = zeros(size(imgc));
+                    cimgs = zeros(size(imgs));
+
+                    colour = zeros(numel(st.vols{i}.blobs),3);
+                    for j=1:numel(st.vols{i}.blobs) % get colours of all images first
+                        if isfield(st.vols{i}.blobs{j},'colour')
+                            colour(j,:) = reshape(st.vols{i}.blobs{j}.colour, [1 3]);
+                        else
+                            colour(j,:) = [1 0 0];
+                        end
+                    end
+                    %colour = colour/max(sum(colour));
+
+                    for j=1:numel(st.vols{i}.blobs)
+                        if isfield(st.vols{i}.blobs{j},'max')
+                            mx = st.vols{i}.blobs{j}.max;
+                        else
+                            mx = max([eps max(st.vols{i}.blobs{j}.vol(:))]);
+                            st.vols{i}.blobs{j}.max = mx;
+                        end
+                        if isfield(st.vols{i}.blobs{j},'min')
+                            mn = st.vols{i}.blobs{j}.min;
+                        else
+                            mn = min([0 min(st.vols{i}.blobs{j}.vol(:))]);
+                            st.vols{i}.blobs{j}.min = mn;
+                        end
+
+                        vol  = st.vols{i}.blobs{j}.vol;
+                        M    = st.Space\st.vols{i}.premul*st.vols{i}.blobs{j}.mat;
+                        tmpt = spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])';
+                        tmpc = spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])';
+                        tmps = spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])';
+                        % check min/max of sampled image
+                        % against mn/mx as given in st
+                        tmpt(tmpt(:)<mn) = mn;
+                        tmpc(tmpc(:)<mn) = mn;
+                        tmps(tmps(:)<mn) = mn;
+                        tmpt(tmpt(:)>mx) = mx;
+                        tmpc(tmpc(:)>mx) = mx;
+                        tmps(tmps(:)>mx) = mx;
+                        tmpt = (tmpt-mn)/(mx-mn);
+                        tmpc = (tmpc-mn)/(mx-mn);
+                        tmps = (tmps-mn)/(mx-mn);
+                        tmpt(~isfinite(tmpt)) = 0;
+                        tmpc(~isfinite(tmpc)) = 0;
+                        tmps(~isfinite(tmps)) = 0;
+
+                        cimgt = cimgt + cat(3,tmpt*colour(j,1),tmpt*colour(j,2),tmpt*colour(j,3));
+                        cimgc = cimgc + cat(3,tmpc*colour(j,1),tmpc*colour(j,2),tmpc*colour(j,3));
+                        cimgs = cimgs + cat(3,tmps*colour(j,1),tmps*colour(j,2),tmps*colour(j,3));
+
+                        wt = wt + tmpt;
+                        wc = wc + tmpc;
+                        ws = ws + tmps;
+                        cdata=permute(shiftdim((1/64:1/64:1)'* ...
+                            colour(j,:),-1),[2 1 3]);
+                        redraw_colourbar(i,j,[mn mx],cdata);
+                    end
+
+                    imgt = repmat(1-wt,[1 1 3]).*imgt+cimgt;
+                    imgc = repmat(1-wc,[1 1 3]).*imgc+cimgc;
+                    imgs = repmat(1-ws,[1 1 3]).*imgs+cimgs;
+
+                    imgt(imgt<0)=0; imgt(imgt>1)=1;
+                    imgc(imgc<0)=0; imgc(imgc>1)=1;
+                    imgs(imgs<0)=0; imgs(imgs>1)=1;
+                end
+            else
                 scal = 64/(mx-mn);
                 dcoff = -mn*scal;
                 imgt = imgt*scal+dcoff;
                 imgc = imgc*scal+dcoff;
                 imgs = imgs*scal+dcoff;
-                
-                if isfield(st.vols{i}.blobs{1},'max')
-                    mx = st.vols{i}.blobs{1}.max;
-                else
-                    mx = max([eps maxval(st.vols{i}.blobs{1}.vol)]);
-                    st.vols{i}.blobs{1}.max = mx;
-                end
-                if isfield(st.vols{i}.blobs{1},'min')
-                    mn = st.vols{i}.blobs{1}.min;
-                else
-                    mn = min([0 minval(st.vols{i}.blobs{1}.vol)]);
-                    st.vols{i}.blobs{1}.min = mn;
-                end
-                
-                vol  = st.vols{i}.blobs{1}.vol;
-                M    = st.Space\st.vols{i}.premul*st.vols{i}.blobs{1}.mat;
-                tmpt = spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])';
-                tmpc = spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])';
-                tmps = spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])';
-                
-                %tmpt_z = find(tmpt==0);tmpt(tmpt_z) = NaN;
-                %tmpc_z = find(tmpc==0);tmpc(tmpc_z) = NaN;
-                %tmps_z = find(tmps==0);tmps(tmps_z) = NaN;
-                
-                sc   = 64/(mx-mn);
-                off  = 65.51-mn*sc;
-                msk  = find(isfinite(tmpt)); imgt(msk) = off+tmpt(msk)*sc;
-                msk  = find(isfinite(tmpc)); imgc(msk) = off+tmpc(msk)*sc;
-                msk  = find(isfinite(tmps)); imgs(msk) = off+tmps(msk)*sc;
-                
-
-                cmap = get(st.fig,'Colormap');
-                if size(cmap,1)~=128
-                    setcolormap(jet(64));
-%                     spm_figure('Colormap','gray-hot')
-                end
-                figure(st.fig)
-                redraw_colourbar(i,1,[mn mx],(1:64)'+64);
-            elseif isstruct(st.vols{i}.blobs{1}.colour)
-                % Add blobs for display using a defined colourmap
-                
-                % colourmaps
-                gryc = (0:63)'*ones(1,3)/63;
-                
-                % scale grayscale image, not isfinite -> black
-                gimgt = scaletocmap(imgt,mn,mx,gryc,65);
-                gimgc = scaletocmap(imgc,mn,mx,gryc,65);
-                gimgs = scaletocmap(imgs,mn,mx,gryc,65);
-                gryc  = [gryc; 0 0 0];
-                cactp = 0;
-                
-                for j=1:numel(st.vols{i}.blobs)
-                    % colourmaps
-                    actc = st.vols{i}.blobs{j}.colour.cmap;
-                    actp = st.vols{i}.blobs{j}.colour.prop;
-                    
-                    % get min/max for blob image
-                    if isfield(st.vols{i}.blobs{j},'max')
-                        cmx = st.vols{i}.blobs{j}.max;
-                    else
-                        cmx = max([eps maxval(st.vols{i}.blobs{j}.vol)]);
-                    end
-                    if isfield(st.vols{i}.blobs{j},'min')
-                        cmn = st.vols{i}.blobs{j}.min;
-                    else
-                        cmn = -cmx;
-                    end
-                    
-                    % get blob data
-                    vol  = st.vols{i}.blobs{j}.vol;
-                    M    = st.Space\st.vols{i}.premul*st.vols{i}.blobs{j}.mat;
-                    tmpt = spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])';
-                    tmpc = spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])';
-                    tmps = spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])';
-                    
-                    % actimg scaled round 0, black NaNs
-                    topc = size(actc,1)+1;
-                    tmpt = scaletocmap(tmpt,cmn,cmx,actc,topc);
-                    tmpc = scaletocmap(tmpc,cmn,cmx,actc,topc);
-                    tmps = scaletocmap(tmps,cmn,cmx,actc,topc);
-                    actc = [actc; 0 0 0];
-                    
-                    % combine gray and blob data to truecolour
-                    if isnan(actp)
-                        if j==1, imgt = gryc(gimgt(:),:); end
-                        imgt(tmpt~=size(actc,1),:) = actc(tmpt(tmpt~=size(actc,1)),:);
-                        if j==1, imgc = gryc(gimgc(:),:); end
-                        imgc(tmpc~=size(actc,1),:) = actc(tmpc(tmpc~=size(actc,1)),:);
-                        if j==1, imgs = gryc(gimgs(:),:); end
-                        imgs(tmps~=size(actc,1),:) = actc(tmps(tmps~=size(actc,1)),:);
-                    else
-                        cactp = cactp + actp;
-                        if j==1, imgt = actc(tmpt(:),:)*actp; else imgt = imgt + actc(tmpt(:),:)*actp; end
-                        if j==numel(st.vols{i}.blobs), imgt = imgt + gryc(gimgt(:),:)*(1-cactp); end
-                        if j==1, imgc = actc(tmpc(:),:)*actp; else imgc = imgc + actc(tmpc(:),:)*actp; end
-                        if j==numel(st.vols{i}.blobs), imgc = imgc + gryc(gimgc(:),:)*(1-cactp); end
-                        if j==1, imgs = actc(tmps(:),:)*actp; else imgs = imgs + actc(tmps(:),:)*actp; end
-                        if j==numel(st.vols{i}.blobs), imgs = imgs + gryc(gimgs(:),:)*(1-cactp); end
-                    end
-                    if j==numel(st.vols{i}.blobs)
-                        imgt = reshape(imgt,[size(gimgt) 3]);
-                        imgc = reshape(imgc,[size(gimgc) 3]);
-                        imgs = reshape(imgs,[size(gimgs) 3]);
-                    end
-                    
-                     % colourbar
-                    csz   = size(st.vols{i}.blobs{j}.colour.cmap);
-                    cdata = reshape(st.vols{i}.blobs{j}.colour.cmap, [csz(1) 1 csz(2)]);
-                    redraw_colourbar(i,j,[cmn cmx],cdata);
-                end
-                
-            else
-                % Add full colour blobs - several sets at once
-                scal  = 1/(mx-mn);
-                dcoff = -mn*scal;
-                
-                wt = zeros(size(imgt));
-                wc = zeros(size(imgc));
-                ws = zeros(size(imgs));
-                
-                imgt  = repmat(imgt*scal+dcoff,[1,1,3]);
-                imgc  = repmat(imgc*scal+dcoff,[1,1,3]);
-                imgs  = repmat(imgs*scal+dcoff,[1,1,3]);
-                
-                cimgt = zeros(size(imgt));
-                cimgc = zeros(size(imgc));
-                cimgs = zeros(size(imgs));
-                
-                colour = zeros(numel(st.vols{i}.blobs),3);
-                for j=1:numel(st.vols{i}.blobs) % get colours of all images first
-                    if isfield(st.vols{i}.blobs{j},'colour')
-                        colour(j,:) = reshape(st.vols{i}.blobs{j}.colour, [1 3]);
-                    else
-                        colour(j,:) = [1 0 0];
-                    end
-                end
-                %colour = colour/max(sum(colour));
-                
-                for j=1:numel(st.vols{i}.blobs)
-                    if isfield(st.vols{i}.blobs{j},'max')
-                        mx = st.vols{i}.blobs{j}.max;
-                    else
-                        mx = max([eps max(st.vols{i}.blobs{j}.vol(:))]);
-                        st.vols{i}.blobs{j}.max = mx;
-                    end
-                    if isfield(st.vols{i}.blobs{j},'min')
-                        mn = st.vols{i}.blobs{j}.min;
-                    else
-                        mn = min([0 min(st.vols{i}.blobs{j}.vol(:))]);
-                        st.vols{i}.blobs{j}.min = mn;
-                    end
-                    
-                    vol  = st.vols{i}.blobs{j}.vol;
-                    M    = st.Space\st.vols{i}.premul*st.vols{i}.blobs{j}.mat;
-                    tmpt = spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])';
-                    tmpc = spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])';
-                    tmps = spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])';
-                    % check min/max of sampled image
-                    % against mn/mx as given in st
-                    tmpt(tmpt(:)<mn) = mn;
-                    tmpc(tmpc(:)<mn) = mn;
-                    tmps(tmps(:)<mn) = mn;
-                    tmpt(tmpt(:)>mx) = mx;
-                    tmpc(tmpc(:)>mx) = mx;
-                    tmps(tmps(:)>mx) = mx;
-                    tmpt = (tmpt-mn)/(mx-mn);
-                    tmpc = (tmpc-mn)/(mx-mn);
-                    tmps = (tmps-mn)/(mx-mn);
-                    tmpt(~isfinite(tmpt)) = 0;
-                    tmpc(~isfinite(tmpc)) = 0;
-                    tmps(~isfinite(tmps)) = 0;
-                    
-                    cimgt = cimgt + cat(3,tmpt*colour(j,1),tmpt*colour(j,2),tmpt*colour(j,3));
-                    cimgc = cimgc + cat(3,tmpc*colour(j,1),tmpc*colour(j,2),tmpc*colour(j,3));
-                    cimgs = cimgs + cat(3,tmps*colour(j,1),tmps*colour(j,2),tmps*colour(j,3));
-                    
-                    wt = wt + tmpt;
-                    wc = wc + tmpc;
-                    ws = ws + tmps;
-                    cdata=permute(shiftdim((1/64:1/64:1)'* ...
-                        colour(j,:),-1),[2 1 3]);
-                    redraw_colourbar(i,j,[mn mx],cdata);
-                end
-                
-                imgt = repmat(1-wt,[1 1 3]).*imgt+cimgt;
-                imgc = repmat(1-wc,[1 1 3]).*imgc+cimgc;
-                imgs = repmat(1-ws,[1 1 3]).*imgs+cimgs;
-                
-                imgt(imgt<0)=0; imgt(imgt>1)=1;
-                imgc(imgc<0)=0; imgc(imgc>1)=1;
-                imgs(imgs<0)=0; imgs(imgs>1)=1;
             end
-        else
-            scal = 64/(mx-mn);
-            dcoff = -mn*scal;
-            imgt = imgt*scal+dcoff;
-            imgc = imgc*scal+dcoff;
-            imgs = imgs*scal+dcoff;
-        end
-
-        set(st.vols{i}.ax{1}.d,'HitTest','off', 'Cdata',imgt);
-        set(st.vols{i}.ax{1}.lx,'HitTest','off',...
-            'Xdata',[0 TD(1)]+0.5,'Ydata',[1 1]*(cent(2)-bb(1,2)+1));
-        set(st.vols{i}.ax{1}.ly,'HitTest','off',...
-            'Ydata',[0 TD(2)]+0.5,'Xdata',[1 1]*(cent(1)-bb(1,1)+1));
-        
-        set(st.vols{i}.ax{2}.d,'HitTest','off', 'Cdata',imgc);
-        set(st.vols{i}.ax{2}.lx,'HitTest','off',...
-            'Xdata',[0 CD(1)]+0.5,'Ydata',[1 1]*(cent(3)-bb(1,3)+1));
-        set(st.vols{i}.ax{2}.ly,'HitTest','off',...
-            'Ydata',[0 CD(2)]+0.5,'Xdata',[1 1]*(cent(1)-bb(1,1)+1));
-        
-        set(st.vols{i}.ax{3}.d,'HitTest','off','Cdata',imgs);
-        if st.mode ==0
-            set(st.vols{i}.ax{3}.lx,'HitTest','off',...
-                'Xdata',[0 SD(1)]+0.5,'Ydata',[1 1]*(cent(2)-bb(1,2)+1));
-            set(st.vols{i}.ax{3}.ly,'HitTest','off',...
-                'Ydata',[0 SD(2)]+0.5,'Xdata',[1 1]*(cent(3)-bb(1,3)+1));
-        else
-            set(st.vols{i}.ax{3}.lx,'HitTest','off',...
-                'Xdata',[0 SD(1)]+0.5,'Ydata',[1 1]*(cent(3)-bb(1,3)+1));
-            set(st.vols{i}.ax{3}.ly,'HitTest','off',...
-                'Ydata',[0 SD(2)]+0.5,'Xdata',[1 1]*(bb(2,2)+1-cent(2)));
-        end
-        
-        if ~isempty(st.plugins) % process any addons
-            for k = 1:numel(st.plugins)
-                if isfield(st.vols{i},st.plugins{k})
-                    feval(['spm_ov_', st.plugins{k}], ...
-                        'redraw', i, TM0, TD, CM0, CD, SM0, SD);
+            set(st.vols{i}.ax{1}.d,'HitTest','off', 'Cdata',imgt);
+            set(st.vols{i}.ax{1}.lx,'HitTest','off',...
+                'Xdata',[0 TD(1)]+0.5,'Ydata',[1 1]*(cent(2)-bb(1,2)+1));
+            set(st.vols{i}.ax{1}.ly,'HitTest','off',...
+                'Ydata',[0 TD(2)]+0.5,'Xdata',[1 1]*(cent(1)-bb(1,1)+1));
+            set(st.vols{i}.ax{2}.d,'HitTest','off', 'Cdata',imgc);
+            set(st.vols{i}.ax{2}.lx,'HitTest','off',...
+                'Xdata',[0 CD(1)]+0.5,'Ydata',[1 1]*(cent(3)-bb(1,3)+1));
+            set(st.vols{i}.ax{2}.ly,'HitTest','off',...
+                'Ydata',[0 CD(2)]+0.5,'Xdata',[1 1]*(cent(1)-bb(1,1)+1));
+            set(st.vols{i}.ax{3}.d,'HitTest','off','Cdata',imgs);
+            if st.mode ==0
+                set(st.vols{i}.ax{3}.lx,'HitTest','off',...
+                    'Xdata',[0 SD(1)]+0.5,'Ydata',[1 1]*(cent(2)-bb(1,2)+1));
+                set(st.vols{i}.ax{3}.ly,'HitTest','off',...
+                    'Ydata',[0 SD(2)]+0.5,'Xdata',[1 1]*(cent(3)-bb(1,3)+1));
+            else
+                set(st.vols{i}.ax{3}.lx,'HitTest','off',...
+                    'Xdata',[0 SD(1)]+0.5,'Ydata',[1 1]*(cent(3)-bb(1,3)+1));
+                set(st.vols{i}.ax{3}.ly,'HitTest','off',...
+                    'Ydata',[0 SD(2)]+0.5,'Xdata',[1 1]*(bb(2,2)+1-cent(2)));
+            end
+            if ~isempty(st.plugins) % process any addons
+                for k = 1:numel(st.plugins)
+                    if isfield(st.vols{i},st.plugins{k})
+                        feval(['spm_ov_', st.plugins{k}], ...
+                            'redraw', i, TM0, TD, CM0, CD, SM0, SD);
+                    end
                 end
             end
         end
     end
-end
-drawnow;
+    drawnow;
 function redraw_all
 redraw(1:max_img);
 function reset_st
@@ -4052,19 +4067,18 @@ function addcolourbar(vh,bh)
     cbpos(3) = (1 - cbpos(1))/2; 
     cbpos(3) = min([cbpos(3) .30]); 
     cbpos(1) = cbpos(1) + (cbpos(3)/4); 
-    yl = [st.vols{vh}.blobs{bh}.min st.vols{vh}.blobs{bh}.max];
-    if range(yl) < 1
-        yltick = [min(yl) max(yl)];
-    elseif strcmpi(st.direct, '+/-')
-        yltick = [ceil(min(yl)) 0 floor(max(yl))];
-    else
-        yltick = [ceil(min(yl)) floor(max(yl))];
+    yl      = [st.vols{vh}.blobs{bh}.min st.vols{vh}.blobs{bh}.max];
+    yltick  = [ceil(min(yl)) floor(max(yl))];
+    yltick(abs(yl) < 1) = yl(abs(yl) < 1); 
+    if strcmpi(st.direct, '+/-')
+        yltick = [yltick(1) 0 yltick(2)]; 
     end
+    ylab = cellnum2str(num2cell(yltick), 2); 
     st.vols{vh}.blobs{bh}.cbar = axes('Parent', st.figax, 'ycolor', st.color.fg, ...
         'position', cbpos, 'YAxisLocation', 'right', 'fontsize', 12, ...
         'ytick', yltick, 'tag', 'colorbar', ...
         'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]); 
-    set(st.vols{vh}.blobs{bh}.cbar, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
+    set(st.vols{vh}.blobs{bh}.cbar, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
     if isfield(st.vols{vh}.blobs{bh},'name')
         ylabel(st.vols{vh}.blobs{bh}.name,'parent',st.vols{vh}.blobs{bh}.cbar);
     end    
@@ -4101,22 +4115,31 @@ function redraw_colourbar(vh,bh,interval,cdata)
         cdata=cdata./max(cdata(:));
     end
     yl = interval;
-    if range(yl) < 1
-        yltick = [min(yl) max(yl)]; 
-    elseif strcmpi(st.direct, '+/-')
-        yltick = [ceil(min(yl)) 0 floor(max(yl))];
-    else
-        yltick = [ceil(min(yl)) floor(max(yl))];
+    yltick  = [ceil(min(yl)) floor(max(yl))];
+    yltick(abs(yl) < 1) = yl(abs(yl) < 1); 
+    if strcmpi(st.direct, '+/-')
+        yltick = [yltick(1) 0 yltick(2)]; 
     end
-    image([0 1],interval,cdata,'Parent',st.vols{vh}.blobs{bh}.cbar);
-    set(st.vols{vh}.blobs{bh}.cbar, 'ycolor', st.color.fg, ...
+    ylab = cellnum2str(num2cell(yltick), 2); 
+    h = st.vols{vh}.blobs{bh}.cbar; 
+    image([0 1],interval,cdata,'Parent',h);
+    set(h, 'ycolor', st.color.fg, ...
         'position', cbpos, 'YAxisLocation', 'right', ...
         'ytick', yltick, ...
         'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]); 
-    set(st.vols{vh}.blobs{bh}.cbar, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
+    set(h, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
     if isfield(st.vols{vh}.blobs{bh},'name')
         ylabel(st.vols{vh}.blobs{bh}.name,'parent',st.vols{vh}.blobs{bh}.cbar);
     end
+function repos_start(varargin)
+    if ~strcmpi(get(gcbf,'SelectionType'),'alt')
+        set(gcbf,'windowbuttonmotionfcn',@repos_move, 'windowbuttonupfcn',@repos_end);
+        bspm_orthviews('reposition');
+    end
+function repos_move(varargin)
+    bspm_orthviews('reposition');
+function repos_end(varargin)
+    set(gcbf,'windowbuttonmotionfcn','', 'windowbuttonupfcn','');
 
 % | BSPM_XYZREG (MODIFIED FROM SPM8 SPM_XYXREG)
 % =========================================================================
@@ -4603,7 +4626,6 @@ if ~ishandle(hReg)
     return
 end
 xyz  = varargin{2};
-
 RD      = get(hReg,'UserData');
 
 %-Check validity of coords only when called without a caller handle
@@ -4639,7 +4661,6 @@ if nargin<5
 end
 
 varargout = {xyz,d};
-
 if ~strcmp(mfn,'spm_graph')
     sHdl=findobj(0,'Tag','SPMGraphSatelliteFig');
     axHdl=findobj(sHdl,'Type','axes','Tag','SPMGraphSatelliteAxes');
@@ -5153,7 +5174,7 @@ for i = 1:size(allxyz,1)
     if regionidx
         regionname{i} = st.ol.atlaslabels.label{st.ol.atlaslabels.id==regionidx};
     else
-        regionname{i} = 'Unknown Label'; 
+        regionname{i} = 'No Label'; 
     end
 end
 voxels = [regionname num2cell(voxelsT(:,1:5))]; 

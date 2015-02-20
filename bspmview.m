@@ -59,7 +59,8 @@ function S = bspmview(ol, ul)
 %       You should have received a copy of the GNU General Public License
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
-version = '20150220'; 
+global version
+version='20150220'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -90,7 +91,7 @@ if nargin < 2
 else
     if iscell(ul), ul = char(ul); end
 end
-global prevsect
+global prevsect 
 prevsect = ul;
 
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
@@ -446,6 +447,7 @@ function put_figmenu
     S.fontsize      = uimenu(S.appear, 'Label','Font Size', 'Separator', 'on'); 
     S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
     S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Separator', 'on', 'Callback',@cb_changefontsize);
+    S.checkversion  = uimenu(S.menu1, 'Label', 'Check Version', 'Separator', 'on', 'Callback', @cb_checkversion); 
     S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode); 
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
@@ -1052,11 +1054,43 @@ function cb_savetable(varargin)
     writereport(allcell, fullfile(pname, fname)); 
 function cb_web(varargin)
     stat = web(varargin{3}, '-browser');
-    if stat, headsup('Could not open a browser window.', 1); end
+    if stat, headsup('Could not open a browser window.'); end
+function cb_checkversion(varargin)
+    global version st
+    url     = 'https://github.com/spunt/bspmview/blob/master/bspmview.m';
+    h       = headsup('Checking GitHub repository', 'Checking Version', 0);
+    try
+        str = webread(url);
+    catch
+        set(h(2), 'String', 'Could not read web data. Are you connected to the internet?');
+        figure(h(1)); 
+        return
+    end
+    [idx1, idx2] = regexp(str, 'Version:  ');
+    gitversion = str(idx2+1:idx2+8);
+    if strcmp(version, gitversion)
+        delete(h(1)); 
+        headsup('You have the latest version.', 'Checking Version', 1);
+        return; 
+    else
+        delete(h(1)); 
+        answer = yesorno('An update is available. Would you like to download the latest version?', 'Update Available');
+        if strcmpi(answer, 'Yes')
+            guidir      = fileparts(mfilename('fullpath')); 
+            newguidir   = fullfile(fileparts(guidir), 'bspmview-master');
+            url         = 'https://github.com/spunt/bspmview/archive/master.zip';
+            h = headsup('Downloading...', 'Please Wait', 0);
+            unzip(url, fileparts(guidir));
+            delete(h(1));
+            h = headsup(sprintf('Latest version saved to: %s', newguidir), 'Update', 1);
+        else
+            return; 
+        end
+    end     
 function cb_neurosynth(varargin)
     baseurl = 'http://neurosynth.org/locations/?x=%d&y=%d&z=%d&r=6';
     stat = web(sprintf(baseurl, getroundvoxel), '-browser');
-    if stat, headsup('Could not open a browser window..', 1); end
+    if stat, headsup('Could not open a browser window..'); end
 function cb_closegui(varargin)
    if length(varargin)==3, h = varargin{3};
    else h = varargin{1}; end
@@ -2128,10 +2162,53 @@ if nargin<2, minmax = [0 1]; end
 if nargin<1, error('USAGE: out = scaledata(in, minmax)'); end
 out = in - repmat(min(in), size(in, 1), 1); 
 out = ((out./repmat(range(out), size(out,1), 1))*(minmax(2)-minmax(1))) + minmax(1); 
-function h      = headsup(msg, wait4resp)
+function answer = yesorno(question, titlestr)
+% YESORNO Ask Yes/No Question
+%
+%  USAGE: h = yesorno(question, *titlestr)    *optional input
+% __________________________________________________________________________
+%  INPUTS
+%   question: character array to present to user 
+%
+
+% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
+%	Created:  2014-09-30
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 1, disp('USAGE: h = yesorno(question, *titlestr)'); return; end
+if nargin < 2, titlestr = 'Yes or No?'; end
+if iscell(titlestr), titlestr = char(titlestr); end
+if iscell(question), question = char(question); end
+global answer
+answer = []; 
+h(1) = figure(...
+    'Units', 'norm', ...
+    'WindowStyle', 'modal', ...
+    'Position',[.425 .45 .15 .10],...
+    'Resize','off',...
+    'Color', [0.8941    0.1020    0.1098]*.60, ...
+    'NumberTitle','off',...
+    'DockControls','off',...
+    'Tag', 'yesorno', ...
+    'MenuBar','none',...
+    'Name',titlestr,...
+    'Visible','on',...
+    'Toolbar','none');
+h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
+    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', question, 'visible', 'on'); 
+h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+'pos', [.25 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Yes', 'visible', 'on', 'callback', {@cb_answer, h});
+h(4) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+'pos', [.55 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'No', 'visible', 'on', 'callback', {@cb_answer, h});
+uiwait(h(1)); 
+function cb_answer(varargin)
+    global answer
+    answer = get(varargin{1}, 'string');
+    delete(findobj(0, 'Tag', 'yesorno'));
+function h      = headsup(msg, titlestr, wait4resp)
 % HEADSUP Present message to user and wait for a response
 %
-%  USAGE: handles = headsup(msg, *wait4resp)    *optional input
+%  USAGE: h = headsup(msg, *titlestr, *wait4resp)    *optional input
 % __________________________________________________________________________
 %  INPUTS
 %   msg: character array to present to user 
@@ -2141,11 +2218,14 @@ function h      = headsup(msg, wait4resp)
 %	Created:  2014-09-30
 %	Email:    spunt@caltech.edu
 % __________________________________________________________________________
-if nargin < 1, disp('USAGE: handles = headsup(msg, *wait4resp)'); return; end
-if nargin < 2, wait4resp = 1; end
-if ~iscell(msg), msg = char(msg); end
+if nargin < 1, disp('USAGE: h = headsup(msg, *titlestr, *wait4resp)'); return; end
+if nargin < 2, titlestr = 'Heads Up'; end
+if nargin < 3, wait4resp = 1; end
+if iscell(msg), msg = char(msg); end
+if iscell(titlestr), titlestr = char(titlestr); end
 h(1) = figure(...
     'Units', 'norm', ...
+    'WindowStyle', 'modal', ...
     'Position',[.425 .45 .15 .10],...
     'Resize','off',...
     'Color', [0.8941    0.1020    0.1098]*.60, ...
@@ -2153,14 +2233,20 @@ h(1) = figure(...
     'DockControls','off',...
     'Tag', 'headsup', ...
     'MenuBar','none',...
-    'Name','Heads Up',...
+    'Name',titlestr,...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.1 .40 .8 .40], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', msg, 'visible', 'on'); 
-h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
+if wait4resp
+    h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
     'pos', [.4 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
-if wait4resp, uiwait(h(1)); end
+    uiwait(h(1)); 
+end
+drawnow; 
+function cb_ok(varargin)
+    delete(findobj(0, 'Tag', 'headsup'));
+    drawnow; 
 function p      = bob_t2p(t, df)
 % BOB_T2P Get p-value from t-value + df
 %
@@ -2172,8 +2258,6 @@ function p      = bob_t2p(t, df)
     p = 1 - p;
 function y      = range(x)
 y = nanmax(x) - nanmin(x); 
-function cb_ok(varargin)
-    delete(findobj(0, 'Tag', 'headsup'));
 function writereport(incell, outname)
 % WRITEREPORT Write cell array to CSV file
 %

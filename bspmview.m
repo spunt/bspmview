@@ -44,9 +44,9 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150217
+%   Version:  20150220
 % _________________________________________________________________________
-version = '20150217'; 
+version = '20150220'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -78,7 +78,7 @@ else
     if iscell(ul), ul = char(ul); end
 end
 global prevsect
-prevsect    = ul;
+prevsect = ul;
 
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
 % | =======================================================================
@@ -478,6 +478,7 @@ function put_axesmenu
     ctsavemap   = uimenu(cmenu, 'Label', 'Save cluster', 'callback', @cb_saveclust, 'separator', 'on');
     ctsavemask  = uimenu(cmenu, 'Label', 'Save cluster (binary mask)', 'callback', @cb_saveclust);
     ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Coordinates', 'callback', @cb_saveroi);
+    ctrmcluster = uimenu(cmenu, 'Label', 'Hide cluster', 'callback', @cb_hideclust);
     ctsavergb   = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb, 'separator', 'on');
     ctxhair     = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
     for a = 1:3
@@ -513,29 +514,30 @@ function put_axesxyz
 % =========================================================================
 function cb_updateoverlay(varargin)
     global st
-    T0 = getthresh;
-    T = T0; 
-    tag = get(varargin{1}, 'tag');
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
-    switch tag
-        case {'Thresh'}
-            if T.df~=Inf, T.pval = bob_t2p(T.thresh, T.df); end
-        case {'P-Value'}
-            if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
-        case {'DF'}
-            if ~any([T.pval T.df]==Inf)
-                T.thresh = spm_invTcdf(1-T.pval, T.df); 
-                T.pval = bob_t2p(T.thresh, T.df);
-            end
-        case {'Extent'}
-            if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
-                headsup('No clusters survived. Defaulting to largest cluster at this voxelwise threshold.');
-                T.extent = max(st.ol.C0(di,:));
-            end
+    T0  = getthresh;
+    T   = T0;
+    di  = strcmpi({'+' '-' '+/-'}, T.direct);
+    if nargin > 0
+        tag = get(varargin{1}, 'tag');
+        switch tag
+            case {'Thresh'}
+                if T.df~=Inf, T.pval = bob_t2p(T.thresh, T.df); end
+            case {'P-Value'}
+                if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
+            case {'DF'}
+                if ~any([T.pval T.df]==Inf)
+                    T.thresh = spm_invTcdf(1-T.pval, T.df); 
+                    T.pval = bob_t2p(T.thresh, T.df);
+                end
+            case {'Extent'}
+                if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
+                    headsup('No clusters survived. Defaulting to largest cluster at this voxelwise threshold.');
+                    T.extent = max(st.ol.C0(di,:));
+                end
+        end
     end
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
     C = st.ol.C0(di,:); 
-    CIDX = st.ol.C0IDX(di,:); 
     if sum(C(C>=T.extent))==0
         T0.thresh = st.ol.U; 
         setthreshinfo(T0);
@@ -714,6 +716,17 @@ function cb_saveclust(varargin)
     outhdr.fname = fn; 
     spm_write_vol(outhdr, outimg);
     fprintf('\nCluster image saved to %s\n', fn);     
+function cb_hideclust(varargin)
+    global st
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    if strcmp(str, 'n/a'), return; end
+    [xyz, voxidx] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm0);
+    T = getthresh; 
+    di = strcmpi({'+' '-' '+/-'}, T.direct);
+    clidx = st.ol.C0IDX(di,:);
+    clidx = clidx==(clidx(voxidx));
+    st.ol.Y(clidx==1) = 0; 
+    cb_updateoverlay
 function cb_saveroi(varargin)
     global st
     [roi, button] = settingsdlg(...  
@@ -1798,35 +1811,35 @@ info.alpha = alpha;
 info.u = u;
 info.Pc = Pc;
 function [out, outmat] = reslice_image(in, ref, int)
-% Most of the code is adapted from rest_Reslice in REST toolbox:
-% Written by YAN Chao-Gan 090302 for DPARSF. Referenced from spm_reslice.
-% State Key Laboratory of Cognitive Neuroscience and Learning 
-% Beijing Normal University, China, 100875
-if nargin<3, int = 1; end
-if nargin<2, display('USAGE: [out, outmat] = reslice_image(infile, ref, SourceHead, int)'); return; end
-if iscell(ref), ref = char(ref); end
-if iscell(in), in = char(in); end
-% read in reference image
-RefHead = spm_vol(ref); 
-mat=RefHead.mat;
-dim=RefHead.dim;
-SourceHead = spm_vol(in);
-[x1,x2,x3] = ndgrid(1:dim(1),1:dim(2),1:dim(3));
-d       = [int*[1 1 1]' [1 1 0]'];
-C       = spm_bsplinc(SourceHead, d);
-v       = zeros(dim);
-M       = inv(SourceHead.mat)*mat; % M = inv(mat\SourceHead.mat) in spm_reslice.m
-y1      = M(1,1)*x1+M(1,2)*x2+(M(1,3)*x3+M(1,4));
-y2      = M(2,1)*x1+M(2,2)*x2+(M(2,3)*x3+M(2,4));
-y3      = M(3,1)*x1+M(3,2)*x2+(M(3,3)*x3+M(3,4));
-out     = spm_bsplins(C, y1,y2,y3, d);
-tiny = 5e-2; % From spm_vol_utils.c
-Mask = true(size(y1));
-Mask = Mask & (y1 >= (1-tiny) & y1 <= (SourceHead.dim(1)+tiny));
-Mask = Mask & (y2 >= (1-tiny) & y2 <= (SourceHead.dim(2)+tiny));
-Mask = Mask & (y3 >= (1-tiny) & y3 <= (SourceHead.dim(3)+tiny));
-out(~Mask) = 0;
-outmat = mat;
+    % Most of the code is adapted from rest_Reslice in REST toolbox:
+    % Written by YAN Chao-Gan 090302 for DPARSF. Referenced from spm_reslice.
+    % State Key Laboratory of Cognitive Neuroscience and Learning 
+    % Beijing Normal University, China, 100875
+    if nargin<3, int = 1; end
+    if nargin<2, display('USAGE: [out, outmat] = reslice_image(infile, ref, SourceHead, int)'); return; end
+    if iscell(ref), ref = char(ref); end
+    if iscell(in), in = char(in); end
+    % read in reference image
+    RefHead = spm_vol(ref); 
+    mat=RefHead.mat;
+    dim=RefHead.dim;
+    SourceHead = spm_vol(in);
+    [x1,x2,x3] = ndgrid(1:dim(1),1:dim(2),1:dim(3));
+    d       = [int*[1 1 1]' [1 1 0]'];
+    C       = spm_bsplinc(SourceHead, d);
+    v       = zeros(dim);
+    M       = inv(SourceHead.mat)*mat; % M = inv(mat\SourceHead.mat) in spm_reslice.m
+    y1      = M(1,1)*x1+M(1,2)*x2+(M(1,3)*x3+M(1,4));
+    y2      = M(2,1)*x1+M(2,2)*x2+(M(2,3)*x3+M(2,4));
+    y3      = M(3,1)*x1+M(3,2)*x2+(M(3,3)*x3+M(3,4));
+    out     = spm_bsplins(C, y1,y2,y3, d);
+    tiny = 5e-2; % From spm_vol_utils.c
+    Mask = true(size(y1));
+    Mask = Mask & (y1 >= (1-tiny) & y1 <= (SourceHead.dim(1)+tiny));
+    Mask = Mask & (y2 >= (1-tiny) & y2 <= (SourceHead.dim(2)+tiny));
+    Mask = Mask & (y3 >= (1-tiny) & y3 <= (SourceHead.dim(3)+tiny));
+    out(~Mask) = 0;
+    outmat = mat;
 
 % | MISC UTILITIES
 % =========================================================================
@@ -4070,7 +4083,7 @@ function addcolourbar(vh,bh)
     yl      = [st.vols{vh}.blobs{bh}.min st.vols{vh}.blobs{bh}.max];
     yltick  = [ceil(min(yl)) floor(max(yl))];
     yltick(abs(yl) < 1) = yl(abs(yl) < 1); 
-    if strcmpi(st.direct, '+/-')
+    if strcmpi(st.direct, '+/-') & min(yltick)<0
         yltick = [yltick(1) 0 yltick(2)]; 
     end
     ylab = cellnum2str(num2cell(yltick), 2); 
@@ -4117,7 +4130,7 @@ function redraw_colourbar(vh,bh,interval,cdata)
     yl = interval;
     yltick  = [ceil(min(yl)) floor(max(yl))];
     yltick(abs(yl) < 1) = yl(abs(yl) < 1); 
-    if strcmpi(st.direct, '+/-')
+    if strcmpi(st.direct, '+/-') & min(yltick)<0
         yltick = [yltick(1) 0 yltick(2)]; 
     end
     ylab = cellnum2str(num2cell(yltick), 2); 
@@ -5448,6 +5461,517 @@ end
 try
 	parameters.nearest=instructure.nearest;
 end
+
+% | NAN SUITE
+% =========================================================================
+function y = nanmean(x,dim)
+% FORMAT: Y = NANMEAN(X,DIM)
+% 
+%    Average or mean value ignoring NaNs
+%
+%    This function enhances the functionality of NANMEAN as distributed in
+%    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
+%    identical name).  
+%
+%    NANMEAN(X,DIM) calculates the mean along any dimension of the N-D
+%    array X ignoring NaNs.  If DIM is omitted NANMEAN averages along the
+%    first non-singleton dimension of X.
+%
+%    Similar replacements exist for NANSTD, NANMEDIAN, NANMIN, NANMAX, and
+%    NANSUM which are all part of the NaN-suite.
+%
+%    See also MEAN
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.1 $ $Date: 2004/07/15 22:42:13 $
+
+if isempty(x)
+	y = NaN;
+	return
+end
+
+if nargin < 2
+	dim = min(find(size(x)~=1));
+	if isempty(dim)
+		dim = 1;
+	end
+end
+
+% Replace NaNs with zeros.
+nans = isnan(x);
+x(isnan(x)) = 0; 
+
+% denominator
+count = size(x,dim) - sum(nans,dim);
+
+% Protect against a  all NaNs in one dimension
+i = find(count==0);
+count(i) = ones(size(i));
+
+y = sum(x,dim)./count;
+y(i) = i + NaN;
+function y = nanmedian(x,dim)
+% FORMAT: Y = NANMEDIAN(X,DIM)
+% 
+%    Median ignoring NaNs
+%
+%    This function enhances the functionality of NANMEDIAN as distributed
+%    in the MATLAB Statistics Toolbox and is meant as a replacement (hence
+%    the identical name).  
+%
+%    NANMEDIAN(X,DIM) calculates the mean along any dimension of the N-D
+%    array X ignoring NaNs.  If DIM is omitted NANMEDIAN averages along the
+%    first non-singleton dimension of X.
+%
+%    Similar replacements exist for NANMEAN, NANSTD, NANMIN, NANMAX, and
+%    NANSUM which are all part of the NaN-suite.
+%
+%    See also MEDIAN
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.2 $ $Date: 2007/07/30 17:19:19 $
+
+if isempty(x)
+	y = [];
+	return
+end
+
+if nargin < 2
+	dim = min(find(size(x)~=1));
+	if isempty(dim)
+		dim = 1;
+	end
+end
+
+siz  = size(x);
+n    = size(x,dim);
+
+% Permute and reshape so that DIM becomes the row dimension of a 2-D array
+perm = [dim:max(length(size(x)),dim) 1:dim-1];
+x = reshape(permute(x,perm),n,prod(siz)/n);
+
+
+% force NaNs to bottom of each column
+x = sort(x,1);
+
+% identify and replace NaNs
+nans = isnan(x);
+x(isnan(x)) = 0;
+
+% new dimension of x
+[n m] = size(x);
+
+% number of non-NaN element in each column
+s = size(x,1) - sum(nans);
+y = zeros(size(s));
+
+% now calculate median for every element in y
+% (does anybody know a more eefficient way than with a 'for'-loop?)
+for i = 1:length(s)
+	if rem(s(i),2) & s(i) > 0
+		y(i) = x((s(i)+1)/2,i);
+	elseif rem(s(i),2)==0 & s(i) > 0
+		y(i) = (x(s(i)/2,i) + x((s(i)/2)+1,i))/2;
+	end
+end
+
+% Protect against a column of NaNs
+i = find(y==0);
+y(i) = i + nan;
+
+% permute and reshape back
+siz(dim) = 1;
+y = ipermute(reshape(y,siz(perm)),perm);
+function y = nanstd(x,flag,dim)
+% FORMAT: Y = NANSTD(X,FLAG,DIM)
+% 
+%    Standard deviation ignoring NaNs
+%
+%    This function enhances the functionality of NANSTD as distributed in
+%    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
+%    identical name).  
+%
+%    NANSTD(X,DIM) calculates the standard deviation along any dimension of
+%    the N-D array X ignoring NaNs.  
+%
+%    NANSTD(X,DIM,0) normalizes by (N-1) where N is SIZE(X,DIM).  This make
+%    NANSTD(X,DIM).^2 the best unbiased estimate of the variance if X is
+%    a sample of a normal distribution. If omitted FLAG is set to zero.
+%    
+%    NANSTD(X,DIM,1) normalizes by N and produces the square root of the
+%    second moment of the sample about the mean.
+%
+%    If DIM is omitted NANSTD calculates the standard deviation along first
+%    non-singleton dimension of X.
+%
+%    Similar replacements exist for NANMEAN, NANMEDIAN, NANMIN, NANMAX, and
+%    NANSUM which are all part of the NaN-suite.
+%
+%    See also STD
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.1 $ $Date: 2004/07/15 22:42:15 $
+
+if isempty(x)
+	y = NaN;
+	return
+end
+if nargin < 3
+	dim = min(find(size(x)~=1));
+	if isempty(dim)
+		dim = 1; 
+	end	  
+end
+if nargin < 2
+	flag = 0;
+end
+
+
+
+
+% Find NaNs in x and nanmean(x)
+nans = isnan(x);
+avg = nanmean(x,dim);
+
+% create array indicating number of element 
+% of x in dimension DIM (needed for subtraction of mean)
+tile = ones(1,max(ndims(x),dim));
+tile(dim) = size(x,dim);
+
+% remove mean
+x = x - repmat(avg,tile);
+
+count = size(x,dim) - sum(nans,dim);
+
+% Replace NaNs with zeros.
+x(isnan(x)) = 0; 
+
+
+% Protect against a  all NaNs in one dimension
+i = find(count==0);
+
+if flag == 0
+	y = sqrt(sum(x.*x,dim)./max(count-1,1));
+else
+	y = sqrt(sum(x.*x,dim)./max(count,1));
+end
+y(i) = i + NaN;
+function y = nanvar(x,dim,flag)
+% FORMAT: Y = NANVAR(X,DIM,FLAG)
+% 
+%    Variance ignoring NaNs
+%
+%    This function enhances the functionality of NANVAR as distributed in
+%    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
+%    identical name).  
+%
+%    NANVAR(X,DIM) calculates the standard deviation along any dimension of
+%    the N-D array X ignoring NaNs.  
+%
+%    NANVAR(X,DIM,0) normalizes by (N-1) where N is SIZE(X,DIM).  This make
+%    NANVAR(X,DIM).^2 the best unbiased estimate of the variance if X is
+%    a sample of a normal distribution. If omitted FLAG is set to zero.
+%    
+%    NANVAR(X,DIM,1) normalizes by N and produces second moment of the 
+%    sample about the mean.
+%
+%    If DIM is omitted NANVAR calculates the standard deviation along first
+%    non-singleton dimension of X.
+%
+%    Similar replacements exist for NANMEAN, NANMEDIAN, NANMIN, NANMAX, 
+%    NANSTD, and NANSUM which are all part of the NaN-suite.
+%
+%    See also STD
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.1 $ $Date: 2008/05/02 21:46:17 $
+
+if isempty(x)
+	y = NaN;
+	return
+end
+
+if nargin < 3
+	flag = 0;
+end
+
+if nargin < 2
+	dim = min(find(size(x)~=1));
+	if isempty(dim)
+		dim = 1; 
+	end	  
+end
+
+
+% Find NaNs in x and nanmean(x)
+nans = isnan(x);
+avg = nanmean(x,dim);
+
+% create array indicating number of element 
+% of x in dimension DIM (needed for subtraction of mean)
+tile = ones(1,max(ndims(x),dim));
+tile(dim) = size(x,dim);
+
+% remove mean
+x = x - repmat(avg,tile);
+
+count = size(x,dim) - sum(nans,dim);
+
+% Replace NaNs with zeros.
+x(isnan(x)) = 0; 
+
+
+% Protect against a  all NaNs in one dimension
+i = find(count==0);
+
+if flag == 0
+	y = sum(x.*x,dim)./max(count-1,1);
+else
+	y = sum(x.*x,dim)./max(count,1);
+end
+y(i) = i + NaN;
+function y = nansem(x,dim)
+% FORMAT: Y = NANSEM(X,DIM)
+% 
+%    Standard error of the mean ignoring NaNs
+%
+%    NANSTD(X,DIM) calculates the standard error of the mean along any
+%    dimension of the N-D array X ignoring NaNs.  
+%
+%    If DIM is omitted NANSTD calculates the standard deviation along first
+%    non-singleton dimension of X.
+%
+%    Similar functions exist: NANMEAN, NANSTD, NANMEDIAN, NANMIN, NANMAX, and
+%    NANSUM which are all part of the NaN-suite.
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.1 $ $Date: 2004/07/22 09:02:27 $
+
+if isempty(x)
+	y = NaN;
+	return
+end
+
+if nargin < 2
+	dim = min(find(size(x)~=1));
+	if isempty(dim)
+		dim = 1; 
+	end	  
+end
+
+
+% Find NaNs in x and nanmean(x)
+nans = isnan(x);
+
+count = size(x,dim) - sum(nans,dim);
+
+
+% Protect against a  all NaNs in one dimension
+i = find(count==0);
+count(i) = 1;
+
+y = nanstd(x,dim)./sqrt(count);
+
+y(i) = i + NaN;
+function y = nansum(x,dim)
+% FORMAT: Y = NANSUM(X,DIM)
+% 
+%    Sum of values ignoring NaNs
+%
+%    This function enhances the functionality of NANSUM as distributed in
+%    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
+%    identical name).  
+%
+%    NANSUM(X,DIM) calculates the mean along any dimension of the N-D array
+%    X ignoring NaNs.  If DIM is omitted NANSUM averages along the first
+%    non-singleton dimension of X.
+%
+%    Similar replacements exist for NANMEAN, NANSTD, NANMEDIAN, NANMIN, and
+%    NANMAX which are all part of the NaN-suite.
+%
+%    See also SUM
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.2 $ $Date: 2005/06/13 12:14:38 $
+
+if isempty(x)
+	y = [];
+	return
+end
+
+if nargin < 2
+	dim = min(find(size(x)~=1));
+	if isempty(dim)
+		dim = 1;
+	end
+end
+
+% Replace NaNs with zeros.
+nans = isnan(x);
+x(isnan(x)) = 0; 
+
+% Protect against all NaNs in one dimension
+count = size(x,dim) - sum(nans,dim);
+i = find(count==0);
+
+y = sum(x,dim);
+y(i) = NaN;
+function [y,idx] = nanmin(a,dim,b)
+% FORMAT: [Y,IDX] = NANMIN(A,DIM,[B])
+% 
+%    Minimum ignoring NaNs
+%
+%    This function enhances the functionality of NANMIN as distributed in
+%    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
+%    identical name).
+%
+%    If fact NANMIN simply rearranges the input arguments to MIN because
+%    MIN already ignores NaNs.
+%
+%    NANMIN(A,DIM) calculates the minimum of A along the dimension DIM of
+%    the N-D array X. If DIM is omitted NANMIN calculates the minimum along
+%    the first non-singleton dimension of X.
+%
+%    NANMIN(A,[],B) returns the minimum of the N-D arrays A and B.  A and
+%    B must be of the same size.
+%
+%    Comparing two matrices in a particular dimension is not supported,
+%    e.g. NANMIN(A,2,B) is invalid.
+%    
+%    [Y,IDX] = NANMIN(X,DIM) returns the index to the minimum in IDX.
+%    
+%    Similar replacements exist for NANMAX, NANMEAN, NANSTD, NANMEDIAN and
+%    NANSUM which are all part of the NaN-suite.
+%
+%    See also MIN
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.1 $ $Date: 2004/07/15 22:42:14 $
+
+if nargin < 1
+	error('Requires at least one input argument')
+end
+
+if nargin == 1
+	if nargout > 1
+		[y,idx] = min(a);
+	else
+		y = min(a);
+	end
+elseif nargin == 2
+	if nargout > 1
+		[y,idx] = min(a,[],dim);
+	else
+		y = min(a,[],dim);
+	end
+elseif nargin == 3
+	if ~isempty(dim)
+		error('Comparing two matrices along a particular dimension is not supported')
+	else
+		if nargout > 1
+			[y,idx] = min(a,b);
+		else
+			y = min(a,b);
+		end
+	end
+elseif nargin > 3
+	error('Too many input arguments.')
+end
+function [y,idx] = nanmax(a,dim,b)
+% FORMAT: [Y,IDX] = NANMAX(A,DIM,[B])
+% 
+%    Maximum ignoring NaNs
+%
+%    This function enhances the functionality of NANMAX as distributed in
+%    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
+%    identical name).
+%
+%    If fact NANMAX simply rearranges the input arguments to MAX because
+%    MAX already ignores NaNs.
+%
+%    NANMAX(A,DIM) calculates the maximum of A along the dimension DIM of
+%    the N-D array X. If DIM is omitted NANMAX calculates the maximum along
+%    the first non-singleton dimension of X.
+%
+%    NANMAX(A,[],B) returns the minimum of the N-D arrays A and B.  A and
+%    B must be of the same size.
+%
+%    Comparing two matrices in a particular dimension is not supported,
+%    e.g. NANMAX(A,2,B) is invalid.
+%    
+%    [Y,IDX] = NANMAX(X,DIM) returns the index to the maximum in IDX.
+%    
+%    Similar replacements exist for NANMIN, NANMEAN, NANSTD, NANMEDIAN and
+%    NANSUM which are all part of the NaN-suite.
+%
+%    See also MAX
+
+% -------------------------------------------------------------------------
+%    author:      Jan Gläscher
+%    affiliation: Neuroimage Nord, University of Hamburg, Germany
+%    email:       glaescher@uke.uni-hamburg.de
+%    
+%    $Revision: 1.1 $ $Date: 2004/07/15 22:42:11 $
+
+if nargin < 1
+	error('Requires at least one input argument')
+end
+
+if nargin == 1
+	if nargout > 1
+		[y,idx] = max(a);
+	else
+		y = max(a);
+	end
+elseif nargin == 2
+	if nargout > 1
+		[y,idx] = max(a,[],dim);
+	else
+		y = max(a,[],dim);
+	end
+elseif nargin == 3
+	if ~isempty(dim)
+		error('Comparing two matrices along a particular dimension is not supported')
+	else
+		if nargout > 1
+			[y,idx] = max(a,b);
+		else
+			y = max(a,b);
+		end
+	end
+elseif nargin > 3
+	error('Too many input arguments.')
+end
+
+
 
 
     

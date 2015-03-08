@@ -46,7 +46,7 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150220
+%   Version:  20150308
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function S = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150220'; 
+version='20150308'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -214,7 +214,7 @@ function prefs  = default_preferences(initial)
     optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)]; 
     surftypeopt     = {'Inflated' 'Pial' 'White'}; 
     surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))]; 
-    surftypeshade   = {'Sulc' 'Curv' 'Thk'};
+    surftypeshade   = {'Sulc' 'Curv'};
     surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))]; 
     nvertopt        = [40962 642 2562 10242 163842]; 
     nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
@@ -924,7 +924,6 @@ function cb_render(varargin)
         otherwise
     end
     obj.background      = [0 0 0];
-    
     obj.mappingfile     = [];         
     obj.fsaverage       = fullfile(st.supportpath, obj.fsaverage); 
     obj.medialflag      = 1; 
@@ -938,9 +937,9 @@ function cb_render(varargin)
     obj.input.he        = st.ol.hdr; 
     obj.figno = 0;
     obj.newfig = 1;
-    obj.overlaythresh = st.ol.U; 
+    obj.overlaythresh = T.thresh;
     if strcmpi(direct, '+/-')
-        obj.overlaythresh = [st.ol.U*-1 st.ol.U];
+        obj.overlaythresh = [T.thresh*-1 T.thresh];
     elseif strcmpi(direct, '-')
         obj.input.m = obj.input.m*-1;
     end
@@ -1056,9 +1055,9 @@ function cb_web(varargin)
     stat = web(varargin{3}, '-browser');
     if stat, headsup('Could not open a browser window.'); end
 function cb_checkversion(varargin)
-    global version st
-    url     = 'https://github.com/spunt/bspmview/blob/master/bspmview.m';
-    h       = headsup('Checking GitHub repository', 'Checking Version', 0);
+    global version
+    url     = 'https://github.com/spunt/bspmview/blob/master/README.md';
+    h       = headsup('Checking GitHub repository. Please be patient.', 'Checking Version', 0);
     try
         str = webread(url);
     catch
@@ -2205,6 +2204,47 @@ function cb_answer(varargin)
     global answer
     answer = get(varargin{1}, 'string');
     delete(findobj(0, 'Tag', 'yesorno'));
+function [flag, h] = waitup(msg, titlestr)
+% YESORNO Ask Yes/No Question
+%
+%  USAGE: h = yesorno(question, *titlestr)    *optional input
+% __________________________________________________________________________
+%  INPUTS
+%   question: character array to present to user 
+%
+
+% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
+%	Created:  2014-09-30
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 1, disp('USAGE: [flag, h] = waitup(msg, titlestr)'); return; end
+if nargin < 2, titlestr = 'Please Wait'; end
+if iscell(titlestr), titlestr = char(titlestr); end
+if iscell(msg), msg = char(msg); end
+global flag
+flag = []; 
+h(1) = figure(...
+    'Units', 'norm', ...
+    'WindowStyle', 'modal', ...
+    'Position',[.425 .45 .15 .10],...
+    'Resize','off',...
+    'Color', [0.8941    0.1020    0.1098]*.60, ...
+    'NumberTitle','off',...
+    'DockControls','off',...
+    'Tag', 'waitup', ...
+    'MenuBar','none',...
+    'Name',titlestr,...
+    'Visible','on',...
+    'Toolbar','none');
+h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
+    'pos', [.075 .40 .850 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
+h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+'pos', [.35 .10 .30 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Cancel', 'visible', 'on', 'callback', {@cb_cancel, h});
+uiwait(h(1)); 
+function cb_cancel(varargin)
+    global flag
+    flag = get(varargin{1}, 'string');
+    delete(findobj(0, 'Tag', 'waitup'));
 function h      = headsup(msg, titlestr, wait4resp)
 % HEADSUP Present message to user and wait for a response
 %

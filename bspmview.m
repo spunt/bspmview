@@ -481,9 +481,10 @@ function put_figmenu
     S.web(3)        = uimenu(S.web(1),'Label','SPM Extensions', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
     S.web(4)        = uimenu(S.web(1),'Label','SPM Archives Search', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
     S.web(5)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
-    S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'}); 
-    S.web(7)        = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
-    S.web(8)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth', 'CallBack', @cb_neurosynth);      
+    S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});
+    S.web(7)        = uimenu(S.web(1),'Label','FSL OtherSoftware', 'CallBack', {@cb_web, 'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'});
+    S.web(8)        = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
+    S.web(9)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth', 'CallBack', @cb_neurosynth);      
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;

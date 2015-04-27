@@ -46,7 +46,7 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150308
+%   Version:  20150427
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function S = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150308'; 
+version='20150427'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -484,7 +484,10 @@ function put_figmenu
     S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});
     S.web(7)        = uimenu(S.web(1),'Label','FSL OtherSoftware', 'CallBack', {@cb_web, 'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'});
     S.web(8)        = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
-    S.web(9)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth', 'CallBack', @cb_neurosynth);      
+    S.web(9)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth', 'CallBack', @cb_neurosynth);
+    
+    %% Status 
+    S.status        = uimenu(st.fig, 'Label', '|    Status: Ready', 'Enable', 'off', 'Tag', 'status');
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;
@@ -861,6 +864,7 @@ function cb_changeskin(varargin)
     set(varargin{1}, 'Checked', 'on'); 
     drawnow;
 function cb_correct(varargin)
+    setstatus('Working, please wait...'); 
     global st
     str = get(varargin{1}, 'string');
     methodstr = str{get(varargin{1}, 'value')};
@@ -886,7 +890,8 @@ function cb_correct(varargin)
         return
     end
     setthresh(C, find(di)); 
-    setthreshinfo(T);  
+    setthreshinfo(T);
+    setstatus('Ready'); 
 function cb_preferences(varargin)
     global st
     default_preferences; 
@@ -904,6 +909,7 @@ function cb_reversemap(varargin)
     setcolormap;  
 function cb_render(varargin)
     global st
+    setstatus('Working, please wait...'); 
     T = getthresh; 
     direct = char(T.direct); 
     obj = []; 
@@ -965,8 +971,10 @@ function cb_render(varargin)
     obj.position = ts; 
     [h1, hh1] = surfPlot4(obj);
     drawnow;
+    setstatus('Ready'); 
 function cb_report(varargin)
     global st
+    setstatus('Working, please wait...'); 
     T = getthresh;
     di = strcmpi({'+' '-' '+/-'}, T.direct);
     opt = {'pos' 'neg' 'pos'}; 
@@ -1024,6 +1032,7 @@ function cb_report(varargin)
     set(th, 'pos', [0 0 1 1]); 
     set(tfig, 'vis', 'on');
     drawnow;
+    setstatus('Ready'); 
 function cb_savetable(varargin)
     global st
     T = getthresh;
@@ -1099,6 +1108,11 @@ function cb_closegui(varargin)
    
 % | SETTERS
 % =========================================================================
+function setstatus(msg)
+    global st
+    basemsg = '|    Status: ';
+    set(findobj(st.fig, 'Tag', 'status'), 'Label', sprintf('%s%s', basemsg, msg));
+    drawnow; 
 function setcolormap(varargin)
     global st
     val = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 

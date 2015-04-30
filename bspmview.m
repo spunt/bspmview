@@ -459,6 +459,7 @@ function put_figmenu
     S.load = uimenu(st.fig,'Label','Load', 'Separator', 'on');
     S.loadol = uimenu(S.load,'Label','Overlay Image', 'Accelerator', 'o', 'CallBack', @cb_loadol);
     S.loadul = uimenu(S.load,'Label','Underlay Image', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
+    S.resetol = uimenu(S.load,'Label','Reload Current Overlay Image', 'Separator', 'on', 'CallBack', @cb_resetol);
     
     %% Save Menu
     S.save              = uimenu(st.fig,'Label','Save', 'Separator', 'on');
@@ -473,7 +474,8 @@ function put_figmenu
     S.report        = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
     S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
     S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
-    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);   
+    S.smoothmap     = uimenu(S.options,'Label','Smooth Image', 'Accelerator', 's', 'CallBack', @cb_smooth);
+    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);
     
     %% Web Menu
     S.web(1)        = uimenu(st.fig,'Label','Web', 'Separator', 'on');
@@ -566,6 +568,11 @@ function cb_updateoverlay(varargin)
     setthresh(C, find(di)); 
     setthreshinfo(T);
     drawnow;
+function cb_resetol(varargin)
+    global st
+    st.ol.Y = spm_read_vols(st.ol.hdr); 
+    st.ol.Y(isnan(st.ol.Y)) = 0;
+    cb_updateoverlay
 function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
@@ -746,6 +753,49 @@ function cb_hideclust(varargin)
     clidx = clidx==(clidx(voxidx));
     st.ol.Y(clidx==1) = 0; 
     cb_updateoverlay
+function cb_smooth(varargin)
+global st
+pos = get(st.fig, 'pos'); 
+w   = pos(3)*.65;
+[prefs, button] = settingsdlg(...
+    'title'                             ,   'Smoothing Options',    ...
+    'WindowWidth'                       ,   w*(2/3),                      ...
+    'ControlWidth'                      ,   w*(1/3),                    ...
+    {'Select Method'; 'method'}         ,   {'Gaussian (uses gauss3filter.m)' 'Robust (uses smoothn.m)'}, ...
+    {'Rescale result to have same MIN/MAX'; 'dorescale'}, true ... 
+    ); 
+if strcmpi(button, 'cancel'), return; end
+y       = st.ol.Y; 
+minmaxy = [nanmin(y(:)) nanmax(y(:))]; 
+switch prefs.method
+    case {'Gaussian (uses gauss3filter.m)'}
+        [OPTIONS, button] = settingsdlg(...
+            'title'                             ,   'Smoothing Options',    ...
+           'WindowWidth'                       ,   w*(2/3),                      ...
+            'ControlWidth'                      ,   w*(1/3),                    ...
+            {'Kernel (FWHM in mm)'; 'fwhm'}     ,   5);  
+        if strcmpi(button, 'cancel'), return; end
+        y = gauss3filter(y, OPTIONS.fwhm, st.ol.VOX'); 
+    case {'Robust (uses smoothn.m)'}
+         [OPTIONS, button] = settingsdlg(...
+            'title'                     ,   'Robust Options', ...
+            'WindowWidth'               ,   w,    ...
+            'ControlWidth'              ,   w/2,    ...
+            {'Tolerance (single value between 0 and 1)'; 'TolZ'}, .001, ...
+            {'Maximum number of iterations allowed'; 'MaxIter'}, 100, ...
+            {'Weight function for robust smoothing'; 'Weight'}, {'bisquare' 'talworth' 'cauchy'});
+        if strcmpi(button, 'cancel'), return; end
+        OPTIONS = rmfield(OPTIONS, {'WindowWidth' 'ControlWidth'}); 
+        setstatus('Working, please wait...'); 
+        y = smoothn(y, 'robust', OPTIONS); 
+end
+if prefs.dorescale
+    y(isnan(y)) = 0; 
+    y(y~=0) = scaledata(y(y~=0), minmaxy); 
+end
+st.ol.Y = y; 
+cb_updateoverlay
+setstatus('Ready'); 
 function cb_saveroi(varargin)
     global st
     [roi, button] = settingsdlg(...  

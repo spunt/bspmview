@@ -43,7 +43,7 @@ _________________________________________________________________________
   Email:    bobspunt@gmail.com
   Created:  2014-09-27
   GitHub:   https://github.com/spunt/bspmview
-  Version:  20150429
+  Version:  20150501
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by

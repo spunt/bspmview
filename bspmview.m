@@ -46,7 +46,7 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150429
+%   Version:  20150501
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function S = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150429'; 
+version='20150501'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -163,15 +163,20 @@ function prop   = default_properties(varargin)
 function cmap   = default_colormaps(depth)
     if nargin==0, depth = 64; end
     cmap = []; 
-    cmap{1,1}  = jet(depth);
-    cmap{1,2}  = 'jet';
-    cmap{2,1}  = hot(depth);
-    cmap{2,2}  = 'hot';
+    cmap{1,1}   = jet(depth);
+    cmap{1,2}   = 'jet';
+    cmap{2,1}   = hot(depth);
+    cmap{2,2}   = 'hot';
+    cmap{3,1}   = cold(depth);
+    cmap{3,2}   = 'cold';
+    cmap{4,1}   = [];
+    cmap{4,2}   = 'signed';
+    anchor = size(cmap,1);
     bmap1 = {'Blues' 'Greens' 'Greys' 'Oranges' 'Purples' 'Reds'};
     for i = 1:length(bmap1)
         tmp = brewermap(50, bmap1{i});
-        cmap{2+i,1} = cmap_upsample(tmp(11:end,:), depth); 
-        cmap{2+i,2} = sprintf('%s', bmap1{i});
+        cmap{anchor+i,1} = cmap_upsample(tmp(11:end,:), depth); 
+        cmap{anchor+i,2} = sprintf('%s', bmap1{i});
     end
     tmp1 = brewermap(36, '*Blues'); 
     tmp2 = brewermap(36, 'Reds'); 
@@ -199,8 +204,9 @@ function prefs  = default_preferences(initial)
             'shading'   ,   'Sulc', ...
             'nverts'    ,   40962, ...
             'round'     ,   false, ...
-            'shadingmin', .1, ...
-            'shadingmax', .7, ...
+            'dilate'    ,   false, ...
+            'shadingmin', .15, ...
+            'shadingmax', .70, ...
             'colorbar', true); 
          if initial, st.preferences = def; return; end
     else
@@ -240,7 +246,8 @@ function prefs  = default_preferences(initial)
         {'Shading Min'; 'shadingmin'},      def.shadingmin, ...
         {'Shading Max'; 'shadingmax'},      def.shadingmax, ...
         {'Add Color Bar'; 'colorbar'},      logical(def.colorbar), ...
-        {'Round Values?'; 'round'}   ,      logical(def.round)); 
+        {'Round Values?'; 'round'}   ,      logical(def.round), ...
+        {'Dilate Inclusive Mask?'; 'dilate'}      ,   logical(def.dilate)); 
     if strcmpi(button, 'cancel'), return; else st.preferences = prefs; end
     if ~strcmpi(st.preferences.atlasname, def.atlasname)
         %% LABEL MAP
@@ -474,7 +481,7 @@ function put_figmenu
     S.report        = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
     S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
     S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
-    S.smoothmap     = uimenu(S.options,'Label','Smooth Image', 'Accelerator', 's', 'CallBack', @cb_smooth);
+    S.smoothmap     = uimenu(S.options,'Label','Smooth Image', 'CallBack', @cb_smooth);
     S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);
     
     %% Web Menu
@@ -499,7 +506,7 @@ function put_axesmenu
     ctsavemap   = uimenu(cmenu, 'Label', 'Save cluster', 'callback', @cb_saveclust, 'separator', 'on');
     ctsavemask  = uimenu(cmenu, 'Label', 'Save cluster (binary mask)', 'callback', @cb_saveclust);
     ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Coordinates', 'callback', @cb_saveroi);
-    ctrmcluster = uimenu(cmenu, 'Label', 'Hide cluster', 'callback', @cb_hideclust);
+%     ctrmcluster = uimenu(cmenu, 'Label', 'Hide cluster', 'callback', @cb_hideclust);
     ctsavergb   = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb, 'separator', 'on');
     ctxhair     = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
     for a = 1:3
@@ -759,23 +766,34 @@ pos = get(st.fig, 'pos');
 w   = pos(3)*.65;
 [prefs, button] = settingsdlg(...
     'title'                             ,   'Smoothing Options',    ...
-    'WindowWidth'                       ,   w*(2/3),                      ...
+    'Description'                       ,   'To undo smoothing you apply, select "Reload Current Overlay Image" from the "Load" menu.', ...
+    'WindowWidth'                       ,   w*(3/4),                      ...
     'ControlWidth'                      ,   w*(1/3),                    ...
     {'Select Method'; 'method'}         ,   {'Gaussian (uses gauss3filter.m)' 'Robust (uses smoothn.m)'}, ...
-    {'Rescale result to have same MIN/MAX'; 'dorescale'}, true ... 
+    {'Rescale result to have same MIN/MAX'; 'dorescale'}, false, ...
+    {'Restrict to suprathreshold voxels?'; 'supraonly'}, false ...
     ); 
 if strcmpi(button, 'cancel'), return; end
 y       = st.ol.Y; 
-minmaxy = [nanmin(y(:)) nanmax(y(:))]; 
+if prefs.supraonly
+    T           = getthresh; 
+    di          = strcmpi({'+' '-' '+/-'}, T.direct); 
+    clustidx    = st.ol.C0(di,:);
+    opt         = [1 -1 1]; 
+    y           = y*opt(di);
+    y(clustidx==0) = NaN;
+end
+minmaxy = [nanmin(y(:)) nanmax(y(:))];
+y(isnan(y)) = 0; 
 switch prefs.method
     case {'Gaussian (uses gauss3filter.m)'}
         [OPTIONS, button] = settingsdlg(...
-            'title'                             ,   'Smoothing Options',    ...
-           'WindowWidth'                       ,   w*(2/3),                      ...
-            'ControlWidth'                      ,   w*(1/3),                    ...
+            'title'                             ,   'Smoothing Options',            ...
+            'WindowWidth'                       ,   w*(2/3),                        ...
+            'ControlWidth'                      ,   w*(1/3),                        ...
             {'Kernel (FWHM in mm)'; 'fwhm'}     ,   5);  
         if strcmpi(button, 'cancel'), return; end
-        y = gauss3filter(y, OPTIONS.fwhm, st.ol.VOX'); 
+        y = gauss3filter(y, OPTIONS.fwhm, st.ol.VOX');
     case {'Robust (uses smoothn.m)'}
          [OPTIONS, button] = settingsdlg(...
             'title'                     ,   'Robust Options', ...
@@ -960,6 +978,7 @@ function cb_reversemap(varargin)
 function cb_render(varargin)
     global st
     setstatus('Working, please wait...'); 
+    
     T = getthresh; 
     direct = char(T.direct); 
     obj = []; 
@@ -981,6 +1000,7 @@ function cb_render(varargin)
         otherwise
     end
     obj.background      = [0 0 0];
+    obj.figname         = st.ol.fname; 
     obj.mappingfile     = [];         
     obj.fsaverage       = fullfile(st.supportpath, obj.fsaverage); 
     obj.medialflag      = 1; 
@@ -988,20 +1008,20 @@ function cb_render(varargin)
     obj.surface         = st.preferences.surface; 
     obj.shading         = st.preferences.shading;
     obj.colorlims       = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max];
-    obj.input.m         = st.ol.Y; 
-    di = {'+' '-' '+/-'}; 
-    obj.input.m(st.ol.C0IDX(strcmpi(di, direct),:)==0) = 0; 
-    obj.input.he        = st.ol.hdr; 
+
+    % | Determine Input
+    obj.input.m = getcurrentoverlay(st.preferences.dilate);
+    obj.input.he = st.ol.hdr; 
     obj.figno = 0;
     obj.newfig = 1;
-    obj.overlaythresh = T.thresh;
+    obj.input.m(obj.input.m==0) = NaN; 
+    obj.overlaythresh = 0;
     if strcmpi(direct, '+/-')
-        obj.overlaythresh = [T.thresh*-1 T.thresh];
+        obj.overlaythresh = [0 0];
     elseif strcmpi(direct, '-')
         obj.input.m = obj.input.m*-1;
     end
-    val = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
-    obj.colormap = st.cmap{val, 1}; 
+    obj.colormap = getcolormap; 
     obj.reverse = 0; 
     ss = get(0, 'ScreenSize');
     ts = floor(ss/2);     
@@ -1019,7 +1039,7 @@ function cb_render(varargin)
     otherwise
     end
     obj.position = ts; 
-    [h1, hh1] = surfPlot4(obj);
+    [h1, hh1] = surfPlot5(obj);
     drawnow;
     setstatus('Ready'); 
 function cb_report(varargin)
@@ -1165,8 +1185,7 @@ function setstatus(msg)
     drawnow; 
 function setcolormap(varargin)
     global st
-    val = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
-    newmap = st.cmap{val, 1}; 
+    newmap = getcolormap;
     cbh = st.vols{1}.blobs{1}.cbar; 
     cmap = [gray(64); newmap];
     set(findobj(cbh, 'type', 'image'), 'CData', (65:128)', 'CdataMapping', 'direct');
@@ -1324,6 +1343,18 @@ function h = gethandles(varargin)
     h.colorbar = st.vols{1}.blobs{1}.cbar;
     h.upperpanel = findobj(st.fig, 'tag', 'upperpanel'); 
     h.lowerpanel = findobj(st.fig, 'tag', 'lowerpanel'); 
+function [cmap, cmapname] = getcolormap
+    global st
+    val     = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
+    list    = get(findobj(st.fig, 'Tag', 'colormaplist'), 'String');
+    cmapname = list{val};
+    if strcmpi(cmapname, 'signed')
+        zero_loc = (0 - min(st.ol.Z))/(max(st.ol.Z) - min(st.ol.Z));
+        if zero_loc <= .10, zero_loc = .5; end
+        cmap = colormap_signed(64, zero_loc);
+    else
+        cmap = st.cmap{val, 1};
+    end
 function [clustsize, clustidx] = getclustidx(rawol, u, k)
 
     % raw data to XYZ
@@ -1390,7 +1421,20 @@ function [xyz, xyzidx, dist] = getroundvoxel
 function [xyz, voxidx, dist] = getnearestvoxel 
     global st
     [xyz, voxidx, dist] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm);
-    
+function y = getcurrentoverlay(dilateflag)
+    if nargin==0, dilateflag = 0; end
+    global st
+    T           = getthresh; 
+    di          = strcmpi({'+' '-' '+/-'}, T.direct); 
+    clustidx    = st.ol.C0(di,:);
+    opt         = [1 -1 1];
+    y           = st.ol.Y*opt(di);
+    y(clustidx==0)  = 0;
+    y(isnan(y))     = 0; 
+    if dilateflag
+        y = st.ol.Y.*dilate_image(double(y~=0));
+    end
+
 % | BUIPANEL
 % =========================================================================
 function h      = buipanel(parent, uilabels, uistyles, relwidth, varargin)
@@ -1601,6 +1645,7 @@ function OL = load_overlay(fname, pval, k)
     XYZmm      = M(1:3,:)*RCP;
     OL          = struct( ...
                 'fname',    fname,...
+                'fname_abbr', abridgepath(fname),...
                 'descrip',  oh.descrip, ...
                 'hdr',      oh, ...
                 'DF',       df, ...
@@ -1951,6 +1996,14 @@ function [out, outmat] = reslice_image(in, ref, int)
     Mask = Mask & (y3 >= (1-tiny) & y3 <= (SourceHead.dim(3)+tiny));
     out(~Mask) = 0;
     outmat = mat;
+function out = dilate_image(in)
+% Dilate non-zero values in 3D volume - Wrapper for spm_dilate.m
+kernel  = cat(3,[0 0 0; 0 1 0; 0 0 0],[0 1 0; 1 1 1; 0 1 0],[0 0 0; 0 1 0; 0 0 0]);
+out     = spm_dilate(in, kernel);
+function out = erode_image(in)
+% Dilate non-zero values in 3D volume - Wrapper for spm_dilate.m
+kernel  = cat(3,[0 0 0; 0 1 0; 0 0 0],[0 1 0; 1 1 1; 0 1 0],[0 0 0; 0 1 0; 0 0 0]);
+out     = spm_erode(in, kernel);
 
 % | MISC UTILITIES
 % =========================================================================
@@ -2002,23 +2055,23 @@ outmsg(floor(.5*msgwidth-.5*msgln):floor(.5*msgwidth-.5*msgln) + msgln-1) = msg;
 outmsg      = sprintf('%s\n\n%s\n%s', msgtop, outmsg, msgbottom);
 if ~hideoutput, disp(outmsg); end
 function out    = abridgepath(str, maxchar)
-if nargin<2, maxchar =  85; end
-if iscell(str), str = char(str); end
-if length(str) <= maxchar, out = str; return; end
-s   = regexp(str, filesep, 'split');
-s(cellfun('isempty', s)) = [];
-p1 = fullfile(s{1}, '...'); 
-s(1) = []; 
-badpath = 1;
-count = 0; 
-while badpath
-    count = count + 1; 
-    testpath = s; 
-    testpath(1:count) = []; 
-    testpath = fullfile(p1, testpath{:}); 
-    if length(testpath)<=maxchar, badpath = 0; end
-end
-out = testpath; 
+    if nargin<2, maxchar =  85; end
+    if iscell(str), str = char(str); end
+    if length(str) <= maxchar, out = str; return; end
+    s   = regexp(str, filesep, 'split');
+    s(cellfun('isempty', s)) = [];
+    p1 = fullfile(s{1}, '...'); 
+    s(1) = []; 
+    badpath = 1;
+    count = 0; 
+    while badpath
+        count = count + 1; 
+        testpath = s; 
+        testpath(1:count) = []; 
+        testpath = fullfile(p1, testpath{:}); 
+        if length(testpath)<=maxchar, badpath = 0; end
+    end
+    out = testpath; 
 function out    = cmap_upsample(in, N)
     num = size(in,1);
     ind = repmat(1:num, ceil(N/num), 1);
@@ -2429,6 +2482,81 @@ else
     if size(propvalue, 1)==1, propvalue = propvalue'; end
     arrayfun(@set, harray, repmat({propname}, length(harray), 1), propvalue); 
 end
+function cmap = colormap_signed(n, zero_loc)
+% Construct colormap for displaying signed data. The function outputs an n x 3
+% colormap designed for use with signed data. The user can specify the location
+% in the data range that corresponds to zero, and the colormap is then constructed
+% so that white maps to zero. 
+%
+% Input arguments:
+%   n: number of rows in colormap (default = 64)
+%   zero_loc: location of zero (fractional dist between neg and pos limits
+%             of data). If k is a signed function of 2 variables that spans
+%             a range from negative to positive, compute the location
+%             of the zero value: 
+%                   zero_loc = (0 - min(k(:)))/(max(k(:)) - min(k(:))) 
+%
+% Usage:
+% cmap = colormap_signed returns a 64 x 3 colormap in which the middle
+% rows tend toward white; lower rows (negative values) tend toward blue
+% while higher rows tend toward red. Variables n and zero_loc assume default
+% values of 64 and 0.5, respectively.
+%
+% cmap = colormap_signed(n) returns a n x 3 colormap, otherwise similar to
+% above. Variable zero_loc assumes default value of 0.5. 
+%
+% cmap = colormap_signed(n,zero_loc) returns a n x 3 colormap in which the 
+% location of the row corresponding to the 'zero color' is given by zero_loc.
+% See section above on input arguments for example of how to compute zero_loc.
+%
+% NOTE: As the value of zero_loc deviates from 0.5, the colormap created by 
+% this function becomes progressively warped so that the portion of the data 
+% range mapped to warm colors does not equal that mapped to cool colors. This 
+% is intentional and allows the full range of colors to be used for a given
+% signed data range. If you want a signed colormap in which the incremental
+% color change is constant across the entire data range, one option is to 
+% use this function to return a symmetrical signed colormap (i.e., zero_loc 
+% = 0.5) and then manually set the colorbar properties to crop the colorbar.
+% Written by Peter Hammer, April 2015 and posted on Matlab File Exchange
+
+switch nargin
+    case 2
+        if (n < 1)
+            error('First input argument must be greater than zero.')
+        end
+        if ((zero_loc < 0) || (zero_loc > 1))
+            error('Second input argument must be between 0 and 1.')
+        end
+    case 1
+        zero_loc = 0.5;
+        if (n < 1)
+            error('First input argument must be greater than zero.')
+        end
+    case 0
+        zero_loc = 0.5;
+        n = 64;
+    otherwise
+        error('Too many input arguments.')
+end
+
+% Array c must have odd number of rows with 'zero color' in middle row.
+% This is a modified jet colormap with white replacing green in the
+% middle (DarkBlue-Blue-Cyan-White-Yellow-Red-DarkRed).
+c = [0 0 0.5;...
+    0 0 1;...
+    0 1 1;...
+    1 1 1;...
+    1 1 0;...
+    1 0 0;...
+    0.5 0 0];
+i_mid = 0.5*(1+size(c,1));
+cmap_neg=c(1:i_mid,:);
+cmap_pos=c(i_mid:end,:);
+i0 = 1+ round(n * zero_loc); % row of cmap (n rows) corresponding to zero 
+x=(1:i_mid)'/i_mid;
+cmap_neg_i=interp1(x,cmap_neg,linspace(x(1),1,i0));
+cmap_pos_i=interp1(x,cmap_pos,linspace(x(1),1,n-i0));
+cmap = [cmap_neg_i; cmap_pos_i];
 
 % | BSPM_OPTHVIEWS (MODIFIED FROM SPM8 SPM_OPTHVIEWS)
 % =========================================================================

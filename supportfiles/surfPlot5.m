@@ -58,7 +58,7 @@ if obj.newfig
         set(gcf,'color',obj.background, 'position', obj.position); shg
     else
         figure( ...
-        'Renderer', 'opengl',       ...
+        'Renderer', 'zbuffer',       ...
         'Inverthardcopy', 'off',    ...
         'Name', obj.figname,        ...
         'NumberTitle', 'off',       ...
@@ -367,9 +367,9 @@ set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick',(tickmark),'Y
 shading interp
 
 % final cleanup
-set(gcf, 'units', 'points', 'paperunits', 'points');
-figpos = get(gcf, 'pos');
-set(gcf, 'papersize', figpos(3:4), 'paperposition', [0 0 figpos(3:4)], 'visible', 'on');
+set(obj.figno, 'units', 'points', 'paperunits', 'points');
+figpos = get(obj.figno, 'pos');
+set(obj.figno, 'papersize', figpos(3:4), 'paperposition', [0 0 figpos(3:4)], 'visible', 'on');
 
 end
 function y = spm_range(x,dim)

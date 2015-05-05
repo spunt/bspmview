@@ -46,7 +46,7 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150504
+%   Version:  20150505
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function S = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150504'; 
+version='20150505'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -1313,12 +1313,17 @@ function setthresh(C, di)
     st.ol.XYZ   = st.ol.XYZ0(:,idx);
     st.ol.XYZmm = st.ol.XYZmm0(:,idx);
     st.ol.C     = C(idx); 
-    st.ol.atlas = st.ol.atlas0(idx); 
-    bspm_orthviews('RemoveBlobs', st.ho);
-    bspm_orthviews('AddBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
+    st.ol.atlas = st.ol.atlas0(idx);
+    if ~isfield(st.vols{1}, 'blobs')
+        bspm_orthviews('RemoveBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
+        bspm_orthviews('AddBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
+    else
+        bspm_orthviews('ReplaceBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
+    end
+    setcolormap; 
     bspm_orthviews('Register', st.registry.hReg);
     bspm_orthviews('Reposition');
-    setcolormap; 
+    drawnow; 
 function [voxval, clsize] = setvoxelinfo
     global st
     [nxyz,voxidx, d]    = getnearestvoxel; 
@@ -2897,6 +2902,10 @@ switch lower(action)
         rmblobs(varargin{1});
         redraw(varargin{1});
         
+    case 'replaceblobs'
+        replaceblobs(varargin{:});
+        redraw(varargin{1});
+
     case 'addcontext'
         if nargin == 1
             handles = 1:max_img;
@@ -3361,6 +3370,23 @@ for i=valid_handles(handle)
             end
         end
         st.vols{i} = rmfield(st.vols{i},'blobs');
+    end
+end
+function replaceblobs(handle, xyz, t, mat, name)
+global st
+if nargin < 5, name = ''; end
+for i=valid_handles(handle)
+    if ~isempty(xyz)
+        rcp         = round(xyz);
+        dim         = max(rcp,[],2)';
+        off         = rcp(1,:) + dim(1)*(rcp(2,:)-1 + dim(2)*(rcp(3,:)-1));
+        vol         = zeros(dim)+NaN;
+        vol(off)    = t;
+        st.vols{i}.blobs{1}.vol     = reshape(vol,dim);
+        st.vols{i}.blobs{1}.mat     = mat;
+        st.vols{i}.blobs{1}.max     = max([eps max(t)]);
+        st.vols{i}.blobs{1}.min     = min([0 min(t)]);
+        st.vols{i}.blobs{1}.name    = name;
     end
 end
 function rmcontexts(handles)

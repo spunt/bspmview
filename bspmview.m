@@ -379,9 +379,9 @@ function put_upperpane(varargin)
     cnamepos     = [.01 .15 .98 .85]; 
     prop         = default_properties('units', 'norm', 'fontu', 'norm', 'fonts', .55); 
     panelh       = uipanel('parent',st.fig, prop.panel{:}, 'pos', st.pos.pane.upper, 'tag', 'upperpanel'); 
-    panelabel    = {{'Effect Direction' '+' '-' '+/-' 'Color Map' 'Color Max'}, {'Text' 'Radio' 'Radio' 'Radio' 'Popup' 'Edit'}}; 
-    relwidth     = [3 1 1 2 3 2]; 
-    tag          = {'label' 'direct' 'direct' 'direct' 'colormaplist' 'maxval'};  
+    panelabel    = {{'Effect Direction' '+' '-' '+/-' 'Colormap' 'Max' 'Min'}, {'Text' 'Radio' 'Radio' 'Radio' 'Popup' 'Edit' 'Edit'}}; 
+    relwidth     = [3 1 1 2 3 1.5 1.5]; 
+    tag          = {'label' 'direct' 'direct' 'direct' 'colormaplist' 'maxval' 'minval'};  
     ph = buipanel(panelh, panelabel{1}, panelabel{2}, relwidth, 'paneltitle', '', 'panelposition', cnamepos, 'tag', tag, 'uicontrolsep', .01, 'marginsep', .025, 'panelfontsize', st.fonts.sz4, 'labelfontsize', st.fonts.sz4, 'editfontsize', st.fonts.sz5); 
     
     % | Check valid directions for contrast display
@@ -402,6 +402,7 @@ function put_upperpane(varargin)
     arrayset(ph.edit(2:4), 'Callback', @cb_directmenu);
     set(ph.edit(1), 'FontSize', st.fonts.sz3); 
     set(ph.edit(6), 'callback', @cb_maxval);
+    set(ph.edit(7), 'callback', @cb_minval); 
     set(ph.edit(5), 'String', st.cmap(:,2), 'Value', 1, 'callback', @setcolormap);
     set(panelh, 'units', 'norm');
     drawnow;
@@ -660,7 +661,13 @@ function cb_maxval(varargin)
     global st
     val = str2num(get(findobj(st.fig, 'tag', 'maxval'), 'string'));
     bspm_orthviews('SetBlobsMax', 1, 1, val);
-    redraw_colourbar(st.hld, 1, [min(st.ol.Z) val], (1:64)'+64);
+    redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
+    drawnow;
+function cb_minval(varargin)
+    global st
+    val = str2num(get(findobj(st.fig, 'tag', 'minval'), 'string'));
+    bspm_orthviews('SetBlobsMin', 1, 1, val);
+    redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
     drawnow;
 function cb_changexyz(varargin)
     xyz = str2num(get(varargin{1}, 'string')); 
@@ -1216,8 +1223,10 @@ function setcolormap(varargin)
     cmap = [gray(64); newmap];
     set(findobj(cbh, 'type', 'image'), 'CData', (65:128)', 'CdataMapping', 'direct');
     set(st.fig, 'Colormap', cmap);
-    bspm_orthviews('SetBlobsMax', 1, 1, max(st.ol.Z))
-    set(findobj(st.fig, 'tag', 'maxval'), 'str',  sprintf('%2.3f',max(st.ol.Z)));
+    mnmx = getminmax; 
+    bspm_orthviews('SetBlobsMax', 1, 1, max(mnmx)); 
+    set(findobj(st.fig, 'tag', 'maxval'), 'str',  sprintf('%2.3f',max(mnmx)));
+    set(findobj(st.fig, 'tag', 'minval'), 'str',  sprintf('%2.3f',min(mnmx)));
     drawnow;
 function setfontunits(unitstr)
     if nargin==0, unitstr = 'norm'; end
@@ -1399,6 +1408,13 @@ function [cmap, cmapname] = getcolormap
         otherwise
             cmap = st.cmap{val, 1};
     end
+function mnmx = getminmax
+global st
+if isfield(st.vols{1}, 'blobs')
+    mnmx = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max];
+else
+    mnmx = [min(st.ol.Z) max(st.ol.Z)]; 
+end
 function [clustsize, clustidx] = getclustidx(rawol, u, k)
 
     % raw data to XYZ

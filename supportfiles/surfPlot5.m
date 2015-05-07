@@ -342,36 +342,35 @@ end
 set(gcf,'UserData',{col1 col2,h});
 drawnow;
 if obj.cmapflag
-if obj.Nsurfs == 4
-    subplot(2,12,[12 24])
-elseif obj.Nsurfs == 1.9 || obj.Nsurfs == 2.1;
-    subplot(1, 22, 22);
-else 
-    subplot(1,11,11);
+    if obj.Nsurfs == 4
+        subplot(2,12,[12 24])
+    elseif obj.Nsurfs == 1.9 || obj.Nsurfs == 2.1;
+        subplot(1, 22, 22);
+    else 
+        subplot(1,11,11);
+    end
+    cla
+    mp = [];
+    mp(1:256,1,1:3) = CD;
+    ch = imagesc((1:256)');
+    set(ch,'CData',mp)
+    try
+        [cl trash indice] = cmap(obj.overlaythresh,obj.colorlims,obj.colormap);
+    catch
+        keyboard; 
+    end
+    tickmark = unique(sort([1 122 255 indice(:)']));
+    ticklabel = unique(sort([obj.colorlims(1) mean(obj.colorlims) obj.colorlims(2) obj.overlaythresh])');
+    tickmark = tickmark([1 end]);
+    ticklabel = ticklabel([1 end]);
+    set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick',(tickmark),'YTickLabel',(ticklabel),'fontsize',14,'YColor','w');
+    shading interp
 end
-cla
-mp = [];
-mp(1:256,1,1:3) = CD;
-ch = imagesc((1:256)');
-set(ch,'CData',mp)
-try
-[cl trash indice] = cmap(obj.overlaythresh,obj.colorlims,obj.colormap);
-catch
-    keyboard; 
-end
-tickmark = unique(sort([1 122 255 indice(:)']));
-ticklabel = unique(sort([obj.colorlims(1) mean(obj.colorlims) obj.colorlims(2) obj.overlaythresh])');
-tickmark = tickmark([1 end]);
-ticklabel = ticklabel([1 end]);
-set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick',(tickmark),'YTickLabel',(ticklabel),'fontsize',14,'YColor','w');
-shading interp
-
 % final cleanup
+tightfig(gcf);
 set(obj.figno, 'units', 'points', 'paperunits', 'points');
 figpos = get(obj.figno, 'pos');
 set(obj.figno, 'papersize', figpos(3:4), 'paperposition', [0 0 figpos(3:4)], 'visible', 'on');
-
-end
 function y = spm_range(x,dim)
 % Computes the difference between the min and max of a vector. If you need
 % to use it on a matrix, then you need to specify which dimension to

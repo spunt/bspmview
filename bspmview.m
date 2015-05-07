@@ -478,12 +478,15 @@ function put_figmenu
     %% Make sure resize callbacks are registered one at a time
     set(S.gui, 'BusyAction', 'cancel', 'Interruptible', 'off'); 
     set(S.font, 'BusyAction', 'cancel', 'Interruptible', 'off');
+    
+%     uimenu(st.fig, 'Label', '|', 'Enable', 'off', 'Tag', 'separator'); % separator
 
     %% Load Menu
     S.load = uimenu(st.fig,'Label','Load', 'Separator', 'on');
     S.loadol = uimenu(S.load,'Label','Overlay Image', 'Accelerator', 'o', 'CallBack', @cb_loadol);
     S.loadul = uimenu(S.load,'Label','Underlay Image', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
     S.resetol = uimenu(S.load,'Label','Reload Current Overlay Image', 'Separator', 'on', 'CallBack', @cb_resetol);
+   
     
     %% Save Menu
     S.save              = uimenu(st.fig,'Label','Save', 'Separator', 'on');
@@ -492,6 +495,12 @@ function put_figmenu
     S.saveroi           = uimenu(S.save,'Label','Save ROI at current location', 'Separator', 'on', 'CallBack', @cb_saveroi);
     S.savetable         = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable);
     
+    %% Batch Menu
+%     S.batch         = uimenu(S.save,'Label','Batch Save', 'Separator', 'on');
+%     S.batchtable    = uimenu(S.batch, 'Label','Results Tables', 'CallBack', @cb_batch_table);
+%     S.batchrender   = uimenu(S.batch, 'Label','Surface Renderings', 'CallBack', @cb_batch_render);
+%     S.batchroi      = uimenu(S.batch, 'Label','ROIs', 'CallBack', @cb_batch_roi);
+
     %% Options Menu
     S.options       = uimenu(st.fig,'Label','Display', 'Separator', 'on');
     S.prefs         = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
@@ -500,7 +509,7 @@ function put_figmenu
     S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
     S.smoothmap     = uimenu(S.options,'Label','Smooth Image', 'CallBack', @cb_smooth);
     S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);
-    
+
     %% Web Menu
     S.web(1)        = uimenu(st.fig,'Label','Web', 'Separator', 'on');
     S.web(2)        = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
@@ -671,12 +680,6 @@ function cb_minval(varargin)
     drawnow;
 function cb_changexyz(varargin)
     xyz = str2num(get(varargin{1}, 'string')); 
-    bspm_orthviews('reposition', xyz');
-    drawnow;
-function cb_tablexyz(varargin)
-    tabrow  = varargin{2}.Indices(1);
-    tabdata = get(varargin{1}, 'data'); 
-    xyz     = cell2mat(tabdata(tabrow,4:6)); 
     bspm_orthviews('reposition', xyz');
     drawnow;
 function cb_directmenu(varargin)
@@ -1034,7 +1037,6 @@ function cb_render(varargin)
     obj.background      = [0 0 0];
     obj.figname         = st.ol.fname; 
     obj.mappingfile     = [];         
-    
     obj.medialflag      = 1; 
     obj.direction       = direct; 
     obj.surface         = st.preferences.surface; 
@@ -1045,14 +1047,13 @@ function cb_render(varargin)
     obj.input.m = getcurrentoverlay(st.preferences.dilate);
     obj.input.he = st.ol.hdr; 
     obj.input.m(obj.input.m==0) = NaN; 
-    obj.overlaythresh = 0;
+    obj.overlaythresh       = 0;
+    obj.reverse             = 0;
     if strcmpi(direct, '+/-')
-        obj.overlaythresh = [0 0];
-    elseif strcmpi(direct, '-')
-        obj.input.m = obj.input.m*-1;
+        obj.overlaythresh   = [0 0];
     end
     obj.colormap    = getcolormap; 
-    obj.reverse     = 0;  % Option to reverse the image; i.e. m*-1
+    
     ss = get(0, 'ScreenSize');
     ts = floor(ss/2);     
     switch obj.Nsurfs
@@ -1075,26 +1076,19 @@ function cb_render(varargin)
 function cb_report(varargin)
     global st
     setstatus('Working, please wait...'); 
-    T = getthresh;
-    di = strcmpi({'+' '-' '+/-'}, T.direct);
-    opt = {'pos' 'neg' 'pos'}; 
-    peaknii  = struct( ...
-        'thresh', T.thresh, ...
-        'cluster'  ,   T.extent, ...
-        'separation',   st.preferences.separation, ...
-        'sign',  opt{di}, ...
-        'nearest',   1, ...
-        'type',     'T', ...
-        'out',   '', ...
-        'voxlimit',   [], ...
-        'SPM',   [], ...
-        'conn',   [], ...
-        'round',   [], ...
-        'mask', [], ...
-        'df1', [], ...
-        'df2', []); 
-    voxels = peak_nii(st.ol.fname, peaknii);
-    
+    T       = getthresh;
+    di      = strcmpi({'+' '-' '+/-'}, T.direct);
+    opt     = {{'pos'} {'neg'} {'pos' 'neg'}};
+    dilabel = {{'Positive'} {'Negative'} {'Positive' 'Negative'}}; 
+    direct  = opt{di};
+    dilabel = dilabel{di}; 
+    voxels  = []; 
+    for i = 1:length(direct)
+        tmp     = runpeaknii(st.ol.fname, T.thresh, T.extent, st.preferences.separation, direct{i});
+        tmp     = [cell(size(tmp,1), 1) tmp];
+        tmp{1}  = dilabel{i}; 
+        voxels = [voxels; tmp]; 
+    end
     % get table position
     ss = get(0, 'ScreenSize');
     ts = floor(ss/3);
@@ -1108,22 +1102,24 @@ function cb_report(varargin)
 
     % create table
     tfig  = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
-    tfigmenu  = uimenu(tfig,'Label','Options');
-    uimenu(tfigmenu,'Label','Save Report to CSV', 'CallBack', @cb_savetable);
-    header  = {'Region Name' 'Extent' 'Stat' 'X' 'Y' 'Z'}; 
+    header  = {'Sign' 'Region Name' 'Extent' 'Stat' 'X' 'Y' 'Z'}; 
     colwidth = repmat({'auto'}, 1, length(header)); 
-    colwidth{1} = floor(ss(3)/10);
+    colwidth{2} = floor(ss(3)/10);
     th = uitable('Parent', tfig, ...
         'Data', voxels, ...
         'Units', 'norm', ...
         'ColumnName', header, ...
         'Pos', [0 0 1 1], ...
         'RearrangeableColumns', 'on', ...
+        'ColumnEditable', [true true false false false false false], ...
         'ColumnWidth', colwidth, ...
         'FontName', 'Fixed-Width', ...
         'FontUnits', 'Points', ...
         'FontSize', st.fonts.sz4, ...
         'CellSelectionCallback',@cb_tablexyz);
+    tfigmenu  = uimenu(tfig,'Label','Options');
+    uimenu(tfigmenu,'Label','Save Report to CSV', 'CallBack', {@cb_savetable, th});
+    uimenu(tfig, 'Label', '|  NOTE: "Sign" and "Region Names" columns are editable', 'Enable', 'off', 'Tag', 'status');
     set(th, 'units', 'pix'); 
     tpos    = get(th, 'extent');
     fpos    = get(tfig, 'pos'); 
@@ -1133,32 +1129,43 @@ function cb_report(varargin)
     set(tfig, 'vis', 'on');
     setstatus('Ready'); 
     drawnow;
+function cb_tablexyz(varargin)
+    tabrow  = varargin{2}.Indices(1);
+    tabdata = get(varargin{1}, 'data'); 
+    xyz     = cell2mat(tabdata(tabrow,5:7)); 
+    bspm_orthviews('reposition', xyz');
+    drawnow;
 function cb_savetable(varargin)
     global st
-    T = getthresh;
-    di = strcmpi({'+' '-' '+/-'}, T.direct);
-    opt = {'pos' 'neg' 'pos'}; 
-    peaknii  = struct( ...
-        'thresh', T.thresh, ...
-        'cluster'  ,   T.extent, ...
-        'separation',   st.preferences.separation, ...
-        'sign',  opt{di}, ...
-        'nearest',   1, ...
-        'type',     'T', ...
-        'out',   '', ...
-        'voxlimit',   [], ...
-        'SPM',   [], ...
-        'conn',   [], ...
-        'round',   [], ...
-        'mask', [], ...
-        'df1', [], ...
-        'df2', []); 
-    voxels = peak_nii(st.ol.fname, peaknii);
-    headers1 = {'' '' '' 'MNI Coordinates' '' ''};
-    headers2 = {'Region Name' 'Extent' 't-value' 'x' 'y' 'z'};
-    allcell = [headers1; headers2; voxels];
+    T       = getthresh;
+    di      = strcmpi({'+' '-' '+/-'}, T.direct);
+    if nargin < 3
+        opt     = {'pos' 'neg' {'pos' 'neg'}};
+        dilabel = {{'Positive'} {'Negative'} {'Positive' 'Negative'}}; 
+        direct  = opt{di};
+        dilabel = dilabel{di}; 
+        voxels  = []; 
+        for i = 1:length(direct)
+            tmp     = runpeaknii(st.ol.fname, T.thresh, T.extent, st.preferences.separation, direct{i});
+            tmp     = [cell(size(tmp,1), 1) tmp]
+            tmp{1}  = dilabel{i}; 
+            voxels = [voxels; tmp]; 
+        end
+    else
+        voxels = get(varargin{3}, 'Data');
+    end
+    sep         = cell(1, size(voxels,2));
+    h1          = sep; 
+    h1{1}       = ['Source image: ' st.ol.fname]; 
+    h2          = sep; 
+    h2{1}       = sprintf('Table lists all local maxima separated by more than %d mm.', st.preferences.separation);
+    headers0    = [h1; h2; sep]; 
+    headers1    = {'' '' '' '' 'MNI Coordinates' '' ''};
+    headers2    = {'Sign' 'Region Name' 'Extent' 't-value' 'x' 'y' 'z'};
+    allcell     = [headers0; headers1; headers2; voxels];
     [p, imname] = fileparts(st.ol.fname);
-    outname = ['save_table_' imname '_I' num2str(peaknii.thresh) '_C' num2str(peaknii.cluster) '_S' num2str(peaknii.separation) '.csv'];
+    diname      = {'Positive' 'Negative' 'PosNeg'}; 
+    outname     = ['save_table_' imname '_' diname{di} '_I' num2str(T.thresh) '_C' num2str(T.extent) '_S' num2str(st.preferences.separation) '.csv'];
     [fname, pname] = uiputfile({'*.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
     writereport(allcell, fullfile(pname, fname)); 
 function cb_web(varargin)
@@ -1734,6 +1741,24 @@ function OL = load_overlay(fname, pval, k)
     OL.atlaslabels = atlas; 
     OL.atlas0 = atlasvol;    
     set(st.fig, 'Name', abridgepath(OL.fname)); 
+function voxels = runpeaknii(fname, u, k, sep, direct) 
+    peaknii  = struct( ...
+        'thresh', u, ...
+        'cluster',  k, ...
+        'separation', sep, ...
+        'sign',  direct, ...
+        'nearest', 1, ...
+        'type',   'T', ...
+        'out',   '', ...
+        'voxlimit',   [], ...
+        'SPM',   [], ...
+        'conn',   [], ...
+        'round',   [], ...
+        'mask', [], ...
+        'df1', [], ...
+        'df2', []); 
+    voxels      = peak_nii(fname, peaknii);
+    voxels(:,3) = num2cell(cellfun(@abs, voxels(:,3))); 
 function u  = voxel_correct(im,alpha)
 if nargin < 1, error('USAGE: u = voxel_correct(im,alpha)'); end
 if nargin < 2, alpha = .05; end

@@ -1,7 +1,7 @@
 ## BSPMVIEW 
 ### MATLAB Program for playing with fMRI statistical maps
 
-  >**USAGE**: S = bspmview([ol], [ul])
+<p>**USAGE**: S = bspmview([ol], [ul])</p>
 
 <p>Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/)
 be in your MATLAB search path. It has only been tested on SPM8/SPM12 operating in MATLAB 2014b. It requires a number of
@@ -9,16 +9,18 @@ supporting utility functions and data files that should have been included in th
 BSPMVIEW is launched, it will look for these files in a folder called "supportfiles" that should be contained in the
 same folder as BSPMVIEW.</p>
 
-#### OPTIONAL INPUTS   
->**ol**: filename for statistical image to overlay   
->**ul**: filename for anatomical image to use as underlay
+#### OPTIONAL INPUTS
+<p>
+**ol**: filename for statistical image to overlay   
+**ul**: filename for anatomical image to use as underlay
+</p>
 
 #### COMMAND LINE USAGE EXAMPLES
 <pre><code>
->> bspmview                              % open dialogue for selecting overlay
->> S = bspmview;                         % returns struct 'S' containing GUI obj handles
->> bspmview('spmT_0001.img')             % overlay on default underlay   
->> bspmview('spmT_0001.img','T1.nii')    % overlay on 'T1.nii'   
+>> bspmview                               % open dialogue for selecting overlay
+>> S = bspmview;                          % returns struct 'S' containing GUI obj handles
+>> bspmview('spmT_0001.img')              % overlay on default underlay   
+>> bspmview('spmT_0001.img','T1.nii')     % overlay on 'T1.nii'
 </code></pre>
   
 #### CREDITS    

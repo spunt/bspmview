@@ -342,29 +342,35 @@ end
 set(gcf,'UserData',{col1 col2,h});
 drawnow;
 if obj.cmapflag
-    if obj.Nsurfs == 4
-        subplot(2,12,[12 24])
-    elseif obj.Nsurfs == 1.9 || obj.Nsurfs == 2.1;
-        subplot(1, 22, 22);
-    else 
-        subplot(1,11,11);
+    if      obj.Nsurfs == 4, subplot(2,12,[12 24])
+    elseif  obj.Nsurfs == 1.9 || obj.Nsurfs == 2.1; subplot(1, 22, 22);
+    else    subplot(1,11,11); 
     end
     cla
     mp = [];
     mp(1:256,1,1:3) = CD;
     ch = imagesc((1:256)');
     set(ch,'CData',mp)
+    
+    
+
+
+    yl          = obj.colorlims;
+    tickmark    = [ceil(min(yl)) floor(max(yl))];
+    tickmark(abs(yl) < 1) = yl(abs(yl) < 1); 
     try
-        [cl trash indice] = cmap(obj.overlaythresh,obj.colorlims,obj.colormap);
+        [cl, trash, indice] = cmap(obj.overlaythresh, [ceil(min(obj.colorlims)) floor(max(obj.colorlims))], obj.colormap);
     catch
         keyboard; 
     end
-    tickmark = unique(sort([1 122 255 indice(:)']));
-    ticklabel = unique(sort([obj.colorlims(1) mean(obj.colorlims) obj.colorlims(2) obj.overlaythresh])');
-    tickmark = tickmark([1 end]);
-    ticklabel = ticklabel([1 end]);
-    set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick',(tickmark),'YTickLabel',(ticklabel),'fontsize',14,'YColor','w');
+    if strcmpi(obj.direction, '+/-') & min(tickmark)<0
+        tickmark = [tickmark(1) 0 tickmark(2)]; 
+    end
+    ytick       = unique(sort([1 255 indice(:)']));
+%     ticklabel   = unique(sort([obj.colorlims(1) mean(obj.colorlims) obj.colorlims(2) obj.overlaythresh])');
+    set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick', ytick, 'YTickLabel',tickmark,'fontsize',14,'YColor','w');
     shading interp
+
 end
 % final cleanup
 tightfig(gcf);

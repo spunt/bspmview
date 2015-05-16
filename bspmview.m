@@ -1533,7 +1533,6 @@ function PEAK = getmaxima(Z, XYZ, M, Dis, Num)
 [N,Z,XYZ,A,L]       = spm_max(Z,XYZ);
 XYZmm               = M(1:3,:)*[XYZ; ones(1,size(XYZ,2))];
 npeak = 0; 
-
 while numel(find(isfinite(Z)))
     %-Find largest remaining local maximum
     %------------------------------------------------------------------

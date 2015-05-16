@@ -486,28 +486,23 @@ function put_figmenu
     %% Make sure resize callbacks are registered one at a time
     set(S.gui, 'BusyAction', 'cancel', 'Interruptible', 'off'); 
     set(S.font, 'BusyAction', 'cancel', 'Interruptible', 'off');
-    
-%     uimenu(st.fig, 'Label', '|', 'Enable', 'off', 'Tag', 'separator'); % separator
 
     %% Load Menu
-    S.load = uimenu(st.fig,'Label','Load', 'Separator', 'on');
-    S.loadol = uimenu(S.load,'Label','Overlay Image', 'Accelerator', 'o', 'CallBack', @cb_loadol);
-    S.loadul = uimenu(S.load,'Label','Underlay Image', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
-    S.resetol = uimenu(S.load,'Label','Reload Current Overlay Image', 'Separator', 'on', 'CallBack', @cb_resetol);
-   
+    S.load      = uimenu(st.fig,'Label','Load', 'Separator', 'on');
+    S.loadol    = uimenu(S.load,'Label','New Overlay', 'Accelerator', 'o', 'CallBack', @cb_loadol);
+    S.resetol   = uimenu(S.load,'Label','Current Overlay (Reload)', 'CallBack', @cb_resetol);
+    S.loadul    = uimenu(S.load,'Label','New Underlay', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
     
     %% Save Menu
     S.save              = uimenu(st.fig,'Label','Save', 'Separator', 'on');
-    S.saveintensity     = uimenu(S.save,'Label','Save as intensity image','CallBack', @cb_saveimg);
-    S.savemask          = uimenu(S.save,'Label','Save as mask', 'Separator', 'on', 'CallBack', @cb_saveimg);
-    S.saveroi           = uimenu(S.save,'Label','Save ROI at current location', 'Separator', 'on', 'CallBack', @cb_saveroi);
-    S.savetable         = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable);
     
-    %% Batch Menu
-%     S.batch         = uimenu(S.save,'Label','Batch Save', 'Separator', 'on');
-%     S.batchtable    = uimenu(S.batch, 'Label','Results Tables', 'CallBack', @cb_batch_table);
-%     S.batchrender   = uimenu(S.batch, 'Label','Surface Renderings', 'CallBack', @cb_batch_render);
-%     S.batchroi      = uimenu(S.batch, 'Label','ROIs', 'CallBack', @cb_batch_roi);
+    S.saveintensity     = uimenu(S.save,'Label','Save Suprathreshold (Intensity)','CallBack', @cb_saveimg);
+    S.savemask          = uimenu(S.save,'Label','Save Suprathreshold (Binary Mask)', 'CallBack', @cb_saveimg);
+    S.ctsavemap         = uimenu(S.save, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
+    S.ctsavemask        = uimenu(S.save, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
+    S.saveroi           = uimenu(S.save,'Label', 'Save ROI at Current Location', 'CallBack', @cb_saveroi);
+    S.savetable         = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable, 'separator', 'on');
+    S.savergb           = uimenu(S.save, 'Label','Save Screen Capture', 'callback', @cb_savergb);
 
     %% Options Menu
     S.options       = uimenu(st.fig,'Label','Display', 'Separator', 'on');
@@ -527,22 +522,21 @@ function put_figmenu
     S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});
     S.web(7)        = uimenu(S.web(1),'Label','FSL OtherSoftware', 'CallBack', {@cb_web, 'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'});
     S.web(8)        = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
-    S.web(9)        = uimenu(S.web(1),'Label','Search Coordinates in Neurosynth', 'CallBack', @cb_neurosynth);
+    S.web(9)        = uimenu(S.web(1),'Label','Search Location in Neurosynth', 'CallBack', @cb_neurosynth);
     
     %% Status 
     S.status        = uimenu(st.fig, 'Label', '|    Status: Ready', 'Enable', 'off', 'Tag', 'status');
 function put_axesmenu
     [h,axpos]   = gethandles_axes;
     cmenu       = uicontextmenu;
-    ctmax       = uimenu(cmenu, 'Label', 'Go to global max', 'callback', @cb_minmax, 'separator', 'off');
-    ctclustmax  = uimenu(cmenu, 'Label', 'Go to cluster max', 'callback', @cb_clustminmax);
-    ctlocalmax  = uimenu(cmenu, 'Label', 'Go to nearest local max', 'callback', @cb_localmax); 
-    ctns        = uimenu(cmenu, 'Label', 'Search Coordinates in Neurosynth',  'CallBack', @cb_neurosynth);  
-    ctsavemap   = uimenu(cmenu, 'Label', 'Save cluster', 'callback', @cb_saveclust, 'separator', 'on');
-    ctsavemask  = uimenu(cmenu, 'Label', 'Save cluster (binary mask)', 'callback', @cb_saveclust);
-    ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Coordinates', 'callback', @cb_saveroi);
-%     ctrmcluster = uimenu(cmenu, 'Label', 'Hide cluster', 'callback', @cb_hideclust);
-    ctsavergb   = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb, 'separator', 'on');
+    ctmax       = uimenu(cmenu, 'Label', 'Go to Global Peak', 'callback', @cb_minmax, 'separator', 'off');
+    ctlocalmax  = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax); 
+    ctclustmax  = uimenu(cmenu, 'Label', 'Go to Cluster Peak', 'callback', @cb_clustminmax);
+    ctsavemap   = uimenu(cmenu, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
+    ctsavemask  = uimenu(cmenu, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
+    ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Current Location', 'callback', @cb_saveroi);
+    ctsavergb   = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb);
+    ctns        = uimenu(cmenu, 'Label', 'Search Location in Neurosynth',  'CallBack', @cb_neurosynth, 'separator', 'on');  
     ctxhair     = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
     for a = 1:3
         set(h.ax(a), 'uicontextmenu', cmenu); 
@@ -654,14 +648,15 @@ function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
     if isempty(fname), disp('An overlay image was not selected.'); return; end
-    T0  = getthresh;
-    T   = T0; 
-    di  = strcmpi({'+' '-' '+/-'}, T.direct); 
-    st.ol = load_overlay(fname, T.pval, T.extent);
+    T       = getthresh;
+    if isinf(T.pval)
+        st.ol   = load_overlay(fname);
+    else
+        st.ol   = load_overlay(fname, T.pval, T.extent);
+    end
+    di      = strcmpi({'+' '-' '+/-'}, T.direct); 
     setthresh(st.ol.C0(3,:), find(di));
-    setthreshinfo; 
-    setcolormap; 
-    setposition_axes;
+    setthreshinfo;
     check4design; 
     drawnow;
 function cb_loadul(varargin)
@@ -693,11 +688,7 @@ function cb_clustminmax(varargin)
     clidx = spm_clusters(st.ol.XYZ);
     clidx = clidx==(clidx(voxidx)); 
     tmpXYZmm = st.ol.XYZmm(:,clidx); 
-    if regexp(get(varargin{1}, 'label'), 'cluster max')
-        centre = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
-    elseif regexp(get(varargin{1}, 'label'), 'cluster min')
-        centre = tmpXYZmm(:,st.ol.Z(clidx)==min(st.ol.Z(clidx)));
-    end
+    centre = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
     bspm_orthviews('reposition', centre);
     drawnow;
 function cb_localmax(varargin)
@@ -707,12 +698,7 @@ function cb_localmax(varargin)
     drawnow;
 function cb_minmax(varargin)
     global st
-    lab = get(varargin{1}, 'label');
-    if regexp(lab, 'global max')
-        centre = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
-    elseif regexp(lab, 'global min')
-        centre = st.ol.XYZmm(:,st.ol.Z==min(st.ol.Z)); 
-    end
+    centre = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
     bspm_orthviews('reposition', centre); 
     drawnow;
 function cb_maxval(varargin)
@@ -760,7 +746,7 @@ function cb_saveimg(varargin)
     outhdr.descrip = 'Thresholded Intensity Image'; 
     [p,n] = fileparts(outhdr.fname); 
     deffn = sprintf('%s/Thresh_%s.nii', p, n);  
-    if regexp(lab, 'Save as mask')
+    if regexpi(lab, 'Binary Mask')
         outimg(isnan(outimg))   = 0; 
         outimg(outimg~=0)       = 1;
         outhdr.descrip = 'Thresholded Mask Image'; 
@@ -790,7 +776,7 @@ function cb_saveclust(varargin)
     outhdr.descrip = 'Intensity Thresholded Cluster Image'; 
     [p,n] = fileparts(outhdr.fname); 
     deffn = sprintf('%s/Cluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);  
-    if regexp(lab, 'binary mask')
+    if regexp(lab, 'Binary Mask')
         outimg(isnan(outimg))   = 0; 
         outimg(outimg~=0)       = 1;
         outhdr.descrip = 'Binary Mask Cluster Image'; 
@@ -802,17 +788,6 @@ function cb_saveclust(varargin)
     outhdr.fname = fn; 
     spm_write_vol(outhdr, outimg);
     fprintf('\nCluster image saved to %s\n', fn);     
-function cb_hideclust(varargin)
-    global st
-    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
-    if strcmp(str, 'n/a'), return; end
-    [xyz, voxidx] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm0);
-    T = getthresh; 
-    di = strcmpi({'+' '-' '+/-'}, T.direct);
-    clidx = st.ol.C0IDX(di,:);
-    clidx = clidx==(clidx(voxidx));
-    st.ol.Y(clidx==1) = 0; 
-    cb_updateoverlay
 function cb_smooth(varargin)
 global st
 pos = get(st.fig, 'pos'); 
@@ -1743,41 +1718,24 @@ function OL = load_overlay(fname, pval, k)
         end
     end
 
-    %% CHECK IMAGE
-    allh = findobj(st.fig, 'Tag', 'direct'); 
-    if ~isempty(allh), cb_directmenu(st.direct); end
-    posneg = [sum(od(:)>0) sum(od(:)<0)]==0; 
-    if any(posneg)
-        opt = {'+' '-'}; 
-        st.direct = lower(opt{posneg==0});
-        if ~isempty(allh)
-            allhstr = get(allh, 'String');
-            set(allh(strcmp(allhstr, '+/-')), 'Value', 0, 'Enable', 'inactive');
-            set(allh(strcmp(allhstr, opt{posneg})), 'Value', 0, 'Enable', 'inactive');
-            set(allh(strcmp(allhstr, opt{~posneg})), 'Value', 1, 'Enable', 'inactive'); 
-        end
-    end
-
-    %% DEGREES OF FREEDOM
-    tmp = oh.descrip;
-    idx{1} = regexp(tmp,'[','ONCE');
-    idx{2} = regexp(tmp,']','ONCE');
-    if any(cellfun('isempty', idx))
-        headsup('Degrees of freedom not found in image header. Showing unthresholded image.')
-        u = 0.01;
-        k = 1;
-        df = Inf;
-        pval = Inf; 
+    % | - CHECK IMAGE
+%     ismask  = check4mask(od);
+    posneg  = check4sign(od);  
+    df      = check4df(oh.descrip); 
+    if isempty(df)
+        u       = 0;
+        k       = 0;
+        df      = Inf;
+        pval    = Inf; 
     else
-        df = str2num(tmp(idx{1}+1:idx{2}-1));
-        u = spm_invTcdf(1-pval, df);  
+        u       = spm_invTcdf(1-pval, df);  
     end
     [C, I] = getclustidx(od, u, k);
     if ~any(C(:))
         headsup('No suprathreshold voxels. Showing unthresholded image.'); 
         u = 0; 
         pval = bob_t2p(u, df);
-        k = 1; 
+        k = 0; 
         [C, I] = getclustidx(od, u, k); 
     end
     M           = oh.mat;         %-voxels to mm matrix
@@ -2161,6 +2119,32 @@ function flag   = check4design
         set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'off'); 
     else
         set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'on'); 
+    end
+function flag   = check4mask(img)
+    flag = 1; 
+    if ~any(ismember(unique(img(:)), [0 1])), flag = 0; end
+function flag   = check4sign(img)
+    global st
+    allh = findobj(st.fig, 'Tag', 'direct'); 
+    if ~isempty(allh), cb_directmenu(st.direct); end
+    flag = [sum(img(:)>0) sum(img(:)<0)]==0; 
+    if any(flag)
+        opt = {'+' '-'}; 
+        st.direct = lower(opt{flag==0});
+        if ~isempty(allh)
+            allhstr = get(allh, 'String');
+            set(allh(strcmp(allhstr, '+/-')), 'Value', 0, 'Enable', 'inactive');
+            set(allh(strcmp(allhstr, opt{flag})), 'Value', 0, 'Enable', 'inactive');
+            set(allh(strcmp(allhstr, opt{~flag})), 'Value', 1, 'Enable', 'inactive'); 
+        end
+    end
+function df     = check4df(descrip)
+    df = regexp(descrip, '\[\d+.*]', 'match'); 
+    if isempty(df)
+        df = []; 
+        headsup('Degrees of freedom not found in image header. Showing unthresholded image.')
+    else
+        df = str2num(char(df)); 
     end
 function str    = nicetime
     str = strtrim(datestr(now,'HH:MM:SS PM on mmm. DD, YYYY'));

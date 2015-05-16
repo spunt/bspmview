@@ -162,15 +162,15 @@ function prop   = default_properties(varargin)
     prop.listbox    = [prop.darkbg {'style', 'list'}]; 
 function cmap   = default_colormaps(depth)
     if nargin==0, depth = 64; end
-    cmap = []; 
-    cmap{1,1}   = jet(depth);
-    cmap{1,2}   = 'jet';
+    cmap = [];
+    cmap{1,1}   = [];
+    cmap{1,2}   = 'signed';
     cmap{2,1}   = hot(depth);
     cmap{2,2}   = 'hot';
     cmap{3,1}   = cold(depth);
     cmap{3,2}   = 'cold';
-    cmap{4,1}   = [];
-    cmap{4,2}   = 'signed';
+    cmap{4,1}   = jet(depth);
+    cmap{4,2}   = 'jet';
     cmap{5,1}   = [];
     cmap{5,2}   = 'cubehelix';
     cmap{6,1}   = [];
@@ -611,6 +611,40 @@ function cb_updateoverlay(varargin)
     setthreshinfo(T);
     setmaxima; 
     drawnow;
+function cb_directmenu(varargin)
+    global st
+    if ischar(varargin{1}), str = varargin{1}; 
+    else str = get(varargin{1}, 'string'); end
+    
+    % | See If Colormap Update is in Order
+    if ismember(str, {'+' '-'}) & strcmp(st.direct, '+/-')
+        htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
+        set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'hot'))); 
+    elseif strcmp(str, '+/-')
+        htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
+        set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'signed'))); 
+    end
+
+    allh = findobj(st.fig, 'Tag', 'direct'); 
+    allhstr = get(allh, 'String');
+    set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive'); 
+    set(allh(~strcmp(allhstr, str)), 'Value', 0, 'Enable', 'on');
+    drawnow;
+    T = getthresh;
+    di = strcmpi({'+' '-' '+/-'}, T.direct);
+    [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
+    C = st.ol.C0(di,:);
+    if sum(C>0)==0 
+        headsup('Nothing survives at this threshold. Showing unthresholded image.');
+        T.thresh = 0; 
+        T.pval = bob_t2p(T.thresh, T.df);
+        T.extent = 1; 
+        [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
+        C = st.ol.C0(di,:);
+        setthreshinfo(T); 
+    end
+    setthreshinfo(T); 
+    setthresh(C, find(di));
 function cb_resetol(varargin)
     global st
     st.ol.Y = spm_read_vols(st.ol.hdr); 
@@ -697,30 +731,6 @@ function cb_changexyz(varargin)
     xyz = str2num(get(varargin{1}, 'string')); 
     bspm_orthviews('reposition', xyz');
     drawnow;
-function cb_directmenu(varargin)
-    global st
-    if ischar(varargin{1}), str = varargin{1}; 
-    else str = get(varargin{1}, 'string'); end
-    allh = findobj(st.fig, 'Tag', 'direct'); 
-    allhstr = get(allh, 'String');
-    set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive'); 
-    set(allh(~strcmp(allhstr, str)), 'Value', 0, 'Enable', 'on');
-    drawnow;
-    T = getthresh;
-    di = strcmpi({'+' '-' '+/-'}, T.direct);
-    [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-    C = st.ol.C0(di,:);
-    if sum(C>0)==0 
-        headsup('Nothing survives at this threshold. Showing unthresholded image.');
-        T.thresh = 0; 
-        T.pval = bob_t2p(T.thresh, T.df);
-        T.extent = 1; 
-        [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-        C = st.ol.C0(di,:);
-        setthreshinfo(T); 
-    end
-    setthreshinfo(T); 
-    setthresh(C, find(di));
 function cb_opencode(varargin)
     open(mfilename('fullpath'));
 function cb_crosshair(varargin)
@@ -1234,10 +1244,8 @@ function setmaxima
     Num = st.preferences.numpeaks; 
     T   = getthresh;
     switch char(T.direct)
-        case '+'
+        case {'+', '-'}
             LOCMAX      = getmaxima(st.ol.Z, st.ol.XYZ, st.ol.M, Dis, Num);
-        case '-'
-            LOCMAX      = getmaxima(st.ol.Z*-1, st.ol.XYZ, st.ol.M, Dis, Num);
         otherwise
             POS         = getmaxima(st.ol.Z, st.ol.XYZ, st.ol.M, Dis, Num);
             NEG         = getmaxima(st.ol.Z*-1, st.ol.XYZ, st.ol.M, Dis, Num);
@@ -1349,8 +1357,11 @@ function setthresh(C, di)
     global st
     if nargin==1, di = 3; end
     idx = find(C > 0);
-    if di~=3, st.ol.Z = abs(st.ol.Y(idx)); end
-    st.ol.Z         = st.ol.Y(idx);
+    if di==2
+        st.ol.Z = abs(st.ol.Y(idx));
+    else
+        st.ol.Z         = st.ol.Y(idx);
+    end
     st.ol.Nunique   = length(unique(st.ol.Z)); 
     st.ol.XYZ       = st.ol.XYZ0(:,idx);
     st.ol.XYZmm     = st.ol.XYZmm0(:,idx);

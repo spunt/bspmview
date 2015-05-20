@@ -1,7 +1,7 @@
-function S = bspmview(ol, ul)
+function varargout = bspmview(ol, ul)
 % BSPMVIEW Program for viewing fMRI statistical maps
 %
-%   USAGE: S = bspmview(ol*, ul*)       *optional inputs
+%   USAGE: varargout = bspmview(ol*, ul*)       *optional inputs
 %
 % Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre
 % for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search
@@ -46,7 +46,7 @@ function S = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150515
+%   Version:  20150520
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function S = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150515'; 
+version='20150520'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -81,7 +81,15 @@ addpath(supportdir);
 % | CHECK INPUTS
 % | =======================================================================
 if nargin < 1 
-    ol = uigetvol('Select an Image File for Overlay', 0);
+    % | CHECK FOR OPEN SPM
+    hcon = findobj(0, 'Name', 'SPM contrast manager'); 
+    if ~isempty(hcon)
+        huserdata = get(hcon, 'UserData');
+        selectdir = huserdata.swd;
+    else
+        selectdir = pwd; 
+    end
+    ol = uigetvol('Select an Image File for Overlay', selectdir);
     if isempty(ol), disp('Must select an overlay!'); return; end
 else
     if iscell(ol), ol = char(ol); end
@@ -99,6 +107,7 @@ prevsect = ul;
 printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', version));
 try
     S = put_figure(ol, ul); shg;
+    if nargout, varargout = {S}; end
 catch err
     save_error(err);
     rethrow(err)
@@ -381,7 +390,7 @@ function S = put_figure(ol, ul)
     setfontunits('points'); 
     setunits;
     check4design;
-    if nargout==1, S.handles = gethandles; end
+    if nargout, S.handles = gethandles; end
 function put_upperpane(varargin)
     global st
     cnamepos     = [.01 .15 .98 .85]; 
@@ -2208,7 +2217,7 @@ function out    = cmap_upsample(in, N)
     if rem, ind(end,end-rem+1:end) = NaN; end
     ind = ind(:); ind(isnan(ind)) = [];
     out = in(ind(:),:);
-function vol    = uigetvol(message, multitag)
+function vol    = uigetvol(message, multitag, defaultdir)
     % UIGETVOL Dialogue for selecting image volume file
     %
     %   USAGE: vol = uigetvol(message, multitag)
@@ -2218,12 +2227,13 @@ function vol    = uigetvol(message, multitag)
     %
     % EX: img = uigetvol('Select Image to Process'); 
     %
+    if nargin < 3, defaultdir = pwd; end
     if nargin < 2, multitag = 0; end
     if nargin < 1, message = 'Select Image File'; end
     if ~multitag
-        [imname, pname] = uigetfile({'*.img; *.nii; *.nii.gz', 'Image File'; '*.*', 'All Files (*.*)'}, message);
+        [imname, pname] = uigetfile({'*.img; *.nii; *.nii.gz', 'Image File'; '*.*', 'All Files (*.*)'}, message, defaultdir);
     else
-        [imname, pname] = uigetfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on');
+        [imname, pname] = uigetfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on', defaultdir);
     end
     if isequal(imname,0) || isequal(pname,0)
         vol = [];

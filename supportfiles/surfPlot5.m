@@ -339,6 +339,8 @@ elseif obj.Nsurfs == 1;
     
     
 end
+
+
 set(gcf,'UserData',{col1 col2,h});
 drawnow;
 if obj.cmapflag
@@ -351,10 +353,17 @@ if obj.cmapflag
     mp(1:256,1,1:3) = CD;
     ch = imagesc((1:256)');
     set(ch,'CData',mp)
-    
-    
-
-
+    apos = get(gca, 'position');
+    % | Figure out positioning
+    for i = 1:length(hh), pos(i,:) = get(get(hh(i), 'parent'), 'position'); end
+    rightedge   = max(sum(pos(:,[1 3]), 2));
+    topedge     = max(sum(pos(:,[2 4]), 2));
+    bottomedge  = min(pos(:,2));
+    spacer      = .075;
+    apos(1)     = rightedge + (spacer/2); 
+    apos(2)     = bottomedge + spacer; 
+    apos(4)     = 1 - (apos(2)*2); 
+    set(gca, 'position', apos); 
     yl          = obj.colorlims;
     tickmark    = [ceil(min(yl)) floor(max(yl))];
     tickmark(abs(yl) < 1) = yl(abs(yl) < 1); 
@@ -368,12 +377,13 @@ if obj.cmapflag
     end
     ytick       = unique(sort([1 255 indice(:)']));
 %     ticklabel   = unique(sort([obj.colorlims(1) mean(obj.colorlims) obj.colorlims(2) obj.overlaythresh])');
-    set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick', ytick, 'YTickLabel',tickmark,'fontsize',14,'YColor','w');
+    set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick', ytick, 'YTickLabel',tickmark,'fontsize',16,'YColor','w');
     shading interp
 
 end
+
 % final cleanup
-tightfig(gcf);
+% tightfig(gcf);
 set(obj.figno, 'units', 'points', 'paperunits', 'points');
 figpos = get(obj.figno, 'pos');
 set(obj.figno, 'papersize', figpos(3:4), 'paperposition', [0 0 figpos(3:4)], 'visible', 'on');

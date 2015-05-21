@@ -1,0 +1,38 @@
+### bspmview 
+Requires that [Statistical Parametric Mapping] (www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search path. It has only been tested on SPM8/SPM12. It requires a number of supporting utility functions and data files that should have been included in the distribution of bspmview. When bspmview is launched, it will look for these files in a folder called "supportfiles" that should be contained in the same folder as BSPMVIEW.
+
+### Installation
+1. Download the software
+2. Put the bspmview folder either on your MATLAB path or in the "toolboxes" subfolder of your SPM installation. Note that only the parent folder needs to be on the path. The subfolder "supportfiles" is added to the MATLAB path whenever you run bspmview.
+
+### Starting
+If you put bspmview in the "toolboxes" subfolder of your SPM installation, you will be able to launch bspmview by selecting it from the "Toolbox:" dropdown menu in the SPM graphical user interface. Otherwise, as long as bspmview is on your MATLAB path you can start it from the command line by entering: 
+```
+>> bspmview                    
+```
+This will open a file selection dialogue window with which you can select the overlay image you'd like to display. You can also give bspmview filenames for overlay and underlay images as arguments. The following will display the overlay *spmT_0001.img* on the default underlay: 
+```
+>> bspmview('spmT_0001.img') 
+```
+This will overlay "spmT_0001.img" on to "T1.nii":
+``` 
+>> bspmview('spmT_0001.img', 'T1.nii') 
+```
+
+### Changing the Appearance of the Interface
+For example, if you want to link to an image at https://github.com/unicorn.png with the alternate text My Unicorn, you would write ![My Unicorn](https://github.com/unicorn.png).
+
+### Modifying Display Preferences
+So...
+
+### Creating a Surface Rendering
+So...
+
+### Creating a Table of Results
+So...
+
+### Have Questions? 
+Feel free to shoot me (Bob) an email at: bobspunt@gmail.com
+
+#### CREDITS    
+This software heavily relies on functions contained within the SPM software, and is essentially an attempt to translate some of it into a simpler and more user-friendly format. In addition, this software was   inspired by and in some cases uses code from two other statistical image viewers: [xjview](http://www.alivelearn.net/xjview8/developers/), and [FIVE] (http://mrtools.mgh.harvard.edu/index.php/Main_Page). Finally, several contributions to the [MATLAB File Exchange] (http://www.mathworks.com/matlabcentral/fileexchange/) are called by the code. These are included in the "supporting files" folder that should have been included in the distribution of the main bspmview function.

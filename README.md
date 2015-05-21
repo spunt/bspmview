@@ -1,6 +1,8 @@
 ### BSPMVIEW 
 #### MATLAB Program for playing with fMRI statistical maps
 
+Online documentation can be found here: http://spunt.github.io/bspmview/.
+
 Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/)
 be in your MATLAB search path. It has only been tested on SPM8/SPM12 operating in MATLAB 2014b. It requires a number of
 supporting utility functions and data files that should have been included in the distribution of BSPMVIEW. When
@@ -27,7 +29,7 @@ This software heavily relies on functions contained within the SPM software, and
 <p>------ Copyright (C) Bob Spunt, California Institute of Technology ------</p>   
 * Email:    spunt@caltech.edu
 * Created:  2014-09-27   
-* Version:  20150520
+* Version:  20150521
 
 <p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later

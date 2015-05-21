@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150520
+%   Version:  20150521
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150520'; 
+version='20150521'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -489,7 +489,8 @@ function put_figmenu
     S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
     S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Separator', 'on', 'Callback',@cb_changefontsize);
     S.checkversion  = uimenu(S.menu1, 'Label', 'Check Version', 'Separator', 'on', 'Callback', @cb_checkversion); 
-    S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode); 
+    S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode);    
+    S.helpme        = uimenu(S.menu1,'Label','Help', 'Separator', 'on', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
     %% Make sure resize callbacks are registered one at a time

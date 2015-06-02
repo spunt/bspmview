@@ -1388,7 +1388,7 @@ function [voxval, clsize] = setvoxelinfo
     for a = 1:length(axidx)
         set(st.vols{1}.ax{axidx(a)}.xyz, 'string', num2str(xyz(a)));  
     end
-    drawnow limitrate; 
+    drawnow;    % older version called drawnow with "limitrate" option;
 function setbackgcolor(newcolor)
     global st
     if nargin==0, newcolor = st.color.bg; end

@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150601
+%   Version:  20150602
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150601'; 
+version='20150602'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -519,8 +519,9 @@ function put_figmenu
     S.prefs         = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
     S.report        = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
     S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
-    S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
-    S.smoothmap     = uimenu(S.options,'Label','Smooth Image', 'CallBack', @cb_smooth);
+    S.smoothmap     = uimenu(S.options,'Label','Apply Smoothing to Overlay', 'Separator', 'on', 'CallBack', @cb_smooth);
+    S.smoothmap     = uimenu(S.options,'Label','Apply Mask to Overlay','CallBack', @cb_mask);
+    S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Separator', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
     S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);
 
     %% Web Menu
@@ -598,7 +599,7 @@ function cb_updateoverlay(varargin)
                 end
             case {'Extent'}
                 if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
-                    headsup('No clusters survived. Defaulting to largest cluster at this voxelwise threshold.');
+                    headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');
                     T.extent = max(st.ol.C0(di,:));
                 end
         end
@@ -608,18 +609,17 @@ function cb_updateoverlay(varargin)
     if sum(C(C>=T.extent))==0
         T0.thresh = st.ol.U; 
         setthreshinfo(T0);
-        headsup('No voxels survived. Try a different threshold.'); 
+        headsup('No suprathreshold voxels. Try a different threshold.'); 
         return
     end
     setthresh(C, find(di)); 
     setthreshinfo(T);
-    setmaxima; 
+    setmaxima;
     drawnow;
 function cb_directmenu(varargin)
     global st
     if ischar(varargin{1}), str = varargin{1}; 
     else str = get(varargin{1}, 'string'); end
-    
     % | See If Colormap Update is in Order
     if ismember(str, {'+' '-'}) & strcmp(st.direct, '+/-')
         htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
@@ -628,24 +628,30 @@ function cb_directmenu(varargin)
         htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
         set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'signed'))); 
     end
-
     allh = findobj(st.fig, 'Tag', 'direct'); 
     allhstr = get(allh, 'String');
     set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive'); 
     set(allh(~strcmp(allhstr, str)), 'Value', 0, 'Enable', 'on');
     drawnow;
-    T = getthresh;
-    di = strcmpi({'+' '-' '+/-'}, T.direct);
+    T       = getthresh;
+    di      = strcmpi({'+' '-' '+/-'}, T.direct);
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-    C = st.ol.C0(di,:);
-    if sum(C>0)==0 
-        headsup('Nothing survives at this threshold. Showing unthresholded image.');
+    C       = st.ol.C0(di,:);
+    y       = st.ol.Y(C>0); 
+    ydi     = [any(y>0) any(y<0) (any(y>0) & any(y<0))];
+    if ~ydi(di)
+        lab = {'positive' 'negative'};
+        if find(di)==3 && any(ydi)
+            headsup(sprintf('No %s suprathreshold voxels. Showing unthresholded image.', lab{ydi(1:2)==0}));
+        else
+            headsup('No suprathreshold voxels. Showing unthresholded image.');
+        end
         T.thresh = 0; 
         T.pval = bob_t2p(T.thresh, T.df);
         T.extent = 1; 
         [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
         C = st.ol.C0(di,:);
-        setthreshinfo(T); 
+        setthreshinfo(T);
     end
     setthreshinfo(T); 
     setthresh(C, find(di));
@@ -653,6 +659,7 @@ function cb_resetol(varargin)
     global st
     st.ol.Y = spm_read_vols(st.ol.hdr); 
     st.ol.Y(isnan(st.ol.Y)) = 0;
+    check4sign(st.ol.Y); 
     cb_updateoverlay
 function cb_loadol(varargin)
     global st
@@ -852,6 +859,26 @@ end
 st.ol.Y = y; 
 cb_updateoverlay
 setstatus('Ready'); 
+function cb_mask(varargin)
+global st
+mfname = uigetvol('Select an Image File for Overlay');
+if isempty(mfname), disp('User cancelled.'); return; end
+setstatus('Working, please wait...'); 
+mask    = reslice_image(mfname, st.ol.fname);
+mask    = double(mask > 0);
+y       = st.ol.Y .* mask; 
+% | Check surviving voxels
+ydi     = [any(y(:)>0) any(y(:)<0) (any(y(:)>0) & any(y(:)<0))];
+di      = strcmpi({'+' '-' '+/-'}, st.direct);
+if ~ydi(di)
+    headsup('No suprathreshold voxels remain after intersecting with mask. Doing nothing...');
+    setstatus('Ready'); 
+    return; 
+end
+st.ol.null 	= check4sign(y);
+st.ol.Y     = y; 
+cb_updateoverlay
+setstatus('Ready');
 function cb_saveroi(varargin)
     global st
     [roi, button] = settingsdlg(...  
@@ -913,7 +940,7 @@ function cb_savergb(varargin)
     im = screencapture(st.fig);
     setbackgcolor(st.color.bg)
     [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf', 'Image'; '*.*', 'All Files (*.*)'}, 'Specify output directory and name', construct_filename);
-    if isempty(imname), disp('User cancelled.'); return; end
+    if ~imname, disp('User cancelled.'); return; end
     imwrite(im, fullfile(pname, imname)); 
     fprintf('\nImage saved to %s\n', fullfile(pname, imname));   
 function cb_changeguisize(varargin)
@@ -993,7 +1020,7 @@ function cb_correct(varargin)
     if sum(C(C>=T.extent))==0
         T0.thresh = st.ol.U; 
         setthreshinfo(T0);
-        headsup('Nothing survived. Showing original threshold.');
+        headsup('No suprathreshold voxels. Reverting to uncorrected threshold.');
         set(varargin{1}, 'value', 1);
         setstatus('Ready'); 
         return
@@ -1170,6 +1197,7 @@ function cb_savetable(varargin)
     diname      = {'Positive' 'Negative' 'PosNeg'}; 
     outname     = ['save_table_' imname '_' diname{di} '_I' num2str(T.thresh) '_C' num2str(T.extent) '_S' num2str(st.preferences.separation) '.csv'];
     [fname, pname] = uiputfile({'*.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
+    if ~fname, disp('User cancelled.'); return; end
     writereport(allcell, fullfile(pname, fname)); 
 function cb_web(varargin)
     stat = web(varargin{3}, '-browser');
@@ -1343,9 +1371,9 @@ function setthresh(C, di)
     if nargin==1, di = 3; end
     idx = find(C > 0);
     if di==2
-        st.ol.Z = abs(st.ol.Y(idx));
+        st.ol.Z     = abs(st.ol.Y(idx));
     else
-        st.ol.Z         = st.ol.Y(idx);
+        st.ol.Z     = st.ol.Y(idx);
     end
     st.ol.Nunique   = length(unique(st.ol.Z)); 
     st.ol.XYZ       = st.ol.XYZ0(:,idx);
@@ -1426,7 +1454,13 @@ function [cmap, cmapname] = getcolormap
         case {'signed'}
             zero_loc = (0 - min(st.ol.Z))/(max(st.ol.Z) - min(st.ol.Z));
             if zero_loc <= .10, zero_loc = .5; end
-            cmap = colormap_signed(64, zero_loc);
+            if any([zero_loc < 0 zero_loc > 1])
+                val = find(strcmpi(list, 'hot')); 
+                set(findobj(st.fig, 'Tag', 'colormaplist'), 'Value', val); 
+                cmap = st.cmap{val, 1};
+            else
+                cmap = colormap_signed(64, zero_loc);
+            end
         case {'cubehelix'}
             cmap    = cmap_upsample(cubehelix(N), 64); 
         case {'linspecer'}
@@ -1522,9 +1556,7 @@ function y = getcurrentoverlay(dilateflag)
     y           = st.ol.Y*opt(di);
     y(clustidx==0)  = 0;
     y(isnan(y))     = 0; 
-    if dilateflag
-        y = st.ol.Y.*dilate_image(double(y~=0));
-    end
+    if dilateflag, y = st.ol.Y.*dilate_image(double(y~=0)); end
 function PEAK = getmaxima(Z, XYZ, M, Dis, Num)
 [N,Z,XYZ,A,L]       = spm_max(Z,XYZ);
 XYZmm               = M(1:3,:)*[XYZ; ones(1,size(XYZ,2))];
@@ -2137,7 +2169,7 @@ function flag   = check4sign(img)
     global st
     allh = findobj(st.fig, 'Tag', 'direct'); 
     if ~isempty(allh), cb_directmenu(st.direct); end
-    flag = [sum(img(:)>0) sum(img(:)<0)]==0; 
+    flag = [~any(img(:)>0) ~any(img(:)<0)]; 
     if any(flag)
         opt = {'+' '-'}; 
         st.direct = lower(opt{flag==0});

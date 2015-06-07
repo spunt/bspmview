@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150602
+%   Version:  20150607
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150602'; 
+version='20150607'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -478,7 +478,8 @@ function put_figmenu
     
     %% Main Menu
     S.menu1         = uimenu('Parent', st.fig, 'Label', 'bspmVIEW');
-    S.appear        = uimenu(S.menu1, 'Label','Appearance'); 
+    S.checkversion  = uimenu(S.menu1, 'Label', 'Check Version', 'Callback', @cb_checkversion);
+    S.appear        = uimenu(S.menu1, 'Label','Appearance', 'Separator', 'on'); 
     S.skin          = uimenu(S.appear, 'Label', 'Skin');
     S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', 'on', 'Callback', @cb_changeskin);
     S.changeskin(2) = uimenu(S.skin, 'Label', 'Light', 'Separator', 'on', 'Callback',@cb_changeskin);
@@ -488,9 +489,11 @@ function put_figmenu
     S.fontsize      = uimenu(S.appear, 'Label','Font Size', 'Separator', 'on'); 
     S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
     S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Separator', 'on', 'Callback',@cb_changefontsize);
-    S.checkversion  = uimenu(S.menu1, 'Label', 'Check Version', 'Separator', 'on', 'Callback', @cb_checkversion); 
-    S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode);    
-    S.helpme        = uimenu(S.menu1,'Label','Help', 'Separator', 'on', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
+%     S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode);
+    S.helpme        = uimenu(S.menu1,'Label','Help', 'Separator', 'on');
+    S.helpme1       = uimenu(S.helpme,'Label','Online Manual', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
+    S.helpme2       = uimenu(S.helpme,'Label','Online Issues Forum', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues'});
+    S.helpme3       = uimenu(S.helpme,'Label','Submit Issue or Feature Request', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues/new'});
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
     %% Make sure resize callbacks are registered one at a time
@@ -505,7 +508,6 @@ function put_figmenu
     
     %% Save Menu
     S.save              = uimenu(st.fig,'Label','Save', 'Separator', 'on');
-    
     S.saveintensity     = uimenu(S.save,'Label','Save Suprathreshold (Intensity)','CallBack', @cb_saveimg);
     S.savemask          = uimenu(S.save,'Label','Save Suprathreshold (Binary Mask)', 'CallBack', @cb_saveimg);
     S.ctsavemap         = uimenu(S.save, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');

@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150607
+%   Version:  20150615
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150607'; 
+version='20150615'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -288,7 +288,7 @@ function prefs  = default_preferences(initial)
         load(atlas_labels);
         st.ol.atlaslabels = atlas; 
         st.ol.atlas0 = atlasvol;
-        setvoxelinfo; 
+        setregionname; 
     end
     st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow));
     def = st.preferences; 
@@ -384,7 +384,6 @@ function S = put_figure(ol, ul)
     put_axesxyz; 
     put_axesmenu;
     setthresh(st.ol.C0(3,:), find(strcmpi({'+', '-', '+/-'}, st.direct))); 
-    setvoxelinfo;
     setmaxima;
     setcolormap;
     setfontunits('points'); 
@@ -489,68 +488,68 @@ function put_figmenu
     S.fontsize      = uimenu(S.appear, 'Label','Font Size', 'Separator', 'on'); 
     S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
     S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Separator', 'on', 'Callback',@cb_changefontsize);
-%     S.opencode      = uimenu(S.menu1, 'Label','Open GUI M-File', 'Separator', 'on', 'Callback', @cb_opencode);
     S.helpme        = uimenu(S.menu1,'Label','Help', 'Separator', 'on');
     S.helpme1       = uimenu(S.helpme,'Label','Online Manual', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
     S.helpme2       = uimenu(S.helpme,'Label','Online Issues Forum', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues'});
     S.helpme3       = uimenu(S.helpme,'Label','Submit Issue or Feature Request', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues/new'});
+    S.opencode      = uimenu(S.helpme, 'Label','Open GUI M-File', 'Callback', @cb_opencode);
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
     %% Make sure resize callbacks are registered one at a time
     set(S.gui, 'BusyAction', 'cancel', 'Interruptible', 'off'); 
     set(S.font, 'BusyAction', 'cancel', 'Interruptible', 'off');
-
+    
     %% Load Menu
-    S.load      = uimenu(st.fig,'Label','Load', 'Separator', 'on');
-    S.loadol    = uimenu(S.load,'Label','New Overlay', 'Accelerator', 'o', 'CallBack', @cb_loadol);
-    S.resetol   = uimenu(S.load,'Label','Current Overlay (Reload)', 'CallBack', @cb_resetol);
-    S.loadul    = uimenu(S.load,'Label','New Underlay', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
+    S.load    = uimenu(st.fig,'Label','Load', 'Separator', 'on');
+    S.loadol  = uimenu(S.load,'Label','New Overlay', 'Accelerator', 'o', 'CallBack', @cb_loadol);
+    S.resetol = uimenu(S.load,'Label','Current Overlay (Reload)', 'CallBack', @cb_resetol);
+    S.loadul  = uimenu(S.load,'Label','New Underlay', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
     
     %% Save Menu
-    S.save              = uimenu(st.fig,'Label','Save', 'Separator', 'on');
-    S.saveintensity     = uimenu(S.save,'Label','Save Suprathreshold (Intensity)','CallBack', @cb_saveimg);
-    S.savemask          = uimenu(S.save,'Label','Save Suprathreshold (Binary Mask)', 'CallBack', @cb_saveimg);
-    S.ctsavemap         = uimenu(S.save, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
-    S.ctsavemask        = uimenu(S.save, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
-    S.saveroi           = uimenu(S.save,'Label', 'Save ROI at Current Location', 'CallBack', @cb_saveroi);
-    S.savetable         = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable, 'separator', 'on');
-    S.savergb           = uimenu(S.save, 'Label','Save Screen Capture', 'callback', @cb_savergb);
-
+    S.save          = uimenu(st.fig,'Label','Save', 'Separator', 'on');
+    S.saveintensity = uimenu(S.save,'Label','Save Suprathreshold (Intensity)','CallBack', @cb_saveimg);
+    S.savemask      = uimenu(S.save,'Label','Save Suprathreshold (Binary Mask)', 'CallBack', @cb_saveimg);
+    S.ctsavemap     = uimenu(S.save, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
+    S.ctsavemask    = uimenu(S.save, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
+    S.saveroi       = uimenu(S.save,'Label', 'Save ROI at Current Location', 'CallBack', @cb_saveroi);
+    S.savetable     = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable, 'separator', 'on');
+    S.savergb       = uimenu(S.save, 'Label','Save Screen Capture', 'callback', @cb_savergb);
+    
     %% Options Menu
-    S.options       = uimenu(st.fig,'Label','Display', 'Separator', 'on');
-    S.prefs         = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
-    S.report        = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
-    S.render        = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
-    S.smoothmap     = uimenu(S.options,'Label','Apply Smoothing to Overlay', 'Separator', 'on', 'CallBack', @cb_smooth);
-    S.smoothmap     = uimenu(S.options,'Label','Apply Mask to Overlay','CallBack', @cb_mask);
-    S.crosshair     = uimenu(S.options,'Label','Toggle Crosshairs', 'Separator', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
-    S.reversemap    = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);
-
+    S.options    = uimenu(st.fig,'Label','Display', 'Separator', 'on');
+    S.prefs      = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
+    S.report     = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
+    S.render     = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
+    S.smoothmap  = uimenu(S.options,'Label','Apply Smoothing to Overlay', 'Separator', 'on', 'CallBack', @cb_smooth);
+    S.smoothmap  = uimenu(S.options,'Label','Apply Mask to Overlay','CallBack', @cb_mask);
+    S.crosshair  = uimenu(S.options,'Label','Toggle Crosshairs', 'Separator', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
+    S.reversemap = uimenu(S.options,'Label','Reverse Color Map', 'Tag', 'reversemap', 'Checked', 'off', 'CallBack', @cb_reversemap);
+    
     %% Web Menu
-    S.web(1)        = uimenu(st.fig,'Label','Web', 'Separator', 'on');
-    S.web(2)        = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
-    S.web(3)        = uimenu(S.web(1),'Label','SPM Extensions', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
-    S.web(4)        = uimenu(S.web(1),'Label','SPM Archives Search', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
-    S.web(5)        = uimenu(S.web(1),'Label','MR Tools Wiki', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
-    S.web(6)        = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});
-    S.web(7)        = uimenu(S.web(1),'Label','FSL OtherSoftware', 'CallBack', {@cb_web, 'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'});
-    S.web(8)        = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
-    S.web(9)        = uimenu(S.web(1),'Label','Search Location in Neurosynth', 'CallBack', @cb_neurosynth);
+    S.web(1) = uimenu(st.fig,'Label','Web', 'Separator', 'on');
+    S.web(2) = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
+    S.web(3) = uimenu(S.web(1),'Label','SPM Extensions', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
+    S.web(4) = uimenu(S.web(1),'Label','SPM Archives Search', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
+    S.web(5) = uimenu(S.web(1),'Label','MR Tools Wiki', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
+    S.web(6) = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});
+    S.web(7) = uimenu(S.web(1),'Label','FSL OtherSoftware', 'CallBack', {@cb_web, 'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'});
+    S.web(8) = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
+    S.web(9) = uimenu(S.web(1),'Label','Search Location in Neurosynth', 'CallBack', @cb_neurosynth);
     
     %% Status 
-    S.status        = uimenu(st.fig, 'Label', '|    Status: Ready', 'Enable', 'off', 'Tag', 'status');
+    S.status = uimenu(st.fig, 'Label', '|    Status: Ready', 'Enable', 'off', 'Tag', 'status');
 function put_axesmenu
-    [h,axpos]   = gethandles_axes;
-    cmenu       = uicontextmenu;
-    ctmax       = uimenu(cmenu, 'Label', 'Go to Global Peak', 'callback', @cb_minmax, 'separator', 'off');
-    ctlocalmax  = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax); 
-    ctclustmax  = uimenu(cmenu, 'Label', 'Go to Cluster Peak', 'callback', @cb_clustminmax);
-    ctsavemap   = uimenu(cmenu, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
-    ctsavemask  = uimenu(cmenu, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
-    ctsaveroi   = uimenu(cmenu, 'Label', 'Save ROI at Current Location', 'callback', @cb_saveroi);
-    ctsavergb   = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb);
-    ctns        = uimenu(cmenu, 'Label', 'Search Location in Neurosynth',  'CallBack', @cb_neurosynth, 'separator', 'on');  
-    ctxhair     = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
+    [h,axpos]  = gethandles_axes;
+    cmenu      = uicontextmenu;
+    ctmax      = uimenu(cmenu, 'Label', 'Go to Global Peak', 'callback', @cb_minmax, 'separator', 'off');
+    ctlocalmax = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax); 
+    ctclustmax = uimenu(cmenu, 'Label', 'Go to Cluster Peak', 'callback', @cb_clustminmax);
+    ctsavemap  = uimenu(cmenu, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
+    ctsavemask = uimenu(cmenu, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
+    ctsaveroi  = uimenu(cmenu, 'Label', 'Save ROI at Current Location', 'callback', @cb_saveroi);
+    ctsavergb  = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb);
+    ctns       = uimenu(cmenu, 'Label', 'Search Location in Neurosynth',  'CallBack', @cb_neurosynth, 'separator', 'on');  
+    ctxhair    = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
     for a = 1:3
         set(h.ax(a), 'uicontextmenu', cmenu); 
     end
@@ -559,8 +558,7 @@ function put_axesxyz
     global st
     h = gethandles_axes;
     xyz = round(bspm_XYZreg('GetCoords',st.registry.hReg));
-    xyzstr = num2str([-99; xyz]); 
-    xyzstr(1,:) = [];
+    xyzstr = num2str([-99; xyz]); xyzstr(1,:) = [];
     set(h.ax, 'YAxislocation', 'right'); 
     axidx = [3 2 1]; 
     for a = 1:length(axidx)
@@ -648,7 +646,7 @@ function cb_directmenu(varargin)
         else
             headsup('No suprathreshold voxels. Showing unthresholded image.');
         end
-        T.thresh = 0; 
+        T.thresh = 0.0001; 
         T.pval = bob_t2p(T.thresh, T.df);
         T.extent = 1; 
         [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
@@ -673,7 +671,7 @@ function cb_loadol(varargin)
     else
         st.ol   = load_overlay(fname, T.pval, T.extent);
     end
-    di      = strcmpi({'+' '-' '+/-'}, T.direct); 
+    di = strcmpi({'+' '-' '+/-'}, T.direct); 
     setthresh(st.ol.C0(3,:), find(di));
     setthreshinfo;
     check4design; 
@@ -701,13 +699,13 @@ function cb_loadul(varargin)
     drawnow;
 function cb_clustminmax(varargin)
     global st
-    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    str           = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
     if strcmp(str, 'n/a'), return; end
     [xyz, voxidx] = getnearestvoxel;
-    clidx = spm_clusters(st.ol.XYZ);
-    clidx = clidx==(clidx(voxidx)); 
-    tmpXYZmm = st.ol.XYZmm(:,clidx); 
-    centre = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
+    clidx         = spm_clusters(st.ol.XYZ);
+    clidx         = clidx==(clidx(voxidx)); 
+    tmpXYZmm      = st.ol.XYZmm(:,clidx); 
+    centre        = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
     bspm_orthviews('reposition', centre);
     drawnow;
 function cb_localmax(varargin)
@@ -781,28 +779,28 @@ function cb_saveclust(varargin)
     global st
     str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
     if strcmp(str, 'n/a'), return; end
-    [xyz, voxidx] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm0);
-    lab = get(varargin{1}, 'label');
-    T = getthresh; 
-    di = strcmpi({'+' '-' '+/-'}, T.direct);
-    clidx = st.ol.C0IDX(di,:);
-    clidx = clidx==(clidx(voxidx)); 
-    opt = [1 -1 1]; 
-    outimg = st.ol.Y*opt(di);
-    outhdr = st.ol.hdr; 
+    [xyz, voxidx]  = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm0);
+    lab            = get(varargin{1}, 'label');
+    T              = getthresh; 
+    di             = strcmpi({'+' '-' '+/-'}, T.direct);
+    clidx          = st.ol.C0IDX(di,:);
+    clidx          = clidx==(clidx(voxidx)); 
+    opt            = [1 -1 1]; 
+    outimg         = st.ol.Y*opt(di);
+    outhdr         = st.ol.hdr; 
     outimg(clidx==0) = NaN;
-    putmsg = 'Save cluster'; 
+    putmsg         = 'Save cluster'; 
     outhdr.descrip = 'Intensity Thresholded Cluster Image'; 
-    [p,n] = fileparts(outhdr.fname); 
-    deffn = sprintf('%s/Cluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);  
+    [p,n]          = fileparts(outhdr.fname); 
+    deffn          = sprintf('%s/Cluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);  
     if regexp(lab, 'Binary Mask')
-        outimg(isnan(outimg))   = 0; 
-        outimg(outimg~=0)       = 1;
-        outhdr.descrip = 'Binary Mask Cluster Image'; 
-        putmsg = 'Save mask image as'; 
-        deffn = sprintf('%s/ClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);   
+        outimg(isnan(outimg)) = 0; 
+        outimg(outimg~=0)     = 1;
+        outhdr.descrip        = 'Binary Mask Cluster Image'; 
+        putmsg                = 'Save mask image as'; 
+        deffn                 = sprintf('%s/ClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);   
     end
-    fn = uiputvol(deffn, putmsg);
+    fn           = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
     outhdr.fname = fn; 
     spm_write_vol(outhdr, outimg);
@@ -1014,7 +1012,6 @@ function cb_correct(varargin)
             T.thresh    = voxel_correct(st.ol.fname, st.preferences.alphacorrect);
             T.pval      = bob_t2p(T.thresh, T.df);
         case {'Cluster FWE'}
-            
             T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect);
     end
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
@@ -1264,7 +1261,7 @@ function setmaxima
         otherwise
             POS         = getmaxima(st.ol.Z, st.ol.XYZ, st.ol.M, Dis, Num);
             NEG         = getmaxima(st.ol.Z*-1, st.ol.XYZ, st.ol.M, Dis, Num);
-            NEG(:,2)    = NEG(:,2)*-1; 
+            if ~isempty(NEG), NEG(:,2) = NEG(:,2)*-1; end
             LOCMAX      = [POS; NEG]; 
     end
     st.ol.tab       = LOCMAX; 
@@ -1415,8 +1412,9 @@ function [voxval, clsize] = setvoxelinfo
     set(findobj(st.fig, 'tag', 'voxval'), 'string', voxval); 
     set(findobj(st.fig, 'tag', 'clustersize'), 'string', clsize);
     axidx = [3 2 1];
+    xyzstr = num2str([-99; xyz]); xyzstr(1,:) = [];
     for a = 1:length(axidx)
-        set(st.vols{1}.ax{axidx(a)}.xyz, 'string', num2str(xyz(a)));  
+        set(st.vols{1}.ax{axidx(a)}.xyz, 'string', xyzstr(a,:)); 
     end
     drawnow;    % older version called drawnow with "limitrate" option;
 function setbackgcolor(newcolor)
@@ -1435,10 +1433,22 @@ function setxhaircolor(varargin)
     set(h.lx, 'color', st.color.xhair); 
     set(h.ly, 'color', st.color.xhair);
     drawnow;
+function setregionname(varargin)
+    global st
+    [nxyz, voxidx, d]   = getnearestvoxel; 
+    [xyz, xyzidx, dist] = getroundvoxel;
+    regionidx           = st.ol.atlas0(xyzidx);
+    if regionidx
+        regionname = st.ol.atlaslabels.label{st.ol.atlaslabels.id==regionidx};
+    else
+        regionname = 'n/a'; 
+    end
+    set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
+    drawnow;
 
 % | GETTERS
 % =========================================================================
-function h = gethandles(varargin)
+function h                       = gethandles(varargin)
     global st
     h.axial = st.vols{1}.ax{1}.ax;
     h.coronal = st.vols{1}.ax{2}.ax;
@@ -1446,7 +1456,7 @@ function h = gethandles(varargin)
     h.colorbar = st.vols{1}.blobs{1}.cbar;
     h.upperpanel = findobj(st.fig, 'tag', 'upperpanel'); 
     h.lowerpanel = findobj(st.fig, 'tag', 'lowerpanel'); 
-function [cmap, cmapname] = getcolormap
+function [cmap, cmapname]        = getcolormap
     global st
     val         = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
     list        = get(findobj(st.fig, 'Tag', 'colormaplist'), 'String');
@@ -1474,14 +1484,14 @@ function [cmap, cmapname] = getcolormap
         otherwise
             cmap = st.cmap{val, 1};
     end
-function mnmx = getminmax
+function mnmx                    = getminmax
 global st
 if isfield(st.vols{1}, 'blobs')
     mnmx = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max];
 else
     mnmx = [min(st.ol.Z) max(st.ol.Z)]; 
 end
-function [clustsize, clustidx] = getclustidx(rawol, u, k)
+function [clustsize, clustidx]   = getclustidx(rawol, u, k)
 
     % raw data to XYZ
     DIM         = size(rawol); 
@@ -1516,7 +1526,7 @@ function [clustsize, clustidx] = getclustidx(rawol, u, k)
     clustsize       = [pos; neg]; 
     clustsize(3,:)  = sum(clustsize);
     clustidx(3,:)   = sum(clustidx); 
-function [h, axpos] = gethandles_axes(varargin)
+function [h, axpos]              = gethandles_axes(varargin)
     global st
     axpos = zeros(3,4);
     if isfield(st.vols{1}, 'blobs');
@@ -1530,7 +1540,7 @@ function [h, axpos] = gethandles_axes(varargin)
         h.ly(a) = tmp.ly;
         axpos(a,:) = get(h.ax(a), 'position');
     end
-function T = getthresh
+function T                       = getthresh
     global st
     
     T.extent    = str2double(get(findobj(st.fig, 'Tag', 'Extent'), 'String')); 
@@ -1541,14 +1551,14 @@ function T = getthresh
     opt = get(tmph, 'String');
     T.direct = opt(find(cell2mat(get(tmph, 'Value'))));
     if strcmp(T.direct, 'pos/neg'), T.direct = '+/-'; end   
-function [xyz, xyzidx, dist] = getroundvoxel
+function [xyz, xyzidx, dist]     = getroundvoxel
     global st
     [xyz, dist] = bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM); 
     xyzidx      = bspm_XYZreg('FindXYZ', xyz, st.ol.XYZmm0); 
-function [xyz, voxidx, dist] = getnearestvoxel 
+function [xyz, voxidx, dist]     = getnearestvoxel 
     global st
     [xyz, voxidx, dist] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm);
-function y = getcurrentoverlay(dilateflag)
+function y                       = getcurrentoverlay(dilateflag)
     if nargin==0, dilateflag = 0; end
     global st
     T           = getthresh; 
@@ -1559,10 +1569,11 @@ function y = getcurrentoverlay(dilateflag)
     y(clustidx==0)  = 0;
     y(isnan(y))     = 0; 
     if dilateflag, y = st.ol.Y.*dilate_image(double(y~=0)); end
-function PEAK = getmaxima(Z, XYZ, M, Dis, Num)
+function PEAK                    = getmaxima(Z, XYZ, M, Dis, Num)
 [N,Z,XYZ,A,L]       = spm_max(Z,XYZ);
 XYZmm               = M(1:3,:)*[XYZ; ones(1,size(XYZ,2))];
-npeak = 0; 
+npeak   = 0;
+PEAK    = [];
 while numel(find(isfinite(Z)))
     %-Find largest remaining local maximum
     %------------------------------------------------------------------
@@ -1767,7 +1778,7 @@ function OL = load_overlay(fname, pval, k)
     posneg  = check4sign(od);  
     df      = check4df(oh.descrip); 
     if isempty(df)
-        u       = 0;
+        u       = .0001;
         k       = 0;
         df      = Inf;
         pval    = Inf; 
@@ -1777,7 +1788,7 @@ function OL = load_overlay(fname, pval, k)
     [C, I] = getclustidx(od, u, k);
     if ~any(C(:))
         headsup('No suprathreshold voxels. Showing unthresholded image.'); 
-        u = 0; 
+        u = 0.0001; 
         pval = bob_t2p(u, df);
         k = 0; 
         [C, I] = getclustidx(od, u, k); 
@@ -2152,9 +2163,9 @@ function out = erode_image(in)
 kernel  = cat(3,[0 0 0; 0 1 0; 0 0 0],[0 1 0; 1 1 1; 0 1 0],[0 0 0; 0 1 0; 0 0 0]);
 out     = spm_erode(in, kernel);
 
-% | MISC UTILITIES
+% | Image Type Checks
 % =========================================================================
-function flag   = check4design
+function flag       = check4design
     global st
     flag = 0; 
     if ~exist(fullfile(fileparts(st.ol.fname), 'I.mat'),'file') & ~exist(fullfile(fileparts(st.ol.fname), 'SPM.mat'),'file') 
@@ -2164,10 +2175,10 @@ function flag   = check4design
     else
         set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'on'); 
     end
-function flag   = check4mask(img)
+function flag       = check4mask(img)
     flag = 1; 
     if ~any(ismember(unique(img(:)), [0 1])), flag = 0; end
-function flag   = check4sign(img)
+function flag       = check4sign(img)
     global st
     allh = findobj(st.fig, 'Tag', 'direct'); 
     if ~isempty(allh), cb_directmenu(st.direct); end
@@ -2182,7 +2193,7 @@ function flag   = check4sign(img)
             set(allh(strcmp(allhstr, opt{~flag})), 'Value', 1, 'Enable', 'inactive'); 
         end
     end
-function df     = check4df(descrip)
+function df         = check4df(descrip)
     df = regexp(descrip, '\[\d+.*]', 'match'); 
     if isempty(df)
         df = []; 
@@ -2190,44 +2201,12 @@ function df     = check4df(descrip)
     else
         df = str2num(char(df)); 
     end
-function str    = nicetime
+    
+% | MISC UTILITIES
+% =========================================================================    
+function str        = nicetime
     str = strtrim(datestr(now,'HH:MM:SS PM on mmm. DD, YYYY'));
-function outmsg = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
-% PRINTMSG Create and print a formatted message with title
-%
-%	USAGE: fmtmessage = printmsg(message, msgtitle, msgborder, msgwidth)
-%
-%
-
-% --------------------------- Copyright (C) 2014 ---------------------------
-%	Author: Bob Spunt
-%	Email: bobspunt@gmail.com
-% 
-%	$Created: 2014_09_27
-% _________________________________________________________________________
-if nargin<5, hideoutput = 0; end
-if nargin<4, msgwidth   = 75; end
-if nargin<3, msgborder  = {'_' '_'}; end
-if nargin<2, msgtitle   = ''; end
-if nargin<1,
-    msg = 'USAGE: fmtmessage = printmsg(msg, [msgtitle], [msgborder], [msgwidth])';
-    msgtitle = 'I NEED MORE INPUT FROM YOU';
-end
-if ischar(msgborder), msgborder = cellstr(msgborder); end
-if length(msgborder)==1, msgborder = [msgborder msgborder]; end
-if iscell(msg), msg = char(msg); end
-if iscell(msgtitle), msgtitle = char(msgtitle); end
-msgtop          = repmat(msgborder{1},1,msgwidth);
-msgbottom       = repmat(msgborder{2},1,msgwidth);
-if ~isempty(msgtitle), msgtitle = sprintf('%s %s %s', msgborder{1}, strtrim(msgtitle), msgborder{1}); end
-titleln         = length(msgtitle);
-msgln           = length(msg); 
-msgtop(floor(.5*msgwidth-.5*titleln):floor(.5*msgwidth-.5*titleln) + titleln-1) = msgtitle;
-outmsg      = repmat(' ', 1, msgwidth);
-outmsg(floor(.5*msgwidth-.5*msgln):floor(.5*msgwidth-.5*msgln) + msgln-1) = msg;
-outmsg      = sprintf('%s\n\n%s\n%s', msgtop, outmsg, msgbottom);
-if ~hideoutput, disp(outmsg); end
-function out    = abridgepath(str, maxchar)
+function out        = abridgepath(str, maxchar)
     if nargin<2, maxchar =  85; end
     if iscell(str), str = char(str); end
     if length(str) <= maxchar, out = str; return; end
@@ -2245,418 +2224,7 @@ function out    = abridgepath(str, maxchar)
         if length(testpath)<=maxchar, badpath = 0; end
     end
     out = testpath; 
-function out    = cmap_upsample(in, N)
-    num = size(in,1);
-    ind = repmat(1:num, ceil(N/num), 1);
-    rem = numel(ind) - N; 
-    if rem, ind(end,end-rem+1:end) = NaN; end
-    ind = ind(:); ind(isnan(ind)) = [];
-    out = in(ind(:),:);
-function vol    = uigetvol(message, multitag, defaultdir)
-    % UIGETVOL Dialogue for selecting image volume file
-    %
-    %   USAGE: vol = uigetvol(message, multitag)
-    %       
-    %       message = to display to user
-    %       multitag = (default = 0) tag to allow selecting multiple images
-    %
-    % EX: img = uigetvol('Select Image to Process'); 
-    %
-    if nargin < 3, defaultdir = pwd; end
-    if nargin < 2, multitag = 0; end
-    if nargin < 1, message = 'Select Image File'; end
-    if ~multitag
-        [imname, pname] = uigetfile({'*.img; *.nii; *.nii.gz', 'Image File'; '*.*', 'All Files (*.*)'}, message, defaultdir);
-    else
-        [imname, pname] = uigetfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on', defaultdir);
-    end
-    if isequal(imname,0) || isequal(pname,0)
-        vol = [];
-    else
-        vol = fullfile(pname, strcat(imname));
-    end
-function vol    = uiputvol(defname, prompt)
-    if nargin < 1, defname = 'myimage.nii'; end
-    if nargin < 2, prompt = 'Save image as'; end
-    [imname, pname] = uiputfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, prompt, defname);
-    if isequal(imname,0) || isequal(pname,0)
-        vol = [];
-    else
-        vol = fullfile(pname, imname); 
-    end
-function out    = cellnum2str(in, ndec)
-% NEW2PVAL Convert numeric array of p-values to formatted cell array of p-values
-%
-%  USAGE: out = num2pval(in)
-% __________________________________________________________________________
-%  INPUTS
-%	in: numeric array of p-values
-%   ndec: number of decimal points to display
-%
-
-% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
-%	Created:  2015-01-13
-%	Email:    spunt@caltech.edu
-% __________________________________________________________________________
-if nargin < 2, ndec = 2; end
-if nargin < 1, disp('USAGE: out = num2pval(in)'); return; end
-if ~iscell(in), error('Input array must be cell!'); end
-n   = cell2mat(in); 
-out = cellfun(@sprintf, repmat({['%2.' num2str(ndec) 'f']}, size(in)), in, 'Unif', false); 
-out = regexprep(out, '0\.', '\.');
-out(mod(n,1)==0) = cellfun(@num2str, in(mod(n,1)==0), 'unif', false);
-function out    = adjustbrightness(in)
-    lim = .5;
-    dat.min = min(in(in>0)); 
-    dat.max = max(in(in>0));
-    dat.dim = size(in);
-    out = double(in)./255; 
-    out(out>0) = out(out>0) + (lim-nanmean(nanmean(out(out>0))))*(1 - out(out>0)); 
-    out(out>0) = scaledata(out(out>0), [dat.min dat.max]);
-function fn     = construct_filename
-    global st
-    [p,n]   = fileparts(st.ol.hdr.fname);
-    idx     = regexp(st.ol.descrip, ': ');
-    if ~isempty(idx)
-        n = strtrim(st.ol.descrip(idx+1:end));
-        n = regexprep(n, ' ', '_'); 
-    end
-    fn = sprintf('%s/%s_x=%d_y=%d_z=%d.png', p, n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));        
-function s      = easydefaults(varargin)
-% easydefaults  Set many default arguments quick and easy.
-%
-%   - For input arguments x1,x2,x3, set default values x1def,x2def,x3def
-%     using easydefaults as parameter-value pairs:
-%       easydefaults('x1',x1def,'x2',x2def,'x3',x3def);
-%   
-%   - Defaults can be set for any input argument, whether explicit or as 
-%     part of a parameter-value pair:
-%       function dummy_function(x,varargin)
-%           easydefaults('x',1,'y',2);
-%           ...   
-%       end
-%
-%   - easydefaults and easyparse can in principle be used in either order, 
-%     but it is usually better to parse first and fill in defaults after:
-%       function dummy_function(x,varargin)
-%           easyparse(varargin,'y')
-%           easydefaults('x',1,'y',2);
-%           ...   
-%       end
-%
-%   CAVEAT UTILITOR: this function relies on evals and assignin statements.
-%   Input checking is performed to limit potential damage, but use at your 
-%   own risk.
-%
-%   Author: Jared Schwede 
-%   Last update: Jan 14, 2013
-
-    % Check that all inputs come in parameter-value pairs.
-    if mod(length(varargin),2)
-        error('Default arguments must be specified in pairs!');
-    end
-    
-    for i=1:2:length(varargin)
-        if ~ischar(varargin{i})
-            error('Variables to easydefaults must be written as strings!');
-        end
-        
-        % We'll check that the varargin is a valid variable name. This
-        % should hopefully avoid any nasty code...
-        if ~isvarname(varargin{i})
-            error('Invalid variable name!');
-        end
-        
-        if exist(varargin{i},'builtin') || (exist(varargin{i},'file') == 2) || exist(varargin{i},'class')
-            warning('MATLAB:defined_function',['''' varargin{i} ''' conflicts with the name of a function, m-file, or class along the MATLAB path and will be ignored by easydefaults.' ...
-                                        ' Please rename the variable, or use a temporary variable with easydefaults and explicitly define ''' varargin{i} ...
-                                        ''' within your function.']);
-        else
-            if ~evalin('caller',['exist(''' varargin{i} ''',''var'')'])
-                % We assign the arguments to a struct, s, which allows us to
-                % check that the evalin statement will not either throw an 
-                % error or execute some nasty code.
-                s.(varargin{i}) = varargin{i+1};
-                assignin('caller',varargin{i},varargin{i+1});
-            end
-        end
-end
-function s      = easyparse(caller_varargin,allowed_names)
-% easyparse    Parse parameter-value pairs without using inputParser
-%   easyparse is called by a function which takes parameter value pairs and
-%   creates individual variables in that function. It can also be used to
-%   generate a struct like inputParser.
-%
-%   - To create variables in the function workspace according to the
-%     varargin of parameter-value pairs, use this syntax in your function:
-%       easyparse(varargin)
-%
-%   - To create only variables with allowed_names, create a cell array of
-%     allowed names and use this syntax:
-%       easyparse(varargin, allowed_names);
-%
-%   - To create a struct with fields specified by the names in varargin,
-%     (similar to the output of inputParser) ask for an output argument:
-%       s = easyparse(...);
-%  
-%   CAVEAT UTILITOR: this function relies on assignin statements. Input
-%   checking is performed to limit potential damage, but use at your own 
-%   risk.
-%
-%   Author: Jared Schwede
-%   Last update: January 14, 2013
-
-    % We assume all inputs come in parameter-value pairs. We'll also assume
-    % that there aren't enough of them to justify using a containers.Map. 
-    for i=1:2:length(caller_varargin)
-        if nargin == 2 && ~any(strcmp(caller_varargin{i},allowed_names))
-            error(['Unknown input argument: ' caller_varargin{i}]);
-        end
-        
-        if ~isvarname(caller_varargin{i})
-            error('Invalid variable name!');
-        end
-        
-        
-        % We assign the arguments to the struct, s, which allows us to
-        % check that the assignin statement will not either throw an error 
-        % or execute some nasty code.
-        s.(caller_varargin{i}) = caller_varargin{i+1};
-        % ... but if we ask for the struct, don't write all of the
-        % variables to the function as well.
-        if ~nargout
-            if exist(caller_varargin{i},'builtin') || (exist(caller_varargin{i},'file') == 2) || exist(caller_varargin{i},'class')
-                warning('MATLAB:defined_function',['''' caller_varargin{i} ''' conflicts with the name of a function, m-file, or class along the MATLAB path and will be ignored by easyparse.' ...
-                                            ' Please rename the variable, or use a temporary variable with easyparse and explicitly define ''' caller_varargin{i} ...
-                                            ''' within your function.']);
-            else
-                assignin('caller',caller_varargin{i},caller_varargin{i+1});
-            end
-        end
-    end
-function out    = scaledata(in, minmax)
-% SCALEDATA
-%
-% USAGE: out = scaledata(in, minmax)
-%
-% Example:
-% a = [1 2 3 4 5];
-% a_out = scaledata(a,0,1);
-% 
-% Output obtained: 
-%            0    0.1111    0.2222    0.3333    0.4444
-%       0.5556    0.6667    0.7778    0.8889    1.0000
-%
-% Program written by:
-% Aniruddha Kembhavi, July 11, 2007
-if nargin<2, minmax = [0 1]; end
-if nargin<1, error('USAGE: out = scaledata(in, minmax)'); end
-out = in - repmat(min(in), size(in, 1), 1); 
-out = ((out./repmat(range(out), size(out,1), 1))*(minmax(2)-minmax(1))) + minmax(1); 
-function answer = yesorno(question, titlestr)
-% YESORNO Ask Yes/No Question
-%
-%  USAGE: h = yesorno(question, *titlestr)    *optional input
-% __________________________________________________________________________
-%  INPUTS
-%   question: character array to present to user 
-%
-
-% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
-%	Created:  2014-09-30
-%	Email:    spunt@caltech.edu
-% __________________________________________________________________________
-if nargin < 1, disp('USAGE: h = yesorno(question, *titlestr)'); return; end
-if nargin < 2, titlestr = 'Yes or No?'; end
-if iscell(titlestr), titlestr = char(titlestr); end
-if iscell(question), question = char(question); end
-global answer
-answer = []; 
-h(1) = figure(...
-    'Units', 'norm', ...
-    'WindowStyle', 'modal', ...
-    'Position',[.425 .45 .15 .10],...
-    'Resize','off',...
-    'Color', [0.8941    0.1020    0.1098]*.60, ...
-    'NumberTitle','off',...
-    'DockControls','off',...
-    'Tag', 'yesorno', ...
-    'MenuBar','none',...
-    'Name',titlestr,...
-    'Visible','on',...
-    'Toolbar','none');
-h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', question, 'visible', 'on'); 
-h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-'pos', [.25 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Yes', 'visible', 'on', 'callback', {@cb_answer, h});
-h(4) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-'pos', [.55 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'No', 'visible', 'on', 'callback', {@cb_answer, h});
-uiwait(h(1)); 
-function cb_answer(varargin)
-    global answer
-    answer = get(varargin{1}, 'string');
-    delete(findobj(0, 'Tag', 'yesorno'));
-function [flag, h] = waitup(msg, titlestr)
-% YESORNO Ask Yes/No Question
-%
-%  USAGE: h = yesorno(question, *titlestr)    *optional input
-% __________________________________________________________________________
-%  INPUTS
-%   question: character array to present to user 
-%
-
-% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
-%	Created:  2014-09-30
-%	Email:    spunt@caltech.edu
-% __________________________________________________________________________
-if nargin < 1, disp('USAGE: [flag, h] = waitup(msg, titlestr)'); return; end
-if nargin < 2, titlestr = 'Please Wait'; end
-if iscell(titlestr), titlestr = char(titlestr); end
-if iscell(msg), msg = char(msg); end
-global flag
-flag = []; 
-h(1) = figure(...
-    'Units', 'norm', ...
-    'WindowStyle', 'modal', ...
-    'Position',[.425 .45 .15 .10],...
-    'Resize','off',...
-    'Color', [0.8941    0.1020    0.1098]*.60, ...
-    'NumberTitle','off',...
-    'DockControls','off',...
-    'Tag', 'waitup', ...
-    'MenuBar','none',...
-    'Name',titlestr,...
-    'Visible','on',...
-    'Toolbar','none');
-h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.075 .40 .850 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
-h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-'pos', [.35 .10 .30 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Cancel', 'visible', 'on', 'callback', {@cb_cancel, h});
-uiwait(h(1)); 
-function cb_cancel(varargin)
-    global flag
-    flag = get(varargin{1}, 'string');
-    delete(findobj(0, 'Tag', 'waitup'));
-function h      = headsup(msg, titlestr, wait4resp)
-% HEADSUP Present message to user and wait for a response
-%
-%  USAGE: h = headsup(msg, *titlestr, *wait4resp)    *optional input
-% __________________________________________________________________________
-%  INPUTS
-%   msg: character array to present to user 
-%
-
-% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
-%	Created:  2014-09-30
-%	Email:    spunt@caltech.edu
-% __________________________________________________________________________
-if nargin < 1, disp('USAGE: h = headsup(msg, *titlestr, *wait4resp)'); return; end
-if nargin < 2, titlestr = 'Heads Up'; end
-if nargin < 3, wait4resp = 1; end
-if iscell(msg), msg = char(msg); end
-if iscell(titlestr), titlestr = char(titlestr); end
-h(1) = figure(...
-    'Units', 'norm', ...
-    'WindowStyle', 'modal', ...
-    'Position',[.425 .45 .15 .10],...
-    'Resize','off',...
-    'Color', [0.8941    0.1020    0.1098]*.60, ...
-    'NumberTitle','off',...
-    'DockControls','off',...
-    'Tag', 'headsup', ...
-    'MenuBar','none',...
-    'Name',titlestr,...
-    'Visible','on',...
-    'Toolbar','none');
-h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
-if wait4resp
-    h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-    'pos', [.4 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
-    uiwait(h(1)); 
-end
-drawnow; 
-function cb_ok(varargin)
-    delete(findobj(0, 'Tag', 'headsup'));
-    drawnow; 
-function p      = bob_t2p(t, df)
-% BOB_T2P Get p-value from t-value + df
-%
-%   ARGUMENTS
-%       t = t-value
-%       df = degrees of freedom
-%
-    p = spm_Tcdf(t, df);
-    p = 1 - p;
-function y      = range(x)
-y = nanmax(x) - nanmin(x); 
-function writereport(incell, outname)
-% WRITEREPORT Write cell array to CSV file
-%
-%  USAGE: outname = writereport(incell, outname)	*optional input
-% __________________________________________________________________________
-%  INPUTS
-%	incell:     cell array of character arrays
-%	outname:   base name for output csv file 
-%
-
-% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
-%	Created:  2015-02-02
-%	Email:    spunt@caltech.edu
-% __________________________________________________________________________
-if nargin < 2, disp('USAGE: outname = writereport(incell, outname)'); return; end
-
-% | Convert all cell contents to character arrays
-% | ========================================================================
-[nrow, ncol] = size(incell);
-for i = 1:numel(incell)
-    if isnumeric(incell{i}), incell{i} = num2str(incell{i}); end
-    if strcmp(incell{i},'NaN'), incell{i} = ''; end
-end
-incell = regexprep(incell, ',', '');
-
-% | Write to file
-% | ========================================================================
-fid = fopen(outname,'w');
-for r = 1:nrow
-    fprintf(fid,['%s' repmat(',%s',1,ncol-1) '\n'],incell{r,:});
-end
-fclose(fid);
-function mfile_showhelp(varargin)
-% MFILE_SHOWHELP
-%
-% ------------------------------------------------------------------------
-ST = dbstack('-completenames');
-if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
-eval(sprintf('help %s', ST(2).file));  
-function save_error(err)
-    global st
-    errdata     = getReport(err);
-    errlogname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorMsg.txt'); 
-    errmatname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorDat.mat'); 
-    errfigname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorFig.fig');
-    hgsave(errfigname); 
-    eid         = fopen(errlogname, 'w');
-    fwrite(eid, errdata);
-    fclose(eid);
-    save(errmatname, 'st');
-    fprintf('\nERROR INFORMATION WRITTEN TO:\n\t%s\n\t%s\n\t%s\n\n', errlogname, errmatname, errfigname);
-function arrayset(harray, propname, propvalue) 
-% ARRAYGET Set property values for array of handles
-%
-% USAGE: arrayset(harray, propname, propvalue) 
-%
-% ==============================================
-if nargin<2, error('USAGE: arrayset(harray, propname, propvalue) '); end
-if size(harray, 1)==1, harray = harray'; end
-if ~iscell(propvalue)
-    arrayfun(@set, harray, repmat({propname}, length(harray), 1), ...
-            repmat({propvalue}, length(harray), 1)); 
-else
-    if size(propvalue, 1)==1, propvalue = propvalue'; end
-    arrayfun(@set, harray, repmat({propname}, length(harray), 1), propvalue); 
-end
-function cmap = colormap_signed(n, zero_loc)
+function cmap       = colormap_signed(n, zero_loc)
 % Construct colormap for displaying signed data. The function outputs an n x 3
 % colormap designed for use with signed data. The user can specify the location
 % in the data range that corresponds to zero, and the colormap is then constructed
@@ -2731,6 +2299,455 @@ x=(1:i_mid)'/i_mid;
 cmap_neg_i=interp1(x,cmap_neg,linspace(x(1),1,i0));
 cmap_pos_i=interp1(x,cmap_pos,linspace(x(1),1,n-i0));
 cmap = [cmap_neg_i; cmap_pos_i];
+function out        = cmap_upsample(in, N)
+    num = size(in,1);
+    ind = repmat(1:num, ceil(N/num), 1);
+    rem = numel(ind) - N; 
+    if rem, ind(end,end-rem+1:end) = NaN; end
+    ind = ind(:); ind(isnan(ind)) = [];
+    out = in(ind(:),:);
+function out        = cellnum2str(in, ndec)
+% NEW2PVAL Convert numeric array of p-values to formatted cell array of p-values
+%
+%  USAGE: out = num2pval(in)
+% __________________________________________________________________________
+%  INPUTS
+%	in: numeric array of p-values
+%   ndec: number of decimal points to display
+%
+
+% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
+%	Created:  2015-01-13
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 2, ndec = 2; end
+if nargin < 1, disp('USAGE: out = num2pval(in)'); return; end
+if ~iscell(in), error('Input array must be cell!'); end
+n   = cell2mat(in); 
+out = cellfun(@sprintf, repmat({['%2.' num2str(ndec) 'f']}, size(in)), in, 'Unif', false); 
+out = regexprep(out, '0\.', '\.');
+out(mod(n,1)==0) = cellfun(@num2str, in(mod(n,1)==0), 'unif', false);
+function out        = adjustbrightness(in)
+    lim = .5;
+    dat.min = min(in(in>0)); 
+    dat.max = max(in(in>0));
+    dat.dim = size(in);
+    out = double(in)./255; 
+    out(out>0) = out(out>0) + (lim-nanmean(nanmean(out(out>0))))*(1 - out(out>0)); 
+    out(out>0) = scaledata(out(out>0), [dat.min dat.max]);
+function fn         = construct_filename
+    global st
+    [p,n]   = fileparts(st.ol.hdr.fname);
+    idx     = regexp(st.ol.descrip, ': ');
+    if ~isempty(idx)
+        n = strtrim(st.ol.descrip(idx+1:end));
+        n = regexprep(n, ' ', '_'); 
+    end
+    fn = sprintf('%s/%s_x=%d_y=%d_z=%d.png', p, n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));        
+function s          = easydefaults(varargin)
+% easydefaults  Set many default arguments quick and easy.
+%
+%   - For input arguments x1,x2,x3, set default values x1def,x2def,x3def
+%     using easydefaults as parameter-value pairs:
+%       easydefaults('x1',x1def,'x2',x2def,'x3',x3def);
+%   
+%   - Defaults can be set for any input argument, whether explicit or as 
+%     part of a parameter-value pair:
+%       function dummy_function(x,varargin)
+%           easydefaults('x',1,'y',2);
+%           ...   
+%       end
+%
+%   - easydefaults and easyparse can in principle be used in either order, 
+%     but it is usually better to parse first and fill in defaults after:
+%       function dummy_function(x,varargin)
+%           easyparse(varargin,'y')
+%           easydefaults('x',1,'y',2);
+%           ...   
+%       end
+%
+%   CAVEAT UTILITOR: this function relies on evals and assignin statements.
+%   Input checking is performed to limit potential damage, but use at your 
+%   own risk.
+%
+%   Author: Jared Schwede 
+%   Last update: Jan 14, 2013
+
+    % Check that all inputs come in parameter-value pairs.
+    if mod(length(varargin),2)
+        error('Default arguments must be specified in pairs!');
+    end
+    
+    for i=1:2:length(varargin)
+        if ~ischar(varargin{i})
+            error('Variables to easydefaults must be written as strings!');
+        end
+        
+        % We'll check that the varargin is a valid variable name. This
+        % should hopefully avoid any nasty code...
+        if ~isvarname(varargin{i})
+            error('Invalid variable name!');
+        end
+        
+        if exist(varargin{i},'builtin') || (exist(varargin{i},'file') == 2) || exist(varargin{i},'class')
+            warning('MATLAB:defined_function',['''' varargin{i} ''' conflicts with the name of a function, m-file, or class along the MATLAB path and will be ignored by easydefaults.' ...
+                                        ' Please rename the variable, or use a temporary variable with easydefaults and explicitly define ''' varargin{i} ...
+                                        ''' within your function.']);
+        else
+            if ~evalin('caller',['exist(''' varargin{i} ''',''var'')'])
+                % We assign the arguments to a struct, s, which allows us to
+                % check that the evalin statement will not either throw an 
+                % error or execute some nasty code.
+                s.(varargin{i}) = varargin{i+1};
+                assignin('caller',varargin{i},varargin{i+1});
+            end
+        end
+end
+function s          = easyparse(caller_varargin,allowed_names)
+% easyparse    Parse parameter-value pairs without using inputParser
+%   easyparse is called by a function which takes parameter value pairs and
+%   creates individual variables in that function. It can also be used to
+%   generate a struct like inputParser.
+%
+%   - To create variables in the function workspace according to the
+%     varargin of parameter-value pairs, use this syntax in your function:
+%       easyparse(varargin)
+%
+%   - To create only variables with allowed_names, create a cell array of
+%     allowed names and use this syntax:
+%       easyparse(varargin, allowed_names);
+%
+%   - To create a struct with fields specified by the names in varargin,
+%     (similar to the output of inputParser) ask for an output argument:
+%       s = easyparse(...);
+%  
+%   CAVEAT UTILITOR: this function relies on assignin statements. Input
+%   checking is performed to limit potential damage, but use at your own 
+%   risk.
+%
+%   Author: Jared Schwede
+%   Last update: January 14, 2013
+
+    % We assume all inputs come in parameter-value pairs. We'll also assume
+    % that there aren't enough of them to justify using a containers.Map. 
+    for i=1:2:length(caller_varargin)
+        if nargin == 2 && ~any(strcmp(caller_varargin{i},allowed_names))
+            error(['Unknown input argument: ' caller_varargin{i}]);
+        end
+        
+        if ~isvarname(caller_varargin{i})
+            error('Invalid variable name!');
+        end
+        
+        
+        % We assign the arguments to the struct, s, which allows us to
+        % check that the assignin statement will not either throw an error 
+        % or execute some nasty code.
+        s.(caller_varargin{i}) = caller_varargin{i+1};
+        % ... but if we ask for the struct, don't write all of the
+        % variables to the function as well.
+        if ~nargout
+            if exist(caller_varargin{i},'builtin') || (exist(caller_varargin{i},'file') == 2) || exist(caller_varargin{i},'class')
+                warning('MATLAB:defined_function',['''' caller_varargin{i} ''' conflicts with the name of a function, m-file, or class along the MATLAB path and will be ignored by easyparse.' ...
+                                            ' Please rename the variable, or use a temporary variable with easyparse and explicitly define ''' caller_varargin{i} ...
+                                            ''' within your function.']);
+            else
+                assignin('caller',caller_varargin{i},caller_varargin{i+1});
+            end
+        end
+    end
+function out        = scaledata(in, minmax)
+% SCALEDATA
+%
+% USAGE: out = scaledata(in, minmax)
+%
+% Example:
+% a = [1 2 3 4 5];
+% a_out = scaledata(a,0,1);
+% 
+% Output obtained: 
+%            0    0.1111    0.2222    0.3333    0.4444
+%       0.5556    0.6667    0.7778    0.8889    1.0000
+%
+% Program written by:
+% Aniruddha Kembhavi, July 11, 2007
+if nargin<2, minmax = [0 1]; end
+if nargin<1, error('USAGE: out = scaledata(in, minmax)'); end
+out = in - repmat(min(in), size(in, 1), 1); 
+out = ((out./repmat(range(out), size(out,1), 1))*(minmax(2)-minmax(1))) + minmax(1); 
+function p          = bob_t2p(t, df)
+% BOB_T2P Get p-value from t-value + df
+%
+%   ARGUMENTS
+%       t = t-value
+%       df = degrees of freedom
+%
+    p = spm_Tcdf(t, df);
+    p = 1 - p;
+function y          = range(x)
+y = nanmax(x) - nanmin(x); 
+function writereport(incell, outname)
+% WRITEREPORT Write cell array to CSV file
+%
+%  USAGE: outname = writereport(incell, outname)	*optional input
+% __________________________________________________________________________
+%  INPUTS
+%	incell:     cell array of character arrays
+%	outname:   base name for output csv file 
+%
+
+% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
+%	Created:  2015-02-02
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 2, disp('USAGE: outname = writereport(incell, outname)'); return; end
+
+% | Convert all cell contents to character arrays
+% | ========================================================================
+[nrow, ncol] = size(incell);
+for i = 1:numel(incell)
+    if isnumeric(incell{i}), incell{i} = num2str(incell{i}); end
+    if strcmp(incell{i},'NaN'), incell{i} = ''; end
+end
+incell = regexprep(incell, ',', '');
+
+% | Write to file
+% | ========================================================================
+fid = fopen(outname,'w');
+for r = 1:nrow
+    fprintf(fid,['%s' repmat(',%s',1,ncol-1) '\n'],incell{r,:});
+end
+fclose(fid);
+function mfile_showhelp(varargin)
+% MFILE_SHOWHELP
+%
+% ------------------------------------------------------------------------
+ST = dbstack('-completenames');
+if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
+eval(sprintf('help %s', ST(2).file));  
+function save_error(err)
+    global st
+    errdata     = getReport(err);
+    errlogname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorMsg.txt'); 
+    errmatname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorDat.mat'); 
+    errfigname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorFig.fig');
+    hgsave(errfigname); 
+    eid         = fopen(errlogname, 'w');
+    fwrite(eid, errdata);
+    fclose(eid);
+    save(errmatname, 'st');
+    fprintf('\nERROR INFORMATION WRITTEN TO:\n\t%s\n\t%s\n\t%s\n\n', errlogname, errmatname, errfigname);
+function arrayset(harray, propname, propvalue) 
+% ARRAYGET Set property values for array of handles
+%
+% USAGE: arrayset(harray, propname, propvalue) 
+%
+% ==============================================
+if nargin<2, error('USAGE: arrayset(harray, propname, propvalue) '); end
+if size(harray, 1)==1, harray = harray'; end
+if ~iscell(propvalue)
+    arrayfun(@set, harray, repmat({propname}, length(harray), 1), ...
+            repmat({propvalue}, length(harray), 1)); 
+else
+    if size(propvalue, 1)==1, propvalue = propvalue'; end
+    arrayfun(@set, harray, repmat({propname}, length(harray), 1), propvalue); 
+end
+
+% | TALKING TO THE HUMAN
+% =========================================================================
+function vol        = uigetvol(message, multitag, defaultdir)
+    % UIGETVOL Dialogue for selecting image volume file
+    %
+    %   USAGE: vol = uigetvol(message, multitag)
+    %       
+    %       message = to display to user
+    %       multitag = (default = 0) tag to allow selecting multiple images
+    %
+    % EX: img = uigetvol('Select Image to Process'); 
+    %
+    if nargin < 3, defaultdir = pwd; end
+    if nargin < 2, multitag = 0; end
+    if nargin < 1, message = 'Select Image File'; end
+    if ~multitag
+        [imname, pname] = uigetfile({'*.img; *.nii; *.nii.gz', 'Image File'; '*.*', 'All Files (*.*)'}, message, defaultdir);
+    else
+        [imname, pname] = uigetfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on', defaultdir);
+    end
+    if isequal(imname,0) || isequal(pname,0)
+        vol = [];
+    else
+        vol = fullfile(pname, strcat(imname));
+    end
+function vol        = uiputvol(defname, prompt)
+    if nargin < 1, defname = 'myimage.nii'; end
+    if nargin < 2, prompt = 'Save image as'; end
+    [imname, pname] = uiputfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, prompt, defname);
+    if isequal(imname,0) || isequal(pname,0)
+        vol = [];
+    else
+        vol = fullfile(pname, imname); 
+    end
+function outmsg     = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
+% PRINTMSG Create and print a formatted message with title
+%
+%	USAGE: fmtmessage = printmsg(message, msgtitle, msgborder, msgwidth)
+%
+%
+
+% --------------------------- Copyright (C) 2014 ---------------------------
+%	Author: Bob Spunt
+%	Email: bobspunt@gmail.com
+% 
+%	$Created: 2014_09_27
+% _________________________________________________________________________
+if nargin<5, hideoutput = 0; end
+if nargin<4, msgwidth   = 75; end
+if nargin<3, msgborder  = {'_' '_'}; end
+if nargin<2, msgtitle   = ''; end
+if nargin<1,
+    msg = 'USAGE: fmtmessage = printmsg(msg, [msgtitle], [msgborder], [msgwidth])';
+    msgtitle = 'I NEED MORE INPUT FROM YOU';
+end
+if ischar(msgborder), msgborder = cellstr(msgborder); end
+if length(msgborder)==1, msgborder = [msgborder msgborder]; end
+if iscell(msg), msg = char(msg); end
+if iscell(msgtitle), msgtitle = char(msgtitle); end
+msgtop          = repmat(msgborder{1},1,msgwidth);
+msgbottom       = repmat(msgborder{2},1,msgwidth);
+if ~isempty(msgtitle), msgtitle = sprintf('%s %s %s', msgborder{1}, strtrim(msgtitle), msgborder{1}); end
+titleln         = length(msgtitle);
+msgln           = length(msg); 
+msgtop(floor(.5*msgwidth-.5*titleln):floor(.5*msgwidth-.5*titleln) + titleln-1) = msgtitle;
+outmsg      = repmat(' ', 1, msgwidth);
+outmsg(floor(.5*msgwidth-.5*msgln):floor(.5*msgwidth-.5*msgln) + msgln-1) = msg;
+outmsg      = sprintf('%s\n\n%s\n%s', msgtop, outmsg, msgbottom);
+if ~hideoutput, disp(outmsg); end
+function answer     = yesorno(question, titlestr)
+% YESORNO Ask Yes/No Question
+%
+%  USAGE: h = yesorno(question, *titlestr)    *optional input
+% __________________________________________________________________________
+%  INPUTS
+%   question: character array to present to user 
+%
+
+% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
+%	Created:  2014-09-30
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 1, disp('USAGE: h = yesorno(question, *titlestr)'); return; end
+if nargin < 2, titlestr = 'Yes or No?'; end
+if iscell(titlestr), titlestr = char(titlestr); end
+if iscell(question), question = char(question); end
+global answer
+answer = []; 
+h(1) = figure(...
+    'Units', 'norm', ...
+    'WindowStyle', 'modal', ...
+    'Position',[.425 .45 .15 .10],...
+    'Resize','off',...
+    'Color', [0.8941    0.1020    0.1098]*.60, ...
+    'NumberTitle','off',...
+    'DockControls','off',...
+    'Tag', 'yesorno', ...
+    'MenuBar','none',...
+    'Name',titlestr,...
+    'Visible','on',...
+    'Toolbar','none');
+h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
+    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', question, 'visible', 'on'); 
+h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+'pos', [.25 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Yes', 'visible', 'on', 'callback', {@cb_answer, h});
+h(4) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+'pos', [.55 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'No', 'visible', 'on', 'callback', {@cb_answer, h});
+uiwait(h(1)); 
+function cb_answer(varargin)
+    global answer
+    answer = get(varargin{1}, 'string');
+    delete(findobj(0, 'Tag', 'yesorno'));
+function [flag, h]  = waitup(msg, titlestr)
+% YESORNO Ask Yes/No Question
+%
+%  USAGE: h = yesorno(question, *titlestr)    *optional input
+% __________________________________________________________________________
+%  INPUTS
+%   question: character array to present to user 
+%
+
+% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
+%	Created:  2014-09-30
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 1, disp('USAGE: [flag, h] = waitup(msg, titlestr)'); return; end
+if nargin < 2, titlestr = 'Please Wait'; end
+if iscell(titlestr), titlestr = char(titlestr); end
+if iscell(msg), msg = char(msg); end
+global flag
+flag = []; 
+h(1) = figure(...
+    'Units', 'norm', ...
+    'WindowStyle', 'modal', ...
+    'Position',[.425 .45 .15 .10],...
+    'Resize','off',...
+    'Color', [0.8941    0.1020    0.1098]*.60, ...
+    'NumberTitle','off',...
+    'DockControls','off',...
+    'Tag', 'waitup', ...
+    'MenuBar','none',...
+    'Name',titlestr,...
+    'Visible','on',...
+    'Toolbar','none');
+h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
+    'pos', [.075 .40 .850 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
+h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+'pos', [.35 .10 .30 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Cancel', 'visible', 'on', 'callback', {@cb_cancel, h});
+uiwait(h(1)); 
+function cb_cancel(varargin)
+    global flag
+    flag = get(varargin{1}, 'string');
+    delete(findobj(0, 'Tag', 'waitup'));
+function h          = headsup(msg, titlestr, wait4resp)
+% HEADSUP Present message to user and wait for a response
+%
+%  USAGE: h = headsup(msg, *titlestr, *wait4resp)    *optional input
+% __________________________________________________________________________
+%  INPUTS
+%   msg: character array to present to user 
+%
+
+% ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
+%	Created:  2014-09-30
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if nargin < 1, disp('USAGE: h = headsup(msg, *titlestr, *wait4resp)'); return; end
+if nargin < 2, titlestr = 'Heads Up'; end
+if nargin < 3, wait4resp = 1; end
+if iscell(msg), msg = char(msg); end
+if iscell(titlestr), titlestr = char(titlestr); end
+h(1) = figure(...
+    'Units', 'norm', ...
+    'WindowStyle', 'modal', ...
+    'Position',[.425 .45 .15 .10],...
+    'Resize','off',...
+    'Color', [0.8941    0.1020    0.1098]*.60, ...
+    'NumberTitle','off',...
+    'DockControls','off',...
+    'Tag', 'headsup', ...
+    'MenuBar','none',...
+    'Name',titlestr,...
+    'Visible','on',...
+    'Toolbar','none');
+h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
+    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
+if wait4resp
+    h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
+    'pos', [.4 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
+    uiwait(h(1)); 
+end
+drawnow; 
+function cb_ok(varargin)
+    delete(findobj(0, 'Tag', 'headsup'));
+    drawnow; 
 
 % | BSPM_OPTHVIEWS (MODIFIED FROM SPM8 SPM_OPTHVIEWS)
 % =========================================================================

@@ -1,0 +1,596 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+			"settings":
+			{
+				"buffer_size": 3838,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "bspmview.m",
+			"settings":
+			{
+				"buffer_size": 233809,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "Snippet: foundatino",
+		"selected_items":
+		[
+			[
+				"Snippet: foundatino",
+				"Snippet: ZURB Foundation 5 Topbar"
+			],
+			[
+				"markdown",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"table",
+				"Table Editor: Enable for current syntax"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"prev",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"preview",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"pandoc",
+				"Build With: pandoc-md2word"
+			],
+			[
+				"syntax mark",
+				"Set Syntax: Markdown"
+			],
+			[
+				"slide",
+				"Markdown Slideshow"
+			],
+			[
+				"citer",
+				"Citer: Search"
+			],
+			[
+				"user",
+				"Preferences: Settings - User"
+			],
+			[
+				"Table",
+				"Table Editor: Enable for current syntax"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"markdo",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"markdown ",
+				"Markdown Preview: Preview in Browser"
+			],
+			[
+				"colorsublime",
+				"Colorsublime: Install Theme"
+			],
+			[
+				"theme",
+				"Colorsublime: Browse Themes"
+			]
+		],
+		"width": 602.0
+	},
+	"console":
+	{
+		"height": 541.0,
+		"history":
+		[
+			"sudo ln -s \"/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl\" /usr/bin/subl",
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/bspmview"
+	],
+	"file_history":
+	[
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/thirdparty_notinpath/feeling-responsive/assets/img/logo.png",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/thirdparty_notinpath/feeling-responsive/_config",
+		"/Users/bobspunt/Desktop/spunt.github.io/assets/img/logo.png",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_config.yml",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/resources/noita/_config.yml",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/feed.xml",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/about/index.md",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/Rakefile",
+		"/Users/bobspunt/Desktop/jekyll-kickstart-master/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_noita/default.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_noita/compress.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/foundation/components/_tables.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/foundation/_settings.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/about/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/blog/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/code/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/cv/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/links/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/papers/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_site/404.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/STYLE_REFERENCE.txt",
+		"/Users/bobspunt/Desktop/untitled.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/.gitignore",
+		"/Users/bobspunt/.gitignore_global",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Research/Caltech/PEERS/data/RA0932_PEERS/raw/EP_POST_CONTE_LOI_1_MB_07/badscan_dvars250framewise50_Jun_04_2015.txt",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/_noita/page.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/normalize.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/foundation.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/foundation/components/_global.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/foundation/_functions.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/_scss/foundation/components/_pagination.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/noita/app.scss",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/HTML-CSS-JS Prettify/.jsbeautifyrc",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/HTML-CSS-JS Prettify/HTMLPrettify.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/blog/feed.atom",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/index.html",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/Jekyll.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/.git/MERGE_MSG",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/MarkdownPreview.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/pandoc-md2word.sublime-build",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/Citer.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/Markdown (Standard).sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/AcademicMarkdown.sublime-settings",
+		"/Users/bobspunt/Desktop/cv.md",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/SideBarEnhancements/Default (OSX).sublime-keymap",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/JSON.sublime-settings",
+		"/Users/bobspunt/Library/Preferences/com.apple.LaunchServices.plist",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/shell/bash_config.sh",
+		"/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/Colorsublime/Colorsublime.sublime-settings",
+		"/Users/bobspunt/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/bobspunt/Desktop/Dropbox/key",
+		"/Users/bobspunt/Library/Application Support/Sublime Text 3/Packages/User/Package Control.sublime-settings",
+		"/Users/bobspunt/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings"
+	],
+	"find":
+	{
+		"height": 38.0
+	},
+	"find_in_files":
+	{
+		"height": 117.0,
+		"where_history":
+		[
+			"<project>",
+			"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git",
+			"<project>",
+			"/Users/bobspunt/Desktop/Dropbox/Bob/Matlab/_functions_/git/spunt.github.io/public"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"fontsize",
+			"project",
+			"logo",
+			"ad-image-large-rectangle",
+			"rb_sysopen",
+			"      # street: 123 Main St.\n      # city: Dallas\n      # state: TX\n      # zip: 75001",
+			"lang",
+			"noita.lang",
+			"site.noita.lang",
+			"$defaults",
+			"$defaults = ",
+			"Panels",
+			"/public/icon_title.png",
+			"/public/spuntreach.jpg",
+			"/public/icon_200x200.png",
+			"public/icon_200x200.png",
+			"icon_200x200.png",
+			"icon.png",
+			"h1",
+			"font-size",
+			"font",
+			"top",
+			"sizes",
+			"topbar",
+			"sizes",
+			"size",
+			"sizes",
+			"size",
+			"sizes",
+			"table",
+			"height",
+			"top",
+			"topbar-height",
+			"4",
+			"icon",
+			"\";\n",
+			"oil",
+			"top",
+			"www.bobspunt.com",
+			"8",
+			"table",
+			"outerHeight = ",
+			"outerHeight =",
+			"outerHeight",
+			"topbar",
+			"px",
+			"raw.githubusercontent.com/spunt.github.io/master",
+			"_",
+			"USERNAME",
+			"Merge",
+			"white_list",
+			"white",
+			"white_",
+			"</kbd>**",
+			"**<kbd>",
+			">**",
+			"ctrl",
+			"opt",
+			"shift",
+			"cmd",
+			" •   ",
+			"**]",
+			"[**",
+			"“",
+			"”",
+			"“",
+			" =",
+			"           =",
+			"=",
+			" =",
+			"space"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"/public/img/icon_title.png",
+			"/public/img/icon_200x200.png",
+			"public/img/icon_200x200.png",
+			"spunt.github.io",
+			"www.bobspunt.com",
+			"www.bobspunt.com/resources/papers",
+			"spunt",
+			"</kbd>",
+			"<kbd>",
+			"<kbd>ctrl</kbd>",
+			"<kbd>opt</kbd>",
+			"<kbd>shift</kbd>",
+			"<kbd>cmd</kbd>",
+			"- ",
+			"]",
+			"[",
+			"\"",
+			"="
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/Users/bobspunt/Desktop/Dropbox/Bob/Sync/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3838,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								729,
+								729
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"WordCountSyntax": "json",
+							"bh_regions":
+							[
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/JavaScript/JSON.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "bspmview.m",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 233809,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6944,
+								6944
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"WordCountShouldRun": true,
+							"WordCountSyntax": "matlab",
+							"bh_regions":
+							[
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/Matlab/Matlab.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 4375.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 30.0
+	},
+	"input":
+	{
+		"height": 38.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 639.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.markdown":
+	{
+		"height": 32.0
+	},
+	"pinned_build_system": "Packages/User/pandoc-md2word.sublime-build",
+	"project": "bspmview.sublime-project",
+	"replace":
+	{
+		"height": 70.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"~/Desktop/comparethem/docompare.m"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 358.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

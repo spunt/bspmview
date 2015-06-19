@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150615
+%   Version:  20150619
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150615'; 
+version='20150619'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -146,13 +146,31 @@ function color  = default_colors(darktag)
     color.panel     = [.01 .22 .34];
     color.blues     = brewermap(40, 'Blues'); 
 function fonts  = default_fonts
-    fonts.name      = 'Arial'; 
-    fonts.sz1       = 24;
-    fonts.sz2       = 18; 
-    fonts.sz3       = 16; 
-    fonts.sz4       = 14;
-    fonts.sz5       = 13; 
-    fonts.sz6       = 12;
+    % | Font Size
+    PROP = 1/100; 
+    SS   = get(0, 'screensize');
+    sz1  = round(SS(3)*PROP); 
+    sz2  = round(sz1*(3/4)); 
+    sz3  = round(sz1*(2/3)); 
+    sz4  = round(sz1*(3/5)); 
+    sz5  = round(sz1*(5/9)); 
+    sz6  = round(sz1*(1/2));
+    sz   = [sz1 sz2 sz3 sz4 sz5 sz6];
+    if sz6 < 12
+        sz = [sz1 sz2 sz3 sz4 sz5 sz6];
+        sz = ceil(scaledata(sz, [12 sz1]));
+    elseif sz1 > 24
+        sz = [sz1 sz2 sz3 sz4 sz5 sz6];
+        sz = ceil(scaledata(sz, [sz6 24])); 
+    end
+    fonts.sz1  = sz(1); 
+    fonts.sz2  = sz(2); 
+    fonts.sz3  = sz(3);
+    fonts.sz4  = sz(4);
+    fonts.sz5  = sz(5); 
+    fonts.sz6  = sz(6);
+    % | Font Name
+    fonts.name = 'Arial';   
 function prop   = default_properties(varargin)
     global st
     prop.darkbg     = {'backg', st.color.bg, 'foreg', st.color.fg};
@@ -2639,7 +2657,7 @@ if nargin < 1, disp('USAGE: h = yesorno(question, *titlestr)'); return; end
 if nargin < 2, titlestr = 'Yes or No?'; end
 if iscell(titlestr), titlestr = char(titlestr); end
 if iscell(question), question = char(question); end
-global answer
+global answer st
 answer = []; 
 h(1) = figure(...
     'Units', 'norm', ...
@@ -2655,11 +2673,11 @@ h(1) = figure(...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', question, 'visible', 'on'); 
+    'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', question, 'visible', 'on'); 
 h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-'pos', [.25 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Yes', 'visible', 'on', 'callback', {@cb_answer, h});
+'pos', [.25 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'Yes', 'visible', 'on', 'callback', {@cb_answer, h});
 h(4) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-'pos', [.55 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'No', 'visible', 'on', 'callback', {@cb_answer, h});
+'pos', [.55 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'No', 'visible', 'on', 'callback', {@cb_answer, h});
 uiwait(h(1)); 
 function cb_answer(varargin)
     global answer
@@ -2682,7 +2700,7 @@ if nargin < 1, disp('USAGE: [flag, h] = waitup(msg, titlestr)'); return; end
 if nargin < 2, titlestr = 'Please Wait'; end
 if iscell(titlestr), titlestr = char(titlestr); end
 if iscell(msg), msg = char(msg); end
-global flag
+global flag st
 flag = []; 
 h(1) = figure(...
     'Units', 'norm', ...
@@ -2698,9 +2716,9 @@ h(1) = figure(...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.075 .40 .850 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
+    'pos',[.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', msg, 'visible', 'on'); 
 h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-'pos', [.35 .10 .30 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'Cancel', 'visible', 'on', 'callback', {@cb_cancel, h});
+'pos', [.4 .075 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'Cancel', 'visible', 'on', 'callback', {@cb_cancel, h});
 uiwait(h(1)); 
 function cb_cancel(varargin)
     global flag
@@ -2724,6 +2742,7 @@ if nargin < 2, titlestr = 'Heads Up'; end
 if nargin < 3, wait4resp = 1; end
 if iscell(msg), msg = char(msg); end
 if iscell(titlestr), titlestr = char(titlestr); end
+global st
 h(1) = figure(...
     'Units', 'norm', ...
     'WindowStyle', 'modal', ...
@@ -2738,10 +2757,10 @@ h(1) = figure(...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.075 .40 .850 .500], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 15, 'string', msg, 'visible', 'on'); 
+    'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', msg, 'visible', 'on'); 
 if wait4resp
     h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
-    'pos', [.4 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', 16, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
+    'pos', [.4 .075 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
     uiwait(h(1)); 
 end
 drawnow; 

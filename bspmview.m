@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150619
+%   Version:  20150624
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150619'; 
+version='20150624'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -124,10 +124,17 @@ end
 function pos    = default_positions 
     screensize      = get(0, 'ScreenSize');
     pos.ss          = screensize(3:4);
-    pos.gui         = [pos.ss(1)*.5 pos.ss(2)*.20 pos.ss(2)*.55 pos.ss(2)*.5];
+    pos.gui         = [pos.ss(1)*.20 25 pos.ss(2)*.55 pos.ss(2)*.50];
     pos.gui(3:4)    = pos.gui(3:4)*1.10; 
     pos.aspratio    = pos.gui(3)/pos.gui(4);
-    if pos.gui(3) < 600, pos.gui(3) = 600; pos.gui(4) = pos.gui(3)*pos.aspratio; end
+    if pos.gui(3) < 550
+        pos.gui(3) = 550; 
+        pos.gui(4) = pos.gui(3)*pos.aspratio; 
+    end
+    if sum(pos.gui([2 4])) > (pos.ss(2)*.95)
+        pos.gui(4)  = pos.ss(2)*.90 - 25; 
+        pos.gui(3)  = pos.gui(4)/pos.aspratio; 
+    end
     guiss           = [pos.gui(3:4) pos.gui(3:4)]; 
     panepos         = getpositions(1, [12 1], .01, .01);
     pos.pane.upper  = panepos(2,3:end); 
@@ -156,9 +163,9 @@ function fonts  = default_fonts
     sz5  = round(sz1*(5/9)); 
     sz6  = round(sz1*(1/2));
     sz   = [sz1 sz2 sz3 sz4 sz5 sz6];
-    if sz6 < 12
+    if sz6 < 10
         sz = [sz1 sz2 sz3 sz4 sz5 sz6];
-        sz = ceil(scaledata(sz, [12 sz1]));
+        sz = ceil(scaledata(sz, [10 sz1]));
     elseif sz1 > 24
         sz = [sz1 sz2 sz3 sz4 sz5 sz6];
         sz = ceil(scaledata(sz, [sz6 24])); 

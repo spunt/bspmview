@@ -29,7 +29,7 @@ This software heavily relies on functions contained within the SPM software, and
 <p>------ Copyright (C) Bob Spunt, California Institute of Technology ------</p>   
 * Email:    spunt@caltech.edu
 * Created:  2014-09-27   
-* Version:  20150619
+* Version:  20150624
 
 <p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later

@@ -173,6 +173,7 @@ function [settings, button] = settingsdlg(varargin)
     
     % Use default colorscheme from the OS
     bgcolor = get(0, 'defaultUicontrolBackgroundColor');
+    
     % Default fontsize
     fontsize = st.fonts.sz4; 
 %     fontsize = get(0, 'defaultuicontrolfontsize')*1.25;        

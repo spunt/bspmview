@@ -221,7 +221,6 @@ function [settings, button] = settingsdlg(varargin)
          'backingstore'    , 'off',...         % DON'T save a copy in the background         
          'resize'          , 'off', ...        % but just keep it resizable
          'renderer'        , 'zbuffer', ...    % best choice for speed vs. compatibility
-         'WindowStyle'     , 'modal',...        % window is modal
          'units'           , 'pixels',...      % better for drawing
          'DockControls'    , 'off',...         % force it to be non-dockable
          'name'            , title,...         % dialog title
@@ -229,6 +228,22 @@ function [settings, button] = settingsdlg(varargin)
          'toolbar'         ,'none', ...        % no toolbar
          'NumberTitle'     , 'off',...         % "Figure 1.4728...:" just looks corny
          'color'           , bgcolor);         % use default colorscheme
+%     fighandle = figure(...
+%          'integerhandle'   , 'off',...         % use non-integers for the handle (prevents accidental plots from going to the dialog)
+%          'Handlevisibility', 'off',...         % only visible from within this function
+%          'position'        , [scx, scy, total_width, total_height],...% figure position
+%          'visible'         , 'off',...         % hide the dialog while it is being constructed
+%          'backingstore'    , 'off',...         % DON'T save a copy in the background         
+%          'resize'          , 'off', ...        % but just keep it resizable
+%          'renderer'        , 'zbuffer', ...    % best choice for speed vs. compatibility
+%          'WindowStyle'     , 'modal',...       % window is modal
+%          'units'           , 'pixels',...      % better for drawing
+%          'DockControls'    , 'off',...         % force it to be non-dockable
+%          'name'            , title,...         % dialog title
+%          'menubar'         ,'none', ...        % no menubar of course
+%          'toolbar'         ,'none', ...        % no toolbar
+%          'NumberTitle'     , 'off',...         % "Figure 1.4728...:" just looks corny
+%          'color'           , bgcolor);         % use default colorscheme
           
     %% Draw all required uicontrols(), and unhide window 
     
@@ -416,6 +431,8 @@ function [settings, button] = settingsdlg(varargin)
                      total_width/2.5,control_height*1.5],...
         'Callback', @OK)  
     
+    
+    
     % modify text
     hall = findall(fighandle, 'type',   'uicontrol');
     hbig = findall(fighandle, 'tag',    'bigger'); 
@@ -425,6 +442,8 @@ function [settings, button] = settingsdlg(varargin)
     % move to center of screen and make visible
     movegui(fighandle, window_position);
     set(fighandle, 'Visible', 'on');
+    
+    
     
     
     

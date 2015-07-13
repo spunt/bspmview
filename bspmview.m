@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150624
+%   Version:  20150713
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150624'; 
+version='20150713'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -183,12 +183,10 @@ function prop   = default_properties(varargin)
     prop.darkbg     = {'backg', st.color.bg, 'foreg', st.color.fg};
     prop.lightbg    = {'backg', st.color.fg, 'foreg', [0 0 0]};
     if ~isempty(varargin), prop.darkbg = [varargin{:} prop.darkbg]; prop.lightbg = [varargin{:} prop.lightbg]; end
-%     prop.panel      = [prop.darkbg {'bordertype', 'line', 'titlepos', 'centertop', 'fontw', 'bold'}];
     prop.panel      = [prop.darkbg {'bordertype', 'none', 'titlepos', 'centertop', 'fontw', 'bold'}]; 
     prop.edit       = [prop.lightbg {'style', 'edit', 'horiz', 'center'}];
     prop.text       = [prop.darkbg {'style', 'text', 'horiz', 'center'}]; 
     prop.popup      = [prop.lightbg {'style', 'popup'}]; 
-%     prop.slider     = [prop.darkbg {'style', 'slide', 'min', 1.0000e-20, 'max', 1, 'sliderstep', [1 5], 'value', st.ol.P}];
     prop.push       = [prop.darkbg {'style', 'push', 'horiz', 'center'}]; 
     prop.radio      = [prop.darkbg {'style', 'radio', 'horiz', 'center'}];
     prop.toggle     = [prop.darkbg {'style', 'toggle'}]; 
@@ -217,9 +215,12 @@ function cmap   = default_colormaps(depth)
         cmap{anchor+i,2} = sprintf('%s', bmap1{i});
     end
     tmp1 = brewermap(36, '*Blues'); 
-    tmp2 = brewermap(36, 'Reds'); 
+    tmp2 = brewermap(36, 'Reds');
+    tmp3 = brewermap(36, 'Greens'); 
     cmap{end+1,1} = [tmp1(1:32,:); tmp2(5:36,:)]; 
     cmap{end,2} = 'Blues-Reds';
+    cmap{end+1,1} = [tmp1(1:32,:); tmp3(5:36,:)]; 
+    cmap{end,2} = 'Blues-Greens';
     bmap2 = {'Accent' 'Dark2' 'Paired' 'Pastel1' 'Pastel2' 'Set1' 'Set2' 'Set3'};
     bnum2 = [8 8 12 9 8 9 8 12];
     anchor = size(cmap,1); 
@@ -545,6 +546,7 @@ function put_figmenu
     S.prefs      = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
     S.report     = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
     S.render     = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
+    S.slice      = uimenu(S.options,'Label','Show Slice Montage', 'CallBack', @cb_montage);
     S.smoothmap  = uimenu(S.options,'Label','Apply Smoothing to Overlay', 'Separator', 'on', 'CallBack', @cb_smooth);
     S.smoothmap  = uimenu(S.options,'Label','Apply Mask to Overlay','CallBack', @cb_mask);
     S.crosshair  = uimenu(S.options,'Label','Toggle Crosshairs', 'Separator', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
@@ -1146,21 +1148,11 @@ function cb_report(varargin)
         voxels{tmpidx(1),1} = 'Negative'; 
     end
     
-    % get table position
-    ss = get(0, 'ScreenSize');
-    ts = floor(ss/3);
-    fs = get(st.fig, 'Position');
-    if ss(3)-sum(fs([1 3])) > ts(3)
-        ts(1) = sum(fs([1 3]));
-    else
-        ts(1) = fs(1)-ts(3);
-    end
-    ts([2 4]) = fs([2 4]);
-
     % create table
-    tfig  = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
-    header  = {'Sign' 'Region Name' 'Extent' 'Stat' 'X' 'Y' 'Z'}; 
-    colwidth = repmat({'auto'}, 1, length(header)); 
+    ts          = setposition_auxwindow;
+    tfig        = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
+    header      = {'Sign' 'Region Name' 'Extent' 'Stat' 'X' 'Y' 'Z'}; 
+    colwidth    = repmat({'auto'}, 1, length(header)); 
     colwidth{2} = floor(ss(3)/10);
     th = uitable('Parent', tfig, ...
         'Data', voxels, ...
@@ -1266,7 +1258,78 @@ function cb_closegui(varargin)
    if length(varargin)==3, h = varargin{3};
    else h = varargin{1}; end
    rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
-   delete(h); % Bye-bye figure
+   delete(h); % Bye-bye figure 
+function cb_montage(varargin)
+global st
+pos = setposition_auxwindow; 
+viewopt     = {'sagittal','coronal', 'axial'};
+[pref1, button] = settingsdlg(...
+        'title'                     ,   'Montage Settings', ...
+        'WindowWidth'               ,   pos(3)/2,           ...
+        'ControlWidth'              ,   pos(3)/3,           ...
+        {'Select a View'; 'view'}   ,   viewopt,            ...
+        {'Show Colorbar?'; 'cbar'}  ,   true); 
+if strcmpi(button, 'cancel'), return; end
+defslices   = unique(st.ol.maxima(strcmpi(viewopt, pref1.view), :));
+[pref2, button] = settingsdlg(...
+        'title'                     ,   'Montage Settings', ...
+        'WindowWidth'               ,   pos(3),         ...
+        'ControlWidth'              ,   pos(3)/1.5,       ...
+        {'Slices'; 'slices2show'}          , num2str(defslices)); 
+if strcmpi(button, 'cancel'), return; end
+if ischar(pref2.slices2show)
+    slices2show = str2num(pref2.slices2show);
+else
+    slices2show = pref2.slices2show; 
+end
+
+o = slover; 
+
+% | Underlay
+o.img(1).vol    = spm_vol(st.vols{1}.fname); 
+o.img(1).prop   = 1;
+
+% | Overlay
+T = getthresh; 
+di = strcmpi({'+' '-' '+/-'}, T.direct); 
+clustidx = st.ol.C0(di,:);
+opt = [1 -1 1]; 
+mat3d = st.ol.Y*opt(di);
+mat3d(clustidx==0) = NaN;
+o.img(2).vol = slover('matrix2vol', mat3d, st.ol.hdr.mat); 
+o.img(2).prop = 1; 
+o.img(2).type = 'split';
+o.img(2).range = getminmax';
+o.img(2).cmap = getcolormap;
+if pref1.cbar, o.cbar = 2; else o.cbar = []; end
+
+% | More Settings
+o.slices    = slices2show;
+o.transform = pref1.view;
+o.refreshf  = 0;
+o.clf = 0; 
+o.resurrectf = 0;
+o.area.units = 'normalized';
+o.area.position = [0 0 1 1];
+o.area.halign = 'left';
+o.area.valign = 'bottom';
+o.xslices = []; 
+o = fill_defaults(o); 
+
+% | Setup Figure Window
+o.figure = figure( ...
+        'Renderer', 'zbuffer',       ...
+        'Inverthardcopy', 'off',    ...
+        'Name', 'Slice Montage',        ...
+        'NumberTitle', 'off',       ...
+        'Position', setposition_auxwindow,   ...
+        'Color', [0 0 0],    ...
+        'DockControls','off', ...
+        'Visible', 'off');
+obj = paint(o);
+set(findall(obj.figure, 'type', 'axes'), 'units', 'norm'); 
+tightfig; 
+drawnow; 
    
 % | SETTERS
 % =========================================================================
@@ -1372,6 +1435,17 @@ function setposition_axes
     set(p, 'units', 'norm', 'pos', ppos); 
     set(p, 'units', unit0); 
     bspm_orthviews('Redraw');
+function pos = setposition_auxwindow
+global st
+ss = get(0, 'ScreenSize');
+pos = floor(ss/3);
+fs = get(st.fig, 'Position');
+if ss(3)-sum(fs([1 3])) > pos(3)
+    pos(1) = sum(fs([1 3]));
+else
+    pos(1) = fs(1)-pos(3);
+end
+pos([2 4]) = fs([2 4]);
 function setthreshinfo(T)
     global st
     if nargin==0

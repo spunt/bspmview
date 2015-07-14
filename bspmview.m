@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150713
+%   Version:  20150714
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150713'; 
+version='20150714'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -546,7 +546,7 @@ function put_figmenu
     S.prefs      = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
     S.report     = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
     S.render     = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
-    S.slice      = uimenu(S.options,'Label','Show Slice Montage', 'CallBack', @cb_montage);
+    S.slice      = uimenu(S.options,'Label','Show Slice Montage', 'Accelerator', 's', 'CallBack', @cb_montage);
     S.smoothmap  = uimenu(S.options,'Label','Apply Smoothing to Overlay', 'Separator', 'on', 'CallBack', @cb_smooth);
     S.smoothmap  = uimenu(S.options,'Label','Apply Mask to Overlay','CallBack', @cb_mask);
     S.crosshair  = uimenu(S.options,'Label','Toggle Crosshairs', 'Separator', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'Checked', 'on', 'CallBack', @cb_crosshair);
@@ -1148,6 +1148,17 @@ function cb_report(varargin)
         voxels{tmpidx(1),1} = 'Negative'; 
     end
     
+    % get table position
+    ss = get(0, 'ScreenSize');
+    ts = floor(ss/3);
+    fs = get(st.fig, 'Position');
+    if ss(3)-sum(fs([1 3])) > ts(3)
+        ts(1) = sum(fs([1 3]));
+    else
+        ts(1) = fs(1)-ts(3);
+    end
+    ts([2 4]) = fs([2 4]);
+    
     % create table
     ts          = setposition_auxwindow;
     tfig        = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
@@ -1262,25 +1273,32 @@ function cb_closegui(varargin)
 function cb_montage(varargin)
 global st
 pos = setposition_auxwindow; 
+% | View GUI
 viewopt     = {'sagittal','coronal', 'axial'};
-[pref1, button] = settingsdlg(...
-        'title'                     ,   'Montage Settings', ...
-        'WindowWidth'               ,   pos(3)/2,           ...
-        'ControlWidth'              ,   pos(3)/3,           ...
-        {'Select a View'; 'view'}   ,   viewopt,            ...
-        {'Show Colorbar?'; 'cbar'}  ,   true); 
-if strcmpi(button, 'cancel'), return; end
-defslices   = unique(st.ol.maxima(strcmpi(viewopt, pref1.view), :));
-[pref2, button] = settingsdlg(...
-        'title'                     ,   'Montage Settings', ...
-        'WindowWidth'               ,   pos(3),         ...
-        'ControlWidth'              ,   pos(3)/1.5,       ...
-        {'Slices'; 'slices2show'}          , num2str(defslices)); 
-if strcmpi(button, 'cancel'), return; end
-if ischar(pref2.slices2show)
-    slices2show = str2num(pref2.slices2show);
+viewoptin   = strcat('|', viewopt);
+pref = menuN('Montage Settings', ...
+            {strcat('p', viewoptin{:}),'Select View'; ...
+          'x|hide colorbar|hide labels','Display Options'; ...
+          't|auto', 'N Slices Per Row'}); 
+if strcmpi(pref, 'cancel'), return; end
+theview = viewopt{pref{1}};
+if any(pref{2}==1), cbar = []; else cbar = 2; end
+if any(pref{2}==2), labels = 'none'; else labels = []; end
+if strcmpi(pref{3}, 'auto'), xslices = []; else xslices = str2num(pref{3}); end
+
+% | Slices GUI
+defslices   = unique(st.ol.maxima(strcmpi(viewopt, theview), :));
+goodset = 0; 
+while ~goodset
+    idx = find(diff(defslices) <= st.ol.VOX(1)) + 1;
+    if isempty(idx), goodset = 1; else defslices(idx(1)) = []; end
+end
+pref = menuN('Montage Settings', {['t|' num2str(defslices)], 'Slices to Display:'});
+if strcmpi(pref, 'cancel'), return; end
+if ischar(pref)
+    slices2show = str2num(pref);
 else
-    slices2show = pref2.slices2show; 
+    slices2show = pref; 
 end
 
 o = slover; 
@@ -1301,11 +1319,12 @@ o.img(2).prop = 1;
 o.img(2).type = 'split';
 o.img(2).range = getminmax';
 o.img(2).cmap = getcolormap;
-if pref1.cbar, o.cbar = 2; else o.cbar = []; end
+o.cbar = cbar; 
+o.labels = labels; 
 
 % | More Settings
 o.slices    = slices2show;
-o.transform = pref1.view;
+o.transform = theview;
 o.refreshf  = 0;
 o.clf = 0; 
 o.resurrectf = 0;
@@ -1313,7 +1332,7 @@ o.area.units = 'normalized';
 o.area.position = [0 0 1 1];
 o.area.halign = 'left';
 o.area.valign = 'bottom';
-o.xslices = []; 
+o.xslices = xslices; 
 o = fill_defaults(o); 
 
 % | Setup Figure Window
@@ -1325,12 +1344,13 @@ o.figure = figure( ...
         'Position', setposition_auxwindow,   ...
         'Color', [0 0 0],    ...
         'DockControls','off', ...
+        'MenuBar', 'Figure', ...
         'Visible', 'off');
 obj = paint(o);
 tightfig; 
 set(findall(obj.figure, 'type', 'axes'), 'units', 'norm'); 
 drawnow; 
-   
+
 % | SETTERS
 % =========================================================================
 function setstatus(msg)
@@ -1544,6 +1564,193 @@ function setregionname(varargin)
     end
     set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
     drawnow;
+function setpos(h,fmt,href)
+% SETPOS Set graphics object position in a flexible way.
+%   SETPOS(H,FMT) sets the position property of graphics object 
+%   with handle H, according to FMT that can be expressed using different
+%   units. H must have a "Position' property.
+%
+%   FMT is a char array containing 4 strings separated by colon or space.
+%   The format of each string is one of "%1c%f%2c" or "%1c%d%2c" where the 
+%   first optional argument is "+" or "-", the second one is a number and 
+%   the last one is two characters that specify the unit as :
+%
+%           px          for Pixels
+%           nz          for Normalized
+%           in          for Inches
+%           cm          for Centimeters
+%           pt          for Points
+%           ch          for Characters
+%           [] (empty)  for Current units [See get(H,'units')]
+%
+%   For better rendering, SETPOS can be included into the "Createfcn" or 
+%   "Resizefcn" properties of the graphical object H.
+%
+%   Any string value of FMT can be replaced by a single '#' to keep the current 
+%   value of the corresponding parameter.
+%
+%   The first optional argument of FMT is used to increase ('+') or 
+%   decrease ('-') the corresponding value.
+%
+%   Note that SETPOS(H,FMT) works as set(H,'Position',FMT) when FMT is 
+%   a 4 double values vector.
+%
+%   SETPOS(H,FMT,HREF) sets the position of the graphics object H according to 
+%   FMT, but using the position of the graphics object HREF as reference instead 
+%   of the parent of H. HREF must be a valid handle and must have a "Position" 
+%   property (except for the Root object). Note that this should only affect 
+%   Left&Bottom (1st&2nd) element of the "Position" vector of H.
+%
+%   See also GETPOS, SET, GET.
+
+%   Author: Jérôme Briot, Matlab 6.1.0.450 (R12.1)
+%   Contact: dutmatlab@yahoo.fr
+%   Revision: 1.0 (12-Feb-2007)
+%             1.1 (14-Feb-2007) Third input argument HREF added.
+%                               Minor corrections in the help section.
+%             1.2 (21-Feb-2007) Bug fixed if HREF is the Root object
+%                               Examples removed from the help section
+%   Comments:
+%
+
+% Check the number of input arguments
+error(nargchk(2,3, nargin));
+
+% Check if H is a graphics object handle
+if ~ishandle(h)
+    error('First argument must be a graphic object handle in SETPOS(H,FMT)');
+end
+
+% If FMT is a 4x1 double vector then SETPOS works as SET(H,'Position',FMT)
+if isnumeric(fmt) & numel(fmt(:))==4
+    
+    set(h,'position',fmt)
+    return
+
+% If FMT is not a double vector, check if it's a char string
+elseif ~ischar(fmt)
+
+    error('FMT argument must be a string or a 4 elements vector in SETPOS(H,FMT)');
+    
+end
+
+if nargin==2 % SETPOS(H,FMT)
+    
+    %HREF = parent of H
+    href=get(h,'parent');
+    
+elseif nargin==3 % SETPOS(H,FMT,HREF)
+    
+    if ~ishandle(href) % Check if HREF is a valid handle
+        error('HREF must be a valid handle of a graphics object in SETPOS(H,FMT,HREF)')
+    end
+    
+end
+
+flag_href=0;
+% Don't use HREF position if it is the parent of H        
+if href~=get(h,'parent') 
+    flag_href=1;
+end
+
+% Extract 4 char strings from FMT
+M=strread(fmt,'%s','delimiter',' ,','emptyvalue',0);
+
+% Store the current unit of the graphics object H
+current_unit=get(h,'units');
+% Store the current unit of the reference object HREF
+current_ref_unit=get(href,'units');
+
+% List available units
+available_units={'inches' 'centimeters' 'normalized' 'points' 'pixels' 'characters'};
+
+flag=zeros(1,4);
+
+% Decode elements of FMT
+for n=1:numel(M)    
+    
+    % If FMT(n) is not a "#"
+    if ~strcmp(M{n},'#')
+        
+        % Check if FMT(n) is +%... or -%...
+        if strncmp(M{n},'+',1)
+            flag(n)=1;
+            M{n}(1)=[]; % Remove '+' char     
+        elseif strncmp(M{n},'-',1)
+            flag(n)=-1;
+            M{n}(1)=[]; % Remove '-' char  
+        end
+        
+        % Separate value and unit from FMT(n)
+        [val(n),temp_unit]=strread(M{n},'%f%s');
+        
+        % If the unit is not specified in FMT(n)
+		if isempty(temp_unit)
+            
+            unit{n}=current_unit; % Set the units to the current one
+            
+        % Else check if the units paramter is valid
+ 		else idx=strcmpi(temp_unit,{'in' 'cm' 'nz' 'pt' 'px' 'ch'});
+            
+            if ~any(idx)
+                error('Units must be one of "in", "cm", "nz", "pt", "px" or "ch"')
+            end
+            
+            unit{n}=available_units{idx}; % Set the units to one from the list
+                
+		end
+        
+    end           
+                
+end
+
+% Set position of H using decoded FMT 
+for n=1:numel(M)
+    
+    % If FMT(n) is not a "#" => value to modify
+    if ~strcmp(M{n},'#')
+        
+        % Modify the "Units" property of H 
+        set(h,'units',unit{n});
+        % Modify the "Units" property of HREF
+        set(href,'units',unit{n});
+        % Get the current "Position" vector of H
+        position_in_unit=get(h,'position');
+        % Get the current "Position" vector of HREF
+        if ~href % HREF is the Root object (no 'Position' property)
+            position_ref_unit=get(href,'screensize'); %%% Should be safe here !
+        else position_ref_unit=get(href,'position');
+        end
+        if ~flag % No "+" or "-"
+            
+            if any(n==[1 2])
+                % If HREF is specified and is not the parent of H, flag_href=1 else flag_href=0
+                position_in_unit(n)=val(n)+position_ref_unit(n)*flag_href;
+            else position_in_unit(n)=val(n);
+            end
+            
+        elseif any(n==[3 4]) % "+" or "-" and FMT(n) is width or height
+        
+            position_in_unit(n)=position_in_unit(n)+val(n)*flag(n);
+            
+        else % "+" or "-" and FMT(n) is left or bottom
+            
+            position_in_unit(n)=position_in_unit(n)+val(n)*flag(n);
+            position_in_unit(n+2)=position_in_unit(n+2)-val(n)*flag(n);
+            
+        end
+        
+        % Modify the "Position" property of H
+        set(h,'position',position_in_unit)
+        
+    end
+        
+end
+
+% Restore the unit of the graphics object H
+set(h,'units',current_unit);
+% Restore the unit of the reference object HREF
+set(href,'units',current_ref_unit);
 
 % | GETTERS
 % =========================================================================
@@ -1708,6 +1915,186 @@ function [regionname, regionidx] = getregionnames(xyz)
             regionname{i} = st.ol.atlaslabels.label{st.ol.atlaslabels.id==regionidx(i)};
         end
     end
+function [pos,unit]              = getpos(h,fmt,href,opt)
+% GETPOS Get graphics object position in a flexible way.
+%   GETPOS(H,FMT) gets the position property of graphics object 
+%   with handle H, according to FMT that can be expressed using different
+%   units. H must have a "Position" property.
+%
+%   FMT is a char array containing four "%2c" strings separated by colon or
+%   space. The two characters specify the unit as :
+%
+%           px  for Pixels
+%           nz  for Normalized
+%           in  for Inches
+%           cm  for Centimeters
+%           pt  for Points
+%           ch  for Characters
+%
+%   If FMT is only one format string from the above list, all returned values are
+%   expressed using this unit.
+%
+%   Any string value of FMT can be replaced by a single '#' to not retrieve the
+%   corresponding value. The returned value is NaN except if the optional last 
+%   argument OPT is set to "compact" in GETPOS(H,FMT,[HREF],OPT).
+%
+%   Note that GETPOS(H) works as get(H,'Position') and return the position 
+%   vector in the current unit of the graphics object H.
+%
+%   GETPOS(H,FMT,HREF,['compact']) gets the position of the graphics object H according 
+%   to FMT, but using the position of the graphics object HREF as reference instead 
+%   of the parent of H. HREF must be a valid handle and must have a "Position" 
+%   property (except for the Root object). Returned values may be negative or 0.
+%
+%   [POS,UNIT]=GETPOS(H,...) returns an additional output argument UNIT that 
+%   contained the unit list of the output vector position POS. It may be safer 
+%   when different units are used.
+% 
+%   See also SETPOS, SET, GET.
+
+%   Author: Jérôme Briot, Matlab 6.1.0.450 (R12.1)
+%   Contact: dutmatlab@yahoo.fr
+%   Revision: 1.0 (12-Feb-2007)
+%             1.1 (14-Feb-2007) Third input argument HREF added.
+%                               Minor corrections in the help section.
+%             1.2 (21-Feb-2007) Bug fixed if HREF is the Root object
+%                               Examples removed from the help section
+%   Comments:
+%
+
+% Check the number of input arguments
+error(nargchk(1,4, nargin));
+
+% Check if H is a graphics object handle
+if ~ishandle(h)
+    error('First argument must be a graphic object handle');
+end
+
+% Store the current unit of the graphics object H
+current_unit=get(h,'units');
+
+% Init variables
+unit={current_unit current_unit current_unit current_unit};
+pos=[nan nan nan nan];
+
+% If FMT input argument is not specified, works as GET(H,'Position')
+if nargin==1
+    pos=get(h,'position');
+    return
+end
+
+% Check if FMT is a char string
+if ~ischar(fmt)
+	error('Second argument must be a string in GETPOS(H,FMT)')
+end  
+
+if nargin==2 % GETPOS(H,FMT)
+    
+    href=get(h,'parent');
+    opt='full';
+    
+elseif nargin==3
+    
+    if ishandle(href) % GETPOS(H,FMT,HREF)
+        
+        opt='full';
+        
+    elseif strcmpi(href,'compact') % GETPOS(H,FMT,"compact")
+        
+        href=get(h,'parent');
+        opt='compact';
+        
+    else % GETPOS(H,FMT,???)
+        error('Wrong third argument in GETPOS(H,FMT,???). Must be a valid handle or "compact"');
+        
+    end
+    
+elseif nargin==4 % GETPOS(H,FMT,HREF,OPT)
+    
+    if ~ishandle(href) 
+        error('Third argument must be a valid handle in GETPOS(H,FMT,HREF,OPT)');
+    end
+        
+    if ~strcmpi(opt,'compact') 
+        error('Last argument must be "compact" in GETPOS(H,FMT,HREF,OPT)'); 
+    end
+    
+end
+
+flag_href=0;
+% Don't use HREF position if it is the parent of H        
+if href~=get(h,'parent')
+    href=h;
+    flag_href=1;
+end
+
+% Store the current unit of the reference object HREF
+current_ref_unit=get(href,'units');
+
+% Extract 4 char strings from FMT
+M=strread(fmt,'%s','delimiter',' ,');
+
+% Only one FMT requested for output
+if numel(M)==1
+    [M{2:4}]=deal(M{1});    
+end
+
+% List available units
+available_units={'inches' 'centimeters' 'normalized' 'points' 'pixels' 'characters'};
+
+% Decode elements of FMT
+for n=1:numel(M) 
+    
+    % If FMT(n) is not a "#"
+    if ~strcmp(M{n},'#')
+        
+        % Check if the units paramter is valid
+        idx=strcmpi(M{n},{'in' 'cm' 'nz' 'pt' 'px' 'ch'});
+        
+        if ~any(idx)
+            error('Units must be one of "in", "cm", "nz", "pt", "px" or "ch"')
+        end
+        
+        unit{n}=available_units{idx}; % Set the units to one from the list 
+            
+    end
+    
+end
+
+% Get position of H using decoded FMT 
+for n=1:numel(M)    
+
+    % If FMT(n) is not a "#" => get the value
+    if ~strcmp(M{n},'#')
+       
+        % Modify the "Units" property of H 
+        set(h,'units',unit{n});
+        % Modify the "Units" property of HREF
+        set(href,'units',unit{n});
+        % Get the current "Position" vector of H
+        temp=get(h,'position');
+        % Get the current "Position" vector of HREF
+        if ~href % HREF is the Root object (no 'Position' property)
+            temp_href=get(href,'screensize'); %%% Should be safe here !
+        else temp_href=get(href,'position');
+        end
+        % Get and store the specified field from the "Position" vector
+        % If HREF is specified and is not the parent of H, flag_href=1 else flag_href=0
+        pos(n)=temp(n)-temp_href(n)*flag_href;
+        
+    end
+    
+end
+
+% Check for compact output format 
+if strcmpi(opt,'compact')
+    pos(isnan(pos))=[];
+end
+
+% Restore the unit of the graphics object H
+set(h,'units',current_unit);
+% Restore the unit of the reference object HREF
+set(href,'units',current_ref_unit);
 
 % | BUIPANEL
 % =========================================================================
@@ -2305,6 +2692,43 @@ function df         = check4df(descrip)
 % =========================================================================    
 function str        = nicetime
     str = strtrim(datestr(now,'HH:MM:SS PM on mmm. DD, YYYY'));
+function [strw, strh] = strsize(string, varargin)
+% STRSIZE Calculate size of string
+%
+%  USAGE: strsize(string, varargin) 
+%
+
+% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
+%	Created:  2015-07-14
+%	Email:     spunt@caltech.edu
+% __________________________________________________________________________
+def = { ... 
+	'axhandle',         gca,	...
+    'FontSize',         [],     ...
+    'FontName',         [],     ...
+    'FontWeight',       [],     ...
+    'FontAngle',        [],     ...
+    'FontUnits',        []      ...
+	};
+vals = setargs(def, varargin);
+if nargin==0, mfile_showhelp; fprintf('\t| - VARARGIN DEFAULTS - |\n'); disp(vals); return; end
+if isempty(FontSize), FontSize = axhandle.FontSize; end
+if isempty(FontName), FontName = axhandle.FontName; end
+if isempty(FontWeight), FontWeight = axhandle.FontWeight; end
+if isempty(FontAngle), FontAngle = axhandle.FontAngle; end
+if isempty(FontUnits), FontUnits = axhandle.FontUnits; end
+
+% | Get text size in data units
+hTest   = text(1,1, string, 'Units','Pixels', 'FontUnits',FontUnits,...
+    'FontAngle',FontAngle,'FontName',FontName,'FontSize',FontSize,...
+    'FontWeight',FontWeight,'Parent',axhandle, 'Visible', 'off');
+textExt = get(hTest,'Extent');
+delete(hTest)
+strh = textExt(4);
+strw = textExt(3);
+
+% | If using a proportional font, shrink text width by a fudge factor to account for kerning.
+if ~strcmpi(axhandle.FontName,'FixedWidth'), strw = strw*0.9; end 
 function out        = abridgepath(str, maxchar)
     if nargin<2, maxchar =  85; end
     if iscell(str), str = char(str); end

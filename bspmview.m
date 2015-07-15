@@ -1301,6 +1301,8 @@ else
     slices2show = pref; 
 end
 
+% | SLOVER
+% | ========================================================
 o = slover; 
 
 % | Underlay
@@ -1344,12 +1346,56 @@ o.figure = figure( ...
         'Position', setposition_auxwindow,   ...
         'Color', [0 0 0],    ...
         'DockControls','off', ...
-        'MenuBar', 'Figure', ...
+        'MenuBar', 'None', ...
         'Visible', 'off');
+S.menu          = uimenu('Parent', o.figure, 'Label', 'Options');
+S.save          = uimenu(S.menu, 'Label', 'Save to File', 'Callback', {@cb_savemontage, o.figure});
+S.labelpos      = uimenu(S.menu, 'Label', 'Label Position', 'Separator', 'on'); 
+S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});
+S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+S.skin          = uimenu(S.labelpos, 'Label', 'Top Left', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+S.skin          = uimenu(S.labelpos, 'Label', 'Top Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+S.labelfont     = uimenu(S.menu, 'Label', 'Label Font Size', 'Separator', 'on');
+S.skin          = uimenu(S.labelfont, 'Label', 'Increase', 'Callback', {@cb_montagelabelsize, o.figure});
+S.skin          = uimenu(S.labelfont, 'Label', 'Decrease', 'Callback', {@cb_montagelabelsize, o.figure});
 obj = paint(o);
 tightfig; 
 set(findall(obj.figure, 'type', 'axes'), 'units', 'norm'); 
 drawnow; 
+function cb_savemontage(varargin)
+defname = 'SliceMontage.png'; 
+[imname, pname] = uiputfile({'*.png; *.jpg; *.pdf; *.tiff; *.pdf; *.ps', 'Image'; '*.*', 'All Files (*.*)'}, 'Valid extensions: png, jpg, tiff, pdf, ps', defname);
+if ~imname, disp('User cancelled.'); return; end
+[p,n,e] = fileparts(imname);
+if isempty(e), e = '.png'; end
+if strcmpi(e, '.ps'), e = '.psc'; end
+if strcmpi(e, '.jpg'), e = '.jpeg'; end
+fmt = strcat('-', regexprep(e, '\.', 'd'));
+print(varargin{3}, fmt, strcat('-', 'painters'), strcat('-', 'noui'), fullfile(pname,n)); 
+fprintf('\nImage saved to %s\n', fullfile(pname, strcat(imname, e)));  
+function cb_montagelabelposition(varargin)
+    set(findall(varargin{3}, 'Tag', 'positionmenu'), 'Checked', 'off'); 
+    hstr = findall(varargin{3},  'type', 'text'); 
+    set(hstr, 'units', 'norm');
+    ext = cell2mat(get(hstr, 'extent'));
+    ext = max(ext(:,3:4)); 
+    height = 1 - ext(2); 
+    width = 1 - ext(1); 
+    chosen = get(varargin{1}, 'Label'); 
+    options = {'Bottom Left' 'Bottom Right' 'Top Left' 'Top Right'};
+    pos = [ 0 0 0; width 0 0; 0 height 0; width height 0 ]; 
+    set(hstr, 'Position', pos(strcmpi(options, chosen), :));
+    set(varargin{1}, 'Checked', 'on'); 
+    drawnow;
+function cb_montagelabelsize(varargin)
+    if strcmpi(get(varargin{1}, 'Label'), 'Increase'), F = 1; else F = -1; end
+    hstr = findall(varargin{3},  '-property', 'FontSize'); 
+    set(hstr, 'FontUnits', 'points');
+    fs = cell2mat(get(hstr, 'FontSize')) + F;
+    arrayfun(@set, hstr, repmat({'FontSize'}, length(hstr), 1), num2cell(fs))
+    pause(.25);
+    drawnow;
+    set(hstr, 'Units', 'norm');
 
 % | SETTERS
 % =========================================================================

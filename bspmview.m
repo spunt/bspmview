@@ -1348,16 +1348,19 @@ o.figure = figure( ...
         'DockControls','off', ...
         'MenuBar', 'None', ...
         'Visible', 'off');
-S.menu          = uimenu('Parent', o.figure, 'Label', 'Options');
-S.save          = uimenu(S.menu, 'Label', 'Save to File', 'Callback', {@cb_savemontage, o.figure});
-S.labelpos      = uimenu(S.menu, 'Label', 'Label Position', 'Separator', 'on'); 
-S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});
-S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
-S.skin          = uimenu(S.labelpos, 'Label', 'Top Left', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
-S.skin          = uimenu(S.labelpos, 'Label', 'Top Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
-S.labelfont     = uimenu(S.menu, 'Label', 'Label Font Size', 'Separator', 'on');
-S.skin          = uimenu(S.labelfont, 'Label', 'Increase', 'Callback', {@cb_montagelabelsize, o.figure});
-S.skin          = uimenu(S.labelfont, 'Label', 'Decrease', 'Callback', {@cb_montagelabelsize, o.figure});
+S.menu          = uimenu('Parent', o.figure, 'Label', 'File');
+S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_savemontage, o.figure});
+if ~isempty(o.labels)
+    S.label         = uimenu('Parent', o.figure, 'Label', 'Labels'); 
+    S.labelpos      = uimenu(S.label, 'Label', 'Label Position'); 
+    S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});
+    S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+    S.skin          = uimenu(S.labelpos, 'Label', 'Top Left', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+    S.skin          = uimenu(S.labelpos, 'Label', 'Top Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+    S.labelfont     = uimenu(S.label, 'Label', 'Label Font Size', 'Separator', 'on');
+    S.skin          = uimenu(S.labelfont, 'Label', 'Increase',  'Accelerator', '=', 'Callback', {@cb_montagelabelsize, o.figure});
+    S.skin          = uimenu(S.labelfont, 'Label', 'Decrease',  'Accelerator', '-','Callback', {@cb_montagelabelsize, o.figure});
+end
 obj = paint(o);
 tightfig; 
 set(findall(obj.figure, 'type', 'axes'), 'units', 'norm'); 

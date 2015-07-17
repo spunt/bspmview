@@ -134,7 +134,7 @@ defOpt.checkboxFontSize       = 12;
 defOpt.listboxFontSize        = 11;
 defOpt.checkboxFontSize       = 12;
 defOpt.sliderFontSize         = 11;
-defOpt.sliderStepsFraction    = [0.01,0.1];
+defOpt.sliderStepsFraction    = [0.01, 0.10];
 defOpt.okButtonLabel          = 'OK';
 defOpt.cancelButtonLabel      = 'Cancel'; 
 defOpt.pixelHeigthUIcontrol   = 20;
@@ -191,11 +191,12 @@ extentWidthRadiobuttonInPadding  = 20;
 extentWidthGroupPadding       = 15;
 extentHeightTitlePadding      = -Opt.pixelPaddingHeigth(2);
 
+thewindowstyle = 'normal'; % 'modal'
 
 %% Create a figure
 % We do not worry about its size and position yet:
 % hFig           = figure('Name',mtitle,'WindowStyle','modal','NumberTitle','off');
-hFig           = figure('Name',mtitle,'Toolbar','none','Menubar','none','NumberTitle','off', 'WindowStyle', 'modal');
+hFig           = figure('Name',mtitle,'Toolbar','none','Menubar','none','NumberTitle','off', 'WindowStyle', thewindowstyle);
 
 % Set initial necessary width that all uicontrols must be [pixels]:
 tmpMinimumSize                = [extentWidthUniversalMin, 15];
@@ -589,7 +590,21 @@ for idxOptions = numOptionsGroups:-1:1
          extentHeightPopupmenuPadding + Opt.pixelPaddingHeigth(2);
       
    %% Print for Options of Input type (s)
-   elseif isnumeric(tmpOptions)                                
+   elseif isnumeric(tmpOptions)    
+       
+       
+%        if length(tmpOptions) < 4
+%            sliderStepsFraction = Opt.sliderStepsFraction;
+%        elseif length(tmpOptions) == 4
+%            sliderStepsFraction = [tmpOptions(4) tmpOptions(4)*5];
+%            tmpOptions = tmpOptions(1:3);
+%        elseif length(tmpOptions) == 5
+%            sliderStepsFraction = tmpOptions(4:5);
+%            tmpOptions = tmpOptions(1:3); 
+%        else
+%            error('menuN:input:Unknown format of slider input input.')
+%        end
+           
       % Check if length is 2:
       if length(tmpOptions) == 2 
          tmpOptions(3) = tmpOptions(1) + 0.5*diff(tmpOptions);
@@ -603,6 +618,8 @@ for idxOptions = numOptionsGroups:-1:1
       if tmpOptions(1) > tmpOptions(2)
          error('menuN:slider:Start value must be lower the end value.');
       end
+      
+      % | Check for Slider Step size
       
       % Create uicontrol:
       hSliderGroup         = cell(1,2);
@@ -625,7 +642,7 @@ for idxOptions = numOptionsGroups:-1:1
          'Position',    tmpPosition,...
          'Userdata',    hSliderGroup{1},...
          'Callback',    {@updateSliderText,hSliderGroup{1}},...
-         'SliderStep',  Opt.sliderStepsFraction);
+         'SliderStep',  sliderStepsFraction);
       
       % For continous updates when we move the slider we add a listener:
       if exist('addlistener','builtin')

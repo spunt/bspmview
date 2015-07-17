@@ -1350,7 +1350,8 @@ o.figure = figure( ...
         'Visible', 'off');
 S.menu          = uimenu('Parent', o.figure, 'Label', 'File');
 S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_savemontage, o.figure});
-if ~isempty(o.labels)
+S.settings      = uimenu(S.menu, 'Label', 'Create New', 'Callback', @cb_montage); 
+if ~strcmpi(o.labels, 'none')
     S.label         = uimenu('Parent', o.figure, 'Label', 'Labels'); 
     S.labelpos      = uimenu(S.label, 'Label', 'Label Position'); 
     S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});

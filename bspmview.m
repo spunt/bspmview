@@ -46,7 +46,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150714
+%   Version:  20150724
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150714'; 
+version='20150724'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -614,17 +614,30 @@ function cb_updateoverlay(varargin)
     di  = strcmpi({'+' '-' '+/-'}, T.direct);
     if nargin > 0
         tag = get(varargin{1}, 'tag');
+        hcorrect = findobj(st.fig, 'tag', 'Correction');
         switch tag
             case {'Thresh'}
                 if T.df~=Inf, T.pval = bob_t2p(T.thresh, T.df); end
+                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                end
             case {'P-Value'}
                 if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
+                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                end
             case {'DF'}
                 if ~any([T.pval T.df]==Inf)
                     T.thresh = spm_invTcdf(1-T.pval, T.df); 
                     T.pval = bob_t2p(T.thresh, T.df);
                 end
+                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                end
             case {'Extent'}
+                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
+                end
                 if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
                     headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');
                     T.extent = max(st.ol.C0(di,:));
@@ -643,6 +656,37 @@ function cb_updateoverlay(varargin)
     setthreshinfo(T);
     setmaxima;
     drawnow;
+function cb_correct(varargin)
+    setstatus('Working, please wait...'); 
+    global st
+    str = get(varargin{1}, 'string');
+    methodstr = str{get(varargin{1}, 'value')};
+    T0 = getthresh;
+    T = T0; 
+    di = strcmpi({'+' '-' '+/-'}, T.direct); 
+    switch methodstr
+        case {'None'}
+            setstatus('Ready'); 
+            return;
+        case {'Voxel FWE'}
+            T.thresh    = voxel_correct(st.ol.fname, st.preferences.alphacorrect);
+            T.pval      = bob_t2p(T.thresh, T.df);
+        case {'Cluster FWE'}
+            T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect, max(st.ol.C));
+    end
+    [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
+    C = st.ol.C0(di,:); 
+    if sum(C(C>=T.extent))==0
+        T0.thresh = st.ol.U; 
+        setthreshinfo(T0);
+        headsup('No suprathreshold voxels. Reverting to uncorrected threshold.');
+        set(varargin{1}, 'value', 1);
+        setstatus('Ready'); 
+        return
+    end
+    setthresh(C, find(di)); 
+    setthreshinfo(T);
+    setstatus('Ready'); 
 function cb_directmenu(varargin)
     global st
     if ischar(varargin{1}), str = varargin{1}; 
@@ -1023,37 +1067,6 @@ function cb_changeskin(varargin)
     set(h.colorbar, 'ycolor', st.color.fg); 
     set(varargin{1}, 'Checked', 'on'); 
     drawnow;
-function cb_correct(varargin)
-    setstatus('Working, please wait...'); 
-    global st
-    str = get(varargin{1}, 'string');
-    methodstr = str{get(varargin{1}, 'value')};
-    T0 = getthresh;
-    T = T0; 
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
-    switch methodstr
-        case {'None'}
-            setstatus('Ready'); 
-            return;
-        case {'Voxel FWE'}
-            T.thresh    = voxel_correct(st.ol.fname, st.preferences.alphacorrect);
-            T.pval      = bob_t2p(T.thresh, T.df);
-        case {'Cluster FWE'}
-            T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect);
-    end
-    [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-    C = st.ol.C0(di,:); 
-    if sum(C(C>=T.extent))==0
-        T0.thresh = st.ol.U; 
-        setthreshinfo(T0);
-        headsup('No suprathreshold voxels. Reverting to uncorrected threshold.');
-        set(varargin{1}, 'value', 1);
-        setstatus('Ready'); 
-        return
-    end
-    setthresh(C, find(di)); 
-    setthreshinfo(T);
-    setstatus('Ready'); 
 function cb_preferences(varargin)
     global st
     default_preferences; 
@@ -2428,10 +2441,10 @@ else % SPM
 end
 %% get threshold
 u = spm_uc(alpha,df,STAT,R,n,S); 
-function k  = cluster_correct(im,u,alpha,range)
-% BOB_SPM_CLUSTER_CORRECT Computer extent for cluster-level correction
+function k  = cluster_correct(im,u,alpha,maxk)
+% CLUSTER_CORRECT Computer extent for cluster-level correction
 %
-% USAGE: [k info] = bob_spm_cluster_correct(im,u,alpha,range)
+% USAGE: [k info] = cluster_correct(im,u,alpha,range)
 %
 %
 % THIS IS A MODIFICATION OF A FUNCTION BY DRS. THOMAS NICHOLS AND MARKO
@@ -2454,14 +2467,14 @@ function k  = cluster_correct(im,u,alpha,range)
 %
 %_________________________________________________________________________
 % $Id: CorrClusTh.m,v 1.12 2008/06/10 19:03:13 nichols Exp $ Thomas Nichols, Marko Wilke
-if nargin < 1
-    disp('USAGE: [k info] = bob_spm_cluster_correct(im,u,alpha,range)'); 
+if nargin < 4
+    disp('USAGE: [k info] = cluster_correct(im,u,alpha,range)'); 
     return; 
 end
 if nargin < 2, u = .001; end
 if nargin < 3, alpha = .05; end
-if nargin < 4, range = 5:200; end
 if iscell(im), im = char(im); end
+range = 2:maxk; 
 
 %% Get Design Variable %%
 [impath, imname] = fileparts(im);

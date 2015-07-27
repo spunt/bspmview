@@ -736,6 +736,8 @@ function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
     if isempty(fname), disp('An overlay image was not selected.'); return; end
+    hcorrect = findobj(st.fig, 'tag', 'Correction');
+    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
     T       = getthresh;
     if isinf(T.pval)
         st.ol   = load_overlay(fname);

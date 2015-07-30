@@ -728,12 +728,6 @@ function cb_directmenu(varargin)
     end
     setthreshinfo(T); 
     setthresh(C, find(di));
-function cb_resetol(varargin)
-    global st
-    st.ol.Y = spm_read_vols(st.ol.hdr); 
-    st.ol.Y(isnan(st.ol.Y)) = 0;
-    check4sign(st.ol.Y); 
-    cb_updateoverlay
 function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
@@ -751,6 +745,12 @@ function cb_loadol(varargin)
     setthreshinfo;
     check4design; 
     drawnow;
+function cb_resetol(varargin)
+    global st
+    st.ol.Y = spm_read_vols(st.ol.hdr); 
+    st.ol.Y(isnan(st.ol.Y)) = 0;
+    check4sign(st.ol.Y); 
+    cb_updateoverlay
 function cb_loadul(varargin)
     
     ul = uigetvol('Select an Image File for Underlay', 0);
@@ -809,8 +809,6 @@ function cb_changexyz(varargin)
     xyz = str2num(get(varargin{1}, 'string')); 
     bspm_orthviews('reposition', xyz');
     drawnow;
-function cb_opencode(varargin)
-    open(mfilename('fullpath'));
 function cb_crosshair(varargin)
     global st
     state = get(varargin{1},'Checked');
@@ -1152,7 +1150,56 @@ function cb_render(varargin)
     obj.position = ts; 
     [h1, hh1] = surfPlot5(obj);
     setstatus('Ready'); 
-    drawnow;
+    drawnow;    
+function cb_opencode(varargin)
+    open(mfilename('fullpath'));
+function cb_web(varargin)
+    stat = web(varargin{3}, '-browser');
+    if stat, headsup('Could not open a browser window.'); end
+function cb_checkversion(varargin)
+    global version
+    url     = 'https://github.com/spunt/bspmview/blob/master/README.md';
+    h       = headsup('Checking GitHub repository. Please be patient.', 'Checking Version', 0);
+    try
+        str = webread(url);
+    catch
+        set(h(2), 'String', 'Could not read web data. Are you connected to the internet?');
+        figure(h(1)); 
+        return
+    end
+    [idx1, idx2] = regexp(str, 'Version:  ');
+    gitversion = str(idx2+1:idx2+8);
+    if strcmp(version, gitversion)
+        delete(h(1)); 
+        headsup('You have the latest version.', 'Checking Version', 1);
+        return; 
+    else
+        delete(h(1)); 
+        answer = yesorno('An update is available. Would you like to download the latest version?', 'Update Available');
+        if strcmpi(answer, 'Yes')
+            guidir      = fileparts(mfilename('fullpath')); 
+            newguidir   = fullfile(fileparts(guidir), 'bspmview-master');
+            url         = 'https://github.com/spunt/bspmview/archive/master.zip';
+            h = headsup('Downloading...', 'Please Wait', 0);
+            unzip(url, fileparts(guidir));
+            delete(h(1));
+            h = headsup(sprintf('Latest version saved to: %s', newguidir), 'Update', 1);
+        else
+            return; 
+        end
+    end     
+function cb_neurosynth(varargin)
+    baseurl = 'http://neurosynth.org/locations/?x=%d&y=%d&z=%d&r=6';
+    stat = web(sprintf(baseurl, getroundvoxel), '-browser');
+    if stat, headsup('Could not open a browser window..'); end
+function cb_closegui(varargin)
+   if length(varargin)==3, h = varargin{3};
+   else h = varargin{1}; end
+   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
+   delete(h); % Bye-bye figure 
+ 
+% | TABLE/REPORT
+% =========================================================================
 function cb_report(varargin)
     global st
     setstatus('Working, please wait...');    
@@ -1243,50 +1290,9 @@ function cb_savetable(varargin)
     [fname, pname] = uiputfile({'*.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
     if ~fname, disp('User cancelled.'); return; end
     writereport(allcell, fullfile(pname, fname)); 
-function cb_web(varargin)
-    stat = web(varargin{3}, '-browser');
-    if stat, headsup('Could not open a browser window.'); end
-function cb_checkversion(varargin)
-    global version
-    url     = 'https://github.com/spunt/bspmview/blob/master/README.md';
-    h       = headsup('Checking GitHub repository. Please be patient.', 'Checking Version', 0);
-    try
-        str = webread(url);
-    catch
-        set(h(2), 'String', 'Could not read web data. Are you connected to the internet?');
-        figure(h(1)); 
-        return
-    end
-    [idx1, idx2] = regexp(str, 'Version:  ');
-    gitversion = str(idx2+1:idx2+8);
-    if strcmp(version, gitversion)
-        delete(h(1)); 
-        headsup('You have the latest version.', 'Checking Version', 1);
-        return; 
-    else
-        delete(h(1)); 
-        answer = yesorno('An update is available. Would you like to download the latest version?', 'Update Available');
-        if strcmpi(answer, 'Yes')
-            guidir      = fileparts(mfilename('fullpath')); 
-            newguidir   = fullfile(fileparts(guidir), 'bspmview-master');
-            url         = 'https://github.com/spunt/bspmview/archive/master.zip';
-            h = headsup('Downloading...', 'Please Wait', 0);
-            unzip(url, fileparts(guidir));
-            delete(h(1));
-            h = headsup(sprintf('Latest version saved to: %s', newguidir), 'Update', 1);
-        else
-            return; 
-        end
-    end     
-function cb_neurosynth(varargin)
-    baseurl = 'http://neurosynth.org/locations/?x=%d&y=%d&z=%d&r=6';
-    stat = web(sprintf(baseurl, getroundvoxel), '-browser');
-    if stat, headsup('Could not open a browser window..'); end
-function cb_closegui(varargin)
-   if length(varargin)==3, h = varargin{3};
-   else h = varargin{1}; end
-   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
-   delete(h); % Bye-bye figure 
+    
+% | SLICE MONTAGE
+% =========================================================================
 function cb_montage(varargin)
 global st
 pos = setposition_auxwindow; 
@@ -1496,10 +1502,7 @@ function setmaxima
     st.ol.maxima    = LOCMAX(:,3:5)';
 function setcolormap(varargin)
     global st
-    hrev = findobj(st.fig, 'tag', 'reversemap');
-    revflag = strcmpi(get(hrev, 'Checked'), 'on'); 
     newmap = getcolormap;
-    if revflag, newmap = newmap(end:-1:1,:); end
     cbh = st.vols{1}.blobs{1}.cbar; 
     cmap = [gray(64); newmap];
     set(findobj(cbh, 'type', 'image'), 'CData', (65:128)', 'CdataMapping', 'direct');
@@ -1723,6 +1726,9 @@ function [cmap, cmapname]        = getcolormap
         otherwise
             cmap = st.cmap{val, 1};
     end
+    hrev = findobj(st.fig, 'tag', 'reversemap');
+    revflag = strcmpi(get(hrev, 'Checked'), 'on'); 
+    if revflag, cmap = cmap(end:-1:1,:); end
 function mnmx                    = getminmax
 global st
 if isfield(st.vols{1}, 'blobs')

@@ -520,7 +520,9 @@ function put_figmenu
     S.helpme1       = uimenu(S.helpme,'Label','Online Manual', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
     S.helpme2       = uimenu(S.helpme,'Label','Online Issues Forum', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues'});
     S.helpme3       = uimenu(S.helpme,'Label','Submit Issue or Feature Request', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues/new'});
-    S.opencode      = uimenu(S.helpme, 'Label','Open GUI M-File', 'Callback', @cb_opencode);
+    S.debug         = uimenu(S.helpme,'Label','Debug', 'Separator', 'on');     
+    S.debug1        = uimenu(S.debug, 'Label','Open GUI M-File', 'Callback', @cb_opencode);
+    S.debug2        = uimenu(S.debug, 'Label','Run UIINSPECT', 'Callback', @cb_uiinspect);
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
     
     %% Make sure resize callbacks are registered one at a time
@@ -537,11 +539,11 @@ function put_figmenu
     S.save          = uimenu(st.fig,'Label','Save', 'Separator', 'on');
     S.saveintensity = uimenu(S.save,'Label','Save Suprathreshold (Intensity)','CallBack', @cb_saveimg);
     S.savemask      = uimenu(S.save,'Label','Save Suprathreshold (Binary Mask)', 'CallBack', @cb_saveimg);
-    S.ctsavemap     = uimenu(S.save, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
-    S.ctsavemask    = uimenu(S.save, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
+    S.ctsavemap     = uimenu(S.save,'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
+    S.ctsavemask    = uimenu(S.save,'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
     S.saveroi       = uimenu(S.save,'Label', 'Save ROI at Current Location', 'CallBack', @cb_saveroi);
     S.savetable     = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable, 'separator', 'on');
-    S.savergb       = uimenu(S.save, 'Label','Save Screen Capture', 'callback', @cb_savergb);
+    S.savergb       = uimenu(S.save,'Label','Save Screen Capture', 'callback', @cb_savergb);
     
     %% Options Menu
     S.options    = uimenu(st.fig,'Label','Display', 'Separator', 'on');
@@ -1149,10 +1151,15 @@ function cb_render(varargin)
     end
     obj.position = ts; 
     [h1, hh1] = surfPlot5(obj);
+    drawnow;
     setstatus('Ready'); 
-    drawnow;    
 function cb_opencode(varargin)
     open(mfilename('fullpath'));
+function cb_uiinspect(varargin)
+    global st
+    setstatus('Running UIINSPECT, please wait...'); 
+    uiinspect(st.fig);
+    setstatus('Ready');
 function cb_web(varargin)
     stat = web(varargin{3}, '-browser');
     if stat, headsup('Could not open a browser window.'); end

@@ -58,7 +58,7 @@ if obj.newfig
         set(gcf,'color',obj.background, 'position', obj.position); shg
     else
         figure( ...
-        'Renderer', 'zbuffer',       ...
+        'Renderer', 'zbuffer',      ...
         'Inverthardcopy', 'off',    ...
         'Name', obj.figname,        ...
         'NumberTitle', 'off',       ...
@@ -383,10 +383,10 @@ if obj.cmapflag
 end
 
 % final cleanup
-% tightfig(gcf);
 set(obj.figno, 'units', 'points', 'paperunits', 'points');
 figpos = get(obj.figno, 'pos');
 set(obj.figno, 'papersize', figpos(3:4), 'paperposition', [0 0 figpos(3:4)], 'visible', 'on');
+tightfig(obj.figno);
 function y = spm_range(x,dim)
 % Computes the difference between the min and max of a vector. If you need
 % to use it on a matrix, then you need to specify which dimension to
@@ -447,7 +447,7 @@ function X = demean(x)
 %%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %%% GNU General Public License for more details.
 X = x-repmat(mean(x),size(x,1),1);
-function out    = cmap_upsample(in, N)
+function out = cmap_upsample(in, N)
     num = size(in,1);
     ind = repmat(1:num, ceil(N/num), 1);
     rem = numel(ind) - N; 

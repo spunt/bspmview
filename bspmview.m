@@ -3,50 +3,60 @@ function varargout = bspmview(ol, ul)
 %
 %   USAGE: varargout = bspmview(ol*, ul*)       *optional inputs
 %
-% Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre
-% for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search
-% path. It has only been tested on SPM8/SPM12 operating in MATLAB 2014b. It
-% requires a number of supporting utility functions and data files that
-% should have been included in the distribution of BSPMVIEW. When BSPMVIEW
-% is launched, it will look for these files in a folder called
-% "supportfiles" that should be contained in the same folder as BSPMVIEW.
-% 
-% _________________________________________________________________________
-%  INPUTS
-%	ol: filename for statistical image to overlay
-%	ul: filename for anatomical image to use as underlay
+% Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre for
+% Neuroimaging; www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search path. In
+% addition, it requires a number of supporting utility functions and data
+% files that should have been included in the distribution of BSPMVIEW. When
+% BSPMVIEW is launched, it will look for these files in a folder called
+% "supportfiles" that should be contained in the same folder as this function.
+% It has been tested on SPM8/SPM12 operating in MATLAB 2014b running in both
+% Windows 8.1 and OS X Yosemite.
 %
-% _________________________________________________________________________
-%  EXAMPLES
-%   >> bspmview('spmT_0001.img', 'T1.nii')   % overlay on 'T1.nii'
-%   >> bspmview('spmT_0001.img')   % overlay on default underlay
-%   >> bspmview                    % open dialogue for selecting overlay
-%   >> S = bspmview;     % returns struct 'S' containing GUI obj handles
-%   
-% _________________________________________________________________________
-%  CREDITS
-% 	This software heavily relies on functions contained within the SPM
-% 	software, and is essentially an attempt to translate some of it into a
-% 	simpler and more user-friendly format. In addition, this software was
-% 	inspired by and in some cases uses code from two other statistical
-% 	image viewers: XJVIEW.m by Xu Cui, Jian Li, and Xiaowei Song
-% 	(http://www.alivelearn.net/xjview8/developers/), and FIVE.m by Aaron P.
-% 	Schultz (http://mrtools.mgh.harvard.edu/index.php/Main_Page). This also
-% 	employs some of the functionality of PEAK_NII.m by Donald McLaren
-% 	(http://www.nmr.mgh.harvard.edu/~mclaren/ftp/Utilities_DGM/). Moreover,
-% 	several contributions to the MATLAB File Exchange
-% 	(http://www.mathworks.com/matlabcentral/fileexchange/) are called by
-% 	the code. These are included in the "supporting files" folder that should 
-%   have been included in the distribution of the main BSPMVIEW function.
-%   The documentation of the supporting functions contains further
-%   information about the source and respective copyright holders. 
+% ________________________________________________________________________________
+% COMMAND LINE USAGE 
+% ________________________________________________________________________________
+%
+% INPUTS
+%   ol: filename for statistical image to overlay
+%	ul: filename for anatomical image to use as underlay
 % 
+% EXAMPLES
+%   bspmview('spmT_0001.img', 'T1.nii')  % overlay on 'T1.nii'
+%   bspmview('spmT_0001.nii.gz')         % overlay on default underlay
+%   bspmview                             % open dialogue for selecting overlay
+%   S = bspmview;                        % returns struct 'S' w/graphics handles
+%
+% ________________________________________________________________________________
+% ACKNOWLEDGMENTS    
+% ________________________________________________________________________________
+%
+% This software heavily relies on functionality contained within SPM and is in
+% many ways an attempt to translate it into a simpler and more user-friendly
+% interface. Special thanks goes to Jared Torre for testing an early version
+% of the code, and to Guillaume Flandin for help with adding BSPMVIEW to the
+% SPM Extensions webpage. In addition, this software was initially inspired by
+% and in some cases adapts code from two other statistical image viewers:  
+%   - XJVIEW by Xu Cui, Jian Li, & Xiaowei Song (alivelearn.net/xjview8)
+%   - FIVE by Aaron P. Schultz (mrtools.mgh.harvard.edu)
+%
+% Moreover, numerous other open-source MATLAB fMRI analysis tools provided the
+% raw material for many of the  functions included in BSPMVIEW, including:
+%   - SURFPLOT (mrtools.mgh.harvard.edu/index.php/SurfPlot)
+%   - PEAK_NII (nitrc.org/projects/peak_nii)
+%   - Anatomy Toolbox (fil.ion.ucl.ac.uk/spm/ext/#Anatomy)
+%
+% Finally, several contributions to the MATLAB File Exchange
+% (mathworks.com/matlabcentral/fileexchange/) are called by the code. These
+% are included in the "supporting files" folder included in the distribution
+% of BSPMVIEW. The documentation of the supporting functions contains further
+% information about the source and respective copyright holders.
+%
 
 % ------ Copyright (C) Bob Spunt, California Institute of Technology ------
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20150729
+%   Version:  20150916
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -60,7 +70,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20150729'; 
+version='20150916'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -230,9 +240,22 @@ function cmap   = default_colormaps(depth)
         cmap{anchor+i,1} = cmap_upsample(brewermap(bnum2(i), bmap2{i}), depth); 
         cmap{anchor+i,2} = sprintf('%s (%d)', bmap2{i}, bnum2(i));
     end
+function urls   = default_urls
+urls = {
+'SPM | Extensions'              'http://www.fil.ion.ucl.ac.uk/spm/ext/'
+'SPM | Forum Archives'          'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'
+'FSL | OtherSoftware'           'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'
+'MILAB | Software'              'http://mialab.mrn.org/software/'
+'Tom Nichols | Software'        'http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/software/'
+'MR Tools'                      'http://mrtools.mgh.harvard.edu/index.php/Main_Page'
+'NeuroVault'                    'http://neurovault.org'
+'SnPM'                          'http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/software/snpm/'
+};
+urls = cell2struct(urls, {'label' 'url'}, 2); 
 function prefs  = default_preferences(initial)
     if nargin==0, initial = 0; end
     global st
+    
     deffile = fullfile(st.supportpath, 'defpref.mat');
     if ~isfield(st, 'preferences')
         def  = struct( ...
@@ -264,6 +287,7 @@ function prefs  = default_preferences(initial)
     else
         def = st.preferences; 
     end
+    
     pos = get(st.fig, 'pos'); 
     w   = pos(3)*.65;
     opt             = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'};
@@ -480,8 +504,7 @@ function put_lowerpane(varargin)
     panelabel{5}    = {{'Current Location'}, {'Edit'}}; 
     relwidth        = {[4 8] [3 4 5] [1] [3 5 3] [1]};
     relheight       = {[6 6] [6 6] [6 6] [6 6] [6 6]}; 
-    tag             = {panelabel{1}{1}, panelabel{2}{1}, panelabel{3}{1}, {'voxval' 'xyz' 'clustersize'}, {'Location'}};  
-    
+    tag             = {panelabel{1}{1}, panelabel{2}{1}, panelabel{3}{1}, {'voxval' 'xyz' 'clustersize'}, {'Location'}};     
     for i = 1:length(panename)
         ph{i} = buipanel(panelh, panelabel{i}{1}, panelabel{i}{2}, relwidth{i}, 'paneltitle', panename{i}, 'panelposition', panepos(i,:), 'tag', tag{i}, 'relheight', relheight{i}); 
     end
@@ -490,9 +513,11 @@ function put_lowerpane(varargin)
     set(ph{1}.edit(2), 'String', {'None' 'Voxel FWE' 'Cluster FWE'}, 'Value', 1, 'Callback', @cb_correct);  
     hndl = [ph{2}.edit; ph{1}.edit(1)]; 
     arrayset(hndl, 'Callback', @cb_updateoverlay); 
-    Tdefvalues  = [st.ol.K st.ol.U st.ol.P st.ol.DF];
-    Tstrform = {'%d' '%2.2f' '%2.3f' '%d'}; 
-    for i = 1:length(Tdefvalues), set(hndl(i), 'str', sprintf(Tstrform{i}, Tdefvalues(i))); end
+    Tdefvalues  = {st.ol.K st.ol.U st.ol.P st.ol.DF};
+    if length(st.ol.DF)==2, dfstrform = '%d,%d'; else dfstrform = '%d'; end
+    Tstrform = {'%d' '%2.2f' '%2.3f' dfstrform}; 
+    
+    for i = 1:length(Tdefvalues), set(hndl(i), 'str', sprintf(Tstrform{i}, Tdefvalues{i})); end
     arrayset(ph{4}.edit([1 3]), 'enable', 'inactive'); 
     set(ph{3}.edit, 'FontSize', st.fonts.sz2); 
     set(ph{4}.edit(2), 'callback', @cb_changexyz); 
@@ -558,14 +583,9 @@ function put_figmenu
     
     %% Web Menu
     S.web(1) = uimenu(st.fig,'Label','Web', 'Separator', 'on');
-    S.web(2) = uimenu(S.web(1),'Label','bspmview GitHub repository', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview'});
-    S.web(3) = uimenu(S.web(1),'Label','SPM Extensions', 'CallBack', {@cb_web, 'http://www.fil.ion.ucl.ac.uk/spm/ext/'});
-    S.web(4) = uimenu(S.web(1),'Label','SPM Archives Search', 'CallBack', {@cb_web,'https://www.jiscmail.ac.uk/cgi-bin/webadmin?REPORT&z=4&1=spm&L=spm'});          
-    S.web(5) = uimenu(S.web(1),'Label','MR Tools Wiki', 'CallBack', {@cb_web, 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'});
-    S.web(6) = uimenu(S.web(1),'Label','Peak_Nii', 'CallBack', {@cb_web, 'http://www.nitrc.org/projects/peak_nii'});
-    S.web(7) = uimenu(S.web(1),'Label','FSL OtherSoftware', 'CallBack', {@cb_web, 'http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/OtherSoftware'});
-    S.web(8) = uimenu(S.web(1),'Label','NeuroVault', 'Callback',{@cb_web, 'http://neurovault.org'}); 
-    S.web(9) = uimenu(S.web(1),'Label','Search Location in Neurosynth', 'CallBack', @cb_neurosynth);
+    urls   = default_urls;
+    for i = 1:length(urls), S.web(i+1) = uimenu(S.web(1),'Label',urls(i).label, 'Callback', {@cb_web, urls(i).url}); end
+    S.web(length(urls)+1) = uimenu(S.web(1),'Label','Search Location in Neurosynth', 'CallBack', @cb_neurosynth);
     
     %% Status 
     S.status = uimenu(st.fig, 'Label', '|    Status: Ready', 'Enable', 'off', 'Tag', 'status');
@@ -613,6 +633,12 @@ function put_axesxyz
 % =========================================================================
 function cb_updateoverlay(varargin)
     global st
+    % | Check for Numeric Input
+    if isnan(str2double(get(varargin{1}, 'string')))
+        setthreshinfo; 
+%         warndlg('Input must be numerical');
+        return
+    end
     T0  = getthresh;
     T   = T0;
     di  = strcmpi({'+' '-' '+/-'}, T.direct);
@@ -797,13 +823,27 @@ function cb_minmax(varargin)
     drawnow;
 function cb_maxval(varargin)
     global st
-    val = str2num(get(findobj(st.fig, 'tag', 'maxval'), 'string'));
+    % | Check for Numeric Input
+    if isnan(str2double(get(varargin{1}, 'string')))
+        warndlg('Input must be numerical');
+        mm = getminmax;
+        set(varargin{1}, 'string', num2str(mm(2))); 
+        return
+    end
+    val = str2double(get(varargin{1}, 'string'));
     bspm_orthviews('SetBlobsMax', 1, 1, val);
     redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
     drawnow;
 function cb_minval(varargin)
     global st
-    val = str2num(get(findobj(st.fig, 'tag', 'minval'), 'string'));
+    % | Check for Numeric Input
+    if isnan(str2double(get(varargin{1}, 'string')))
+        warndlg('Input must be numerical');
+        mm = getminmax;
+        set(varargin{1}, 'string', num2str(mm(1))); 
+        return
+    end
+    val = str2double(get(varargin{1}, 'string'));
     bspm_orthviews('SetBlobsMin', 1, 1, val);
     redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
     drawnow;
@@ -1218,7 +1258,6 @@ function cb_report(varargin)
         tmpidx = find(LOCMAX(:,2)<0); 
         voxels{tmpidx(1),1} = 'Negative'; 
     end
-    
     % get table position
     ss = get(0, 'ScreenSize');
     ts = floor(ss/3);
@@ -1229,7 +1268,6 @@ function cb_report(varargin)
         ts(1) = fs(1)-ts(3);
     end
     ts([2 4]) = fs([2 4]);
-    
     % create table
     ts          = setposition_auxwindow;
     tfig        = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
@@ -1301,153 +1339,154 @@ function cb_savetable(varargin)
 % | SLICE MONTAGE
 % =========================================================================
 function cb_montage(varargin)
-global st
-pos = setposition_auxwindow; 
-% | View GUI
-viewopt     = {'sagittal','coronal', 'axial'};
-viewoptin   = strcat('|', viewopt);
-pref = menuN('Montage Settings', ...
-            {strcat('p', viewoptin{:}),'Select View'; ...
-          'x|hide colorbar|hide labels','Display Options'; ...
-          't|t-stat', 'Colorbar Title'; ...
-          't|auto', 'N Slices Per Row'}); 
-if strcmpi(pref, 'cancel'), return; end
-theview = viewopt{pref{1}};
-if any(pref{2}==1), cbar = []; else cbar = 2; end
-if any(pref{2}==2), labels = 'none'; else labels = []; end
-cbartitle = pref{3}; 
-if strcmpi(pref{4}, 'auto'), xslices = []; else xslices = str2num(pref{4}); end
+    global st
+    pos = setposition_auxwindow; 
+    % | View GUI
+    viewopt     = {'sagittal','coronal', 'axial'};
+    viewoptin   = strcat('|', viewopt);
+    pref = menuN('Montage Settings', ...
+                {strcat('p', viewoptin{:}),'Select View'; ...
+              'x|hide colorbar|hide labels','Display Options'; ...
+              't|t-stat', 'Colorbar Title'; ...
+              't|auto', 'N Slices Per Row'}); 
+    if strcmpi(pref, 'cancel'), return; end
+    theview = viewopt{pref{1}};
+    if any(pref{2}==1), cbar = []; else cbar = 2; end
+    if any(pref{2}==2), labels = 'none'; else labels = []; end
+    cbartitle = pref{3}; 
+    if strcmpi(pref{4}, 'auto'), xslices = []; else xslices = str2num(pref{4}); end
 
-% | Slices GUI
-defslices   = unique(st.ol.maxima(strcmpi(viewopt, theview), :));
-goodset = 0; 
-while ~goodset
-    idx = find(diff(defslices) <= st.ol.VOX(1)) + 1;
-    if isempty(idx), goodset = 1; else defslices(idx(1)) = []; end
-end
-pref = menuN('Montage Settings', {['t|' num2str(defslices)], 'Slices to Display:'});
-if strcmpi(pref, 'cancel'), return; end
-if ischar(pref)
-    slices2show = str2num(pref);
-else
-    slices2show = pref; 
-end
+    % | Slices GUI
+    defslices   = unique(st.ol.maxima(strcmpi(viewopt, theview), :));
+    goodset = 0; 
+    while ~goodset
+        idx = find(diff(defslices) <= st.ol.VOX(1)) + 1;
+        if isempty(idx), goodset = 1; else defslices(idx(1)) = []; end
+    end
+    pref = menuN('Montage Settings', {['t|' num2str(defslices)], 'Slices to Display:'});
+    if strcmpi(pref, 'cancel'), return; end
+    if ischar(pref)
+        slices2show = str2num(pref);
+    else
+        slices2show = pref; 
+    end
 
-% | SLOVER
-% | ========================================================
-o = slover; 
+    % | SLOVER
+    % | ========================================================
+    o = slover; 
 
-% | Underlay
-o.img(1).vol    = spm_vol(st.vols{1}.fname); 
-o.img(1).prop   = 1;
+    % | Underlay
+    o.img(1).vol    = spm_vol(st.vols{1}.fname); 
+    o.img(1).prop   = 1;
 
-% | Overlay
-T = getthresh; 
-di = strcmpi({'+' '-' '+/-'}, T.direct); 
-clustidx = st.ol.C0(di,:);
-opt = [1 -1 1]; 
-mat3d = st.ol.Y*opt(di);
-mat3d(clustidx==0) = NaN;
-o.img(2).vol = slover('matrix2vol', mat3d, st.ol.hdr.mat); 
-o.img(2).prop = 1; 
-o.img(2).type = 'split';
-o.img(2).range = getminmax';
-o.img(2).cmap = getcolormap;
-o.cbar = cbar; 
-o.labels = labels; 
+    % | Overlay
+    T = getthresh; 
+    di = strcmpi({'+' '-' '+/-'}, T.direct); 
+    clustidx = st.ol.C0(di,:);
+    opt = [1 -1 1]; 
+    mat3d = st.ol.Y*opt(di);
+    mat3d(clustidx==0) = NaN;
+    o.img(2).vol = slover('matrix2vol', mat3d, st.ol.hdr.mat); 
+    o.img(2).prop = 1; 
+    o.img(2).type = 'split';
+    o.img(2).range = getminmax';
+    o.img(2).cmap = getcolormap;
+    o.cbar = cbar; 
+    o.labels = labels; 
 
-% | More Settings
-o.slices    = slices2show;
-o.transform = theview;
-o.refreshf  = 0;
-o.clf = 0; 
-o.resurrectf = 0;
-o.area.units = 'normalized';
-o.area.position = [0 0 1 1];
-o.area.halign = 'left';
-o.area.valign = 'bottom';
-if ~isempty(xslices), xslices = min([length(slices2show) xslices]) + ~isempty(cbar); end
-o.xslices = xslices; 
-o = fill_defaults(o); 
+    % | More Settings
+    o.slices    = slices2show;
+    o.transform = theview;
+    o.refreshf  = 0;
+    o.clf = 0; 
+    o.resurrectf = 0;
+    o.area.units = 'normalized';
+    o.area.position = [0 0 1 1];
+    o.area.halign = 'left';
+    o.area.valign = 'bottom';
+    if ~isempty(xslices), xslices = min([length(slices2show) xslices]) + ~isempty(cbar); end
+    o.xslices = xslices; 
+    o = fill_defaults(o); 
 
-% | Setup Figure Window
-o.figure = figure( ...
-        'Renderer', 'painters',       ...
-        'Inverthardcopy', 'off',    ...
-        'Name', 'Slice Montage',        ...
-        'NumberTitle', 'off',       ...
-        'Position', setposition_auxwindow,   ...
-        'Color', [0 0 0],    ...
-        'DockControls','off', ...
-        'MenuBar', 'None', ...
-        'Visible', 'off');
-    
-% | Menu Bar
-S.menu          = uimenu('Parent', o.figure, 'Label', 'File');
-S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_savemontage, o.figure});
-S.settings      = uimenu(S.menu, 'Label', 'Create New', 'Callback', @cb_montage); 
-if ~strcmpi(o.labels, 'none')
-    S.label         = uimenu('Parent', o.figure, 'Label', 'Labels'); 
-    S.labelpos      = uimenu(S.label, 'Label', 'Label Position'); 
-    S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});
-    S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
-    S.skin          = uimenu(S.labelpos, 'Label', 'Top Left', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
-    S.skin          = uimenu(S.labelpos, 'Label', 'Top Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
-    S.labelfont     = uimenu(S.label, 'Label', 'Label Font Size', 'Separator', 'on');
-    S.skin          = uimenu(S.labelfont, 'Label', 'Increase',  'Accelerator', '=', 'Callback', {@cb_montagelabelsize, o.figure});
-    S.skin          = uimenu(S.labelfont, 'Label', 'Decrease',  'Accelerator', '-','Callback', {@cb_montagelabelsize, o.figure});
-end
+    % | Setup Figure Window
+    o.figure = figure( ...
+            'Renderer', 'painters',       ...
+            'Inverthardcopy', 'off',    ...
+            'Name', 'Slice Montage',        ...
+            'NumberTitle', 'off',       ...
+            'Position', setposition_auxwindow,   ...
+            'Color', [0 0 0],    ...
+            'DockControls','off', ...
+            'MenuBar', 'None', ...
+            'Visible', 'off');
 
-% | Context Menu
-obj = paint(o);
-set(findall(obj.figure, 'type', 'axes'), 'units', 'pixels');
-set(obj.figure, 'visible', 'off');
-cmh = uicontextmenu;
-uimenu(cmh, 'Label', 'Delete Panel', 'callback', @cb_montagepaneldelete, 'separator', 'off');
-[hpan, hpos] = getpos_grid(findall(obj.figure, 'tag', 'slice overlay panel'));
-emptyidx = find(cellfun('isempty', get(hpan, 'children'))); 
-delete(hpan(emptyidx)); 
-hpan(emptyidx) = []; 
-hpos(emptyidx,:) = [];
-hstr = findall(obj.figure,  'type', 'text');
-set(hstr, 'tag', 'slicelabel');
-hpos(:,2) = hpos(:,2) - min(hpos(:,2));
-for i = 1:length(hpan)
-   set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh); 
-   set(get(hpan(i), 'children'), 'uicontextmenu', cmh);
-end
-if cbar   
-    hc = findobj(obj.figure, 'tag', 'cbar');
-    set(hc, 'units', 'pix', 'fontunits', 'points'); 
-    cpos = get(hc, 'position');
-    cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 10; 
-    gridheight = max(sum(hpos(:,[2 4]), 2));
-    cpos(4) = max([cpos(4) gridheight*.33]);
-    cpos(2) = gridheight - cpos(4); 
-    set(hc, 'pos', cpos); 
-    set(hc, 'units', 'norm');
-    set(hc, 'yaxislocation', 'right');
-    tick = get(hc, 'ytick'); 
-    if any(tick(2:end-1)==0), tick = [tick(1) 0 tick(end)]; else tick = tick([1 end]); end
-    set(hc, 'ytick', tick); 
-    if ~isempty(cbartitle), ht = title(cbartitle, 'units', 'norm', 'fontunits', get(hc, 'fontunits'), 'parent', hc, 'tag', 'cbartitle', 'color', [1 1 1], 'fontsize', 1.1*get(hc,'fontsize')); end
-end
-tightfig;
-set(obj.figure, 'units', 'norm', 'visible', 'on');
-arrayset(findall(obj.figure, '-property', 'units'), 'units', 'norm');
-arrayset(findall(obj.figure, '-property', 'fontunits'), 'fontunits', 'norm');
-drawnow; 
+    % | Menu Bar
+    S.menu          = uimenu('Parent', o.figure, 'Label', 'File');
+    S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_savemontage, o.figure});
+    S.settings      = uimenu(S.menu, 'Label', 'Create New', 'Callback', @cb_montage); 
+    if ~strcmpi(o.labels, 'none')
+        S.label         = uimenu('Parent', o.figure, 'Label', 'Labels'); 
+        S.labelpos      = uimenu(S.label, 'Label', 'Label Position'); 
+        S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});
+        S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+        S.skin          = uimenu(S.labelpos, 'Label', 'Top Left', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+        S.skin          = uimenu(S.labelpos, 'Label', 'Top Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
+        S.labelfont     = uimenu(S.label, 'Label', 'Label Font Size', 'Separator', 'on');
+        S.skin          = uimenu(S.labelfont, 'Label', 'Increase',  'Accelerator', '=', 'Callback', {@cb_montagelabelsize, o.figure});
+        S.skin          = uimenu(S.labelfont, 'Label', 'Decrease',  'Accelerator', '-','Callback', {@cb_montagelabelsize, o.figure});
+    end
+    S.msg          = uimenu(o.figure, 'Label', '|  USAGE TIP: Right-Click to Delete Slices', 'Enable', 'off', 'Tag', 'status');
+
+    % | Context Menu
+    obj = paint(o);
+    set(obj.figure, 'visible', 'off');
+    set(findall(obj.figure, 'type', 'axes'), 'units', 'pixels');
+    cmh = uicontextmenu;
+    uimenu(cmh, 'Label', 'Delete Slice', 'callback', @cb_montagepaneldelete, 'separator', 'off');
+    [hpan, hpos] = getpos_grid(findall(obj.figure, 'tag', 'slice overlay panel'));
+    emptyidx = find(cellfun('isempty', get(hpan, 'children'))); 
+    delete(hpan(emptyidx)); 
+    hpan(emptyidx) = []; 
+    hpos(emptyidx,:) = [];
+    hstr = findall(obj.figure,  'type', 'text');
+    set(hstr, 'tag', 'slicelabel');
+    hpos(:,2) = hpos(:,2) - min(hpos(:,2));
+    for i = 1:length(hpan)
+       set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh); 
+       set(get(hpan(i), 'children'), 'uicontextmenu', cmh);
+    end
+    if cbar   
+        hc = findobj(obj.figure, 'tag', 'cbar');
+        set(hc, 'units', 'pix', 'fontunits', 'points'); 
+        cpos = get(hc, 'position');
+        cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 10; 
+        gridheight = max(sum(hpos(:,[2 4]), 2));
+        cpos(4) = max([cpos(4) gridheight*.33]);
+        cpos(2) = gridheight - cpos(4); 
+        set(hc, 'pos', cpos); 
+        set(hc, 'units', 'norm');
+        set(hc, 'yaxislocation', 'right');
+        tick = get(hc, 'ytick'); 
+        if any(tick(2:end-1)==0), tick = [tick(1) 0 tick(end)]; else tick = tick([1 end]); end
+        set(hc, 'ytick', tick); 
+        if ~isempty(cbartitle), ht = title(cbartitle, 'units', 'norm', 'fontunits', get(hc, 'fontunits'), 'parent', hc, 'tag', 'cbartitle', 'color', [1 1 1], 'fontsize', 1.1*get(hc,'fontsize')); end
+    end
+    tightfig;
+    set(obj.figure, 'units', 'norm', 'visible', 'on');
+    arrayset(findall(obj.figure, '-property', 'units'), 'units', 'norm');
+    arrayset(findall(obj.figure, '-property', 'fontunits'), 'fontunits', 'norm');
+    drawnow; 
 function cb_savemontage(varargin)
-defname = 'SliceMontage.png'; 
-[imname, pname] = uiputfile({'*.png; *.jpg; *.pdf; *.tiff; *.pdf; *.ps', 'Image'; '*.*', 'All Files (*.*)'}, 'Valid extensions: png, jpg, tiff, pdf, ps', defname);
-if ~imname, disp('User cancelled.'); return; end
-[p,n,e] = fileparts(imname);
-if isempty(e), e = '.png'; end
-if strcmpi(e, '.ps'), e = '.psc'; end
-if strcmpi(e, '.jpg'), e = '.jpeg'; end
-fmt = strcat('-', regexprep(e, '\.', 'd'));
-print(varargin{3}, fmt, strcat('-', 'painters'), strcat('-', 'noui'), fullfile(pname,n)); 
-fprintf('\nImage saved to %s\n', fullfile(pname, strcat(imname, e)));  
+    defname = 'SliceMontage.png'; 
+    [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf; *.tiff; *.pdf; *.ps', 'Image'; '*.*', 'All Files (*.*)'}, 'Valid extensions: png, jpg, tiff, pdf, ps', defname);
+    if ~imname, disp('User cancelled.'); return; end
+    [p,n,e] = fileparts(imname);
+    if isempty(e), e = '.png'; end
+    if strcmpi(e, '.ps'), e = '.psc'; end
+    if strcmpi(e, '.jpg'), e = '.jpeg'; end
+    fmt = strcat('-', regexprep(e, '\.', 'd'));
+    print(varargin{3}, fmt, strcat('-', 'painters'), strcat('-', 'noui'), fullfile(pname,n)); 
+    fprintf('\nImage saved to %s\n', fullfile(pname, strcat(imname, e)));  
 function cb_montagelabelposition(varargin)
     set(findall(varargin{3}, 'Tag', 'positionmenu'), 'Checked', 'off'); 
     hstr = findall(varargin{3},  'tag', 'slicelabel'); 
@@ -1473,16 +1512,29 @@ function cb_montagelabelsize(varargin)
     set(hstr, 'Units', 'norm');
     tightfig; 
 function cb_montagepaneldelete(varargin) 
-[hax, hpos] = getpos_grid(findall(gcf, 'tag', 'slice overlay panel')); 
-gcapos      = repmat(get(gca, 'pos'), length(hax), 1);
-gcaidx      = find(mean(hpos==gcapos, 2)==1);
-delete(hax(gcaidx)); 
-hax(gcaidx) = []; 
-for i = gcaidx:length(hax)
-    set(hax(i), 'pos', hpos(i,:)); 
-end
-tightfig;
-drawnow; 
+    [hax, hpos] = getpos_grid(findall(gcf, 'tag', 'slice overlay panel'));
+    nrow1 = length(unique(hpos(:,2))); 
+    gcapos      = repmat(get(gca, 'pos'), length(hax), 1);
+    gcaidx      = find(mean(hpos==gcapos, 2)==1);
+    delete(hax(gcaidx)); 
+    hax(gcaidx) = []; 
+    for i = gcaidx:length(hax)
+        set(hax(i), 'pos', hpos(i,:)); 
+    end
+    [hax, hpos] = getpos_grid(findall(gcf, 'tag', 'slice overlay panel'));
+    nrow2 = length(unique(hpos(:,2)));
+    hc = findobj(gcf, 'tag', 'cbar');  
+    if all([nrow2<nrow1 ~isempty(hc) ])
+        set(hc, 'units', 'norm');
+        cpos = get(hc, 'position');
+        if nrow2*hpos(1,4) < cpos(4)
+            cpos(4) = hpos(1,4)*.95;
+            cpos(2) = 1 - hpos(1,4); 
+            set(hc, 'pos', cpos); 
+        end
+    end
+    tightfig;
+    drawnow; 
     
 % | SETTERS
 % =========================================================================
@@ -1606,13 +1658,17 @@ function setthreshinfo(T)
             'df',       st.ol.DF, ...
             'direct',   st.direct);
     end
-    st.direct   = char(T.direct); 
+    % | Update st
+    st.direct   = char(T.direct);
+    st.ol.K     = T.extent;
+    st.ol.U     = T.thresh;
+    st.ol.P     = T.pval;
+    st.ol.DF    = T.df;
     Tval        = [T.extent T.thresh T.pval T.df]; 
     Tstr        = {'Extent' 'Thresh' 'P-Value' 'DF'};
     Tstrform    = {'%d' '%2.2f' '%2.3f' '%d'}; 
     for i = 1:length(Tstr)
         set(findobj(st.fig, 'Tag', Tstr{i}), 'String', num2str(Tval(i))); 
-%         set(findobj(st.fig, 'Tag', Tstr{i}), 'String', sprintf(Tstrform{i}, Tval(i)));
     end
 function setthresh(C, di)
     global st
@@ -1794,7 +1850,6 @@ function [h, axpos]              = gethandles_axes(varargin)
     end
 function T                       = getthresh
     global st
-    
     T.extent    = str2double(get(findobj(st.fig, 'Tag', 'Extent'), 'String')); 
     T.thresh    = str2double(get(findobj(st.fig, 'Tag', 'Thresh'), 'String'));
     T.pval      = str2double(get(findobj(st.fig, 'Tag', 'P-Value'), 'String'));
@@ -1861,11 +1916,12 @@ function [regionname, regionidx] = getregionnames(xyz)
             regionname{i} = st.ol.atlaslabels.label{st.ol.atlaslabels.id==regionidx(i)};
         end
     end
-function [hout, hpos]            = getpos_grid(h)
+function [hout, hpos, griddim]   = getpos_grid(h)
 hpos        = [(1:length(h))' cell2mat(get(h, 'pos'))];
 hpos        = sortrows(hpos, [-3 2]);
 hout        = h(hpos(:,1));
-hpos(:,1)   = []; 
+hpos(:,1)   = [];
+if nargout==3, griddim = [length(unique(hpos(:,2))) length(unique(hpos(:,1)))]; end
 
 % | BUIPANEL
 % =========================================================================
@@ -2031,16 +2087,19 @@ function OL = load_overlay(fname, pval, k)
     end
 
     % | - CHECK IMAGE
-%     ismask  = check4mask(od);
     posneg  = check4sign(od);  
-    df      = check4df(oh.descrip); 
+    df      = check4df(oh.descrip);
     if isempty(df)
         u       = .0001;
         k       = 0;
         df      = Inf;
         pval    = Inf; 
     else
-        u       = spm_invTcdf(1-pval, df);  
+        if regexp(oh.descrip, 'SPM\WF')
+            u       = spm_invFcdf(1-pval, df);
+        else
+            u       = spm_invTcdf(1-pval, df);  
+        end
     end
     [C, I] = getclustidx(od, u, k);
     if ~any(C(:))
@@ -2072,10 +2131,10 @@ function OL = load_overlay(fname, pval, k)
                 'M',        M,...
                 'DIM',      DIM,...
                 'VOX',      VOX, ...
-                'C0',        C, ...
-                'C0IDX',       I, ...
-                'XYZmm0',    XYZmm,...
-                'XYZ0',      XYZ);    
+                'C0',       C, ...
+                'C0IDX',    I, ...
+                'XYZmm0',   XYZmm,...
+                'XYZ0',     XYZ);    
             
     %% LABEL MAP
     atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); 
@@ -2930,6 +2989,19 @@ function mfile_showhelp(varargin)
 ST = dbstack('-completenames');
 if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
 eval(sprintf('help %s', ST(2).file));  
+function error_handler(err, write)
+if nargin<2, write = 0; end
+info1 = cellstr(sprintf('UNDEFINED ERROR => %s', err.message));
+info2 = [printstruct(err.stack, 'name', 'Error Trace'); {''}];
+if write
+    day        = datestr(now,'mm_DD_YYYY');
+    time       = strtrim(datestr(now,'HHMMPM'));
+    errlogname = sprintf('ErrorLog_%s_%s.txt', day, time);
+    errdata    = getReport(err);
+    eid        = fopen(fullfile(data.defaultdir,errlogname),'w');
+    fwrite(eid, errdata);
+    fclose(eid);
+end   
 function save_error(err)
     global st
     errdata     = getReport(err);

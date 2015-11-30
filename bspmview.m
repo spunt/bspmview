@@ -302,7 +302,8 @@ function prefs  = default_preferences(initial)
     nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
     atlasopt        = {'AnatomyToolbox'                    ,...
                     'HarvardOxford-cort-maxprob-thr0'   ,...
-                    'HarvardOxford-sub-maxprob-thr0'     ...
+                    'HarvardOxford-sub-maxprob-thr0'    ,...
+                    'AAL2'                               ...
                     }; 
     atlasopt     = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];             
     [prefs, button] = settingsdlg(...
@@ -333,7 +334,7 @@ function prefs  = default_preferences(initial)
     end
     if ~strcmpi(st.preferences.atlasname, def.atlasname)
         %% LABEL MAP
-        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); 
+        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
         atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
         atlasvol = reslice_image(atlas_vol, st.ol.fname);
         atlasvol = single(round(atlasvol(:)))'; 
@@ -2137,7 +2138,7 @@ function OL = load_overlay(fname, pval, k)
                 'XYZ0',     XYZ);    
             
     %% LABEL MAP
-    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); 
+    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
     atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
     atlasvol = reslice_image(atlas_vol, fname);
     atlasvol = single(round(atlasvol(:)))'; 
@@ -5945,7 +5946,7 @@ function y = nanmean(x,dim)
 %    See also MEAN
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -5995,7 +5996,7 @@ function y = nanmedian(x,dim)
 %    See also MEDIAN
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -6080,7 +6081,7 @@ function y = nanstd(x,flag,dim)
 %    See also STD
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -6158,7 +6159,7 @@ function y = nanvar(x,dim,flag)
 %    See also STD
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -6223,7 +6224,7 @@ function y = nansem(x,dim)
 %    NANSUM which are all part of the NaN-suite.
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -6274,7 +6275,7 @@ function y = nansum(x,dim)
 %    See also SUM
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -6332,7 +6333,7 @@ function [y,idx] = nanmin(a,dim,b)
 %    See also MIN
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    
@@ -6397,7 +6398,7 @@ function [y,idx] = nanmax(a,dim,b)
 %    See also MAX
 
 % -------------------------------------------------------------------------
-%    author:      Jan Gläscher
+%    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
 %    

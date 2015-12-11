@@ -56,7 +56,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20151129
+%   Version:  20151210
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20151129'; 
+version='20151210'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -99,7 +99,7 @@ if nargin < 1
     else
         selectdir = pwd; 
     end
-    ol = uigetvol('Select an Image File for Overlay', selectdir);
+    ol = uigetvol('Select an Image File for Overlay', 0, selectdir);
     if isempty(ol), disp('Must select an overlay!'); return; end
 else
     if iscell(ol), ol = char(ol); end
@@ -596,10 +596,15 @@ function put_axesmenu
     ctmax      = uimenu(cmenu, 'Label', 'Go to Global Peak', 'callback', @cb_minmax, 'separator', 'off');
     ctlocalmax = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax); 
     ctclustmax = uimenu(cmenu, 'Label', 'Go to Cluster Peak', 'callback', @cb_clustminmax);
-    ctsavemap  = uimenu(cmenu, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust, 'separator', 'on');
-    ctsavemask = uimenu(cmenu, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
-    ctsaveroi  = uimenu(cmenu, 'Label', 'Save ROI at Current Location', 'callback', @cb_saveroi);
-    ctsavergb  = uimenu(cmenu, 'Label', 'Save Screen Capture', 'callback', @cb_savergb);
+    ctplot     = uimenu(cmenu, 'Label', 'Plot (beta)', 'separator', 'on');
+    ctclustexp = uimenu(ctplot, 'Label', 'Cluster', 'callback', {@cb_clustexplore, 'Cluster'});
+    ctclustexp = uimenu(ctplot, 'Label', 'Voxel', 'callback', {@cb_clustexplore, 'Voxel'});
+    ctclustexp = uimenu(ctplot, 'Label', 'Shape around Voxel', 'callback', {@cb_clustexplore, 'Shape around Voxel'});
+    ctsave     = uimenu(cmenu, 'Label', 'Save', 'separator', 'on');
+    ctsavemap  = uimenu(ctsave, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust);
+    ctsavemask = uimenu(ctsave, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
+    ctsaveroi  = uimenu(ctsave, 'Label', 'Save ROI at Current Location', 'callback', @cb_saveroi);
+    ctsavergb  = uimenu(ctsave, 'Label', 'Save Screen Capture', 'callback', @cb_savergb);
     ctns       = uimenu(cmenu, 'Label', 'Search Location in Neurosynth',  'CallBack', @cb_neurosynth, 'separator', 'on');  
     ctxhair    = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', @cb_crosshair, 'separator', 'on'); 
     for a = 1:3
@@ -635,11 +640,10 @@ function put_axesxyz
 function cb_updateoverlay(varargin)
     global st
     % | Check for Numeric Input
-    if isnan(str2double(get(varargin{1}, 'string')))
-        setthreshinfo; 
-%         warndlg('Input must be numerical');
-        return
-    end
+%     if isempty(varargin) || isnan(str2double(get(varargin{1}, 'string')))
+%         setthreshinfo; 
+%         return
+%     end
     T0  = getthresh;
     T   = T0;
     di  = strcmpi({'+' '-' '+/-'}, T.direct);
@@ -867,24 +871,18 @@ function cb_crosshair(varargin)
     drawnow;
 function cb_saveimg(varargin)
     global st
-    lab = get(varargin{1}, 'label');
-    T = getthresh; 
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
-    clustidx = st.ol.C0(di,:);
-    opt = [1 -1 1]; 
-    outimg = st.ol.Y*opt(di);
-    outhdr = st.ol.hdr;
-    outimg(clustidx==0) = NaN;
-    putmsg = 'Save intensity image as'; 
+    lab     = get(varargin{1}, 'label');
+    outimg  = getcurrentoverlay; 
+    outhdr  = st.ol.hdr;
+    putmsg  = 'Save intensity image as'; 
     outhdr.descrip = 'Thresholded Intensity Image'; 
     [p,n] = fileparts(outhdr.fname); 
-    deffn = sprintf('%s/Thresh_%s.nii', p, n);  
+    deffn = sprintf('%s%sThresh_%s.nii', p, filesep, n);  
     if regexpi(lab, 'Binary Mask')
-        outimg(isnan(outimg))   = 0; 
-        outimg(outimg~=0)       = 1;
+        outimg(outimg~=0)     = 1;
         outhdr.descrip = 'Thresholded Mask Image'; 
         putmsg = 'Save mask image as'; 
-        deffn = sprintf('%s/Mask_%s.nii', p, n);  
+        deffn = sprintf('%s%sMask_%s.nii', p, filesep, n);  
     end
     fn = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
@@ -895,26 +893,21 @@ function cb_saveclust(varargin)
     global st
     str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
     if strcmp(str, 'n/a'), return; end
-    [xyz, voxidx]  = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm0);
     lab            = get(varargin{1}, 'label');
-    T              = getthresh; 
-    di             = strcmpi({'+' '-' '+/-'}, T.direct);
-    clidx          = st.ol.C0IDX(di,:);
-    clidx          = clidx==(clidx(voxidx)); 
-    opt            = [1 -1 1]; 
-    outimg         = st.ol.Y*opt(di);
+    blob           = getcurrentblob; 
+    rname          = sprintf('%s (x=%d, y=%d, z=%d)', blob.label, blob.xyz);
+    outimg         = st.ol.Y; 
     outhdr         = st.ol.hdr; 
-    outimg(clidx==0) = NaN;
+    outimg(~blob.clidx) = 0; 
     putmsg         = 'Save cluster'; 
     outhdr.descrip = 'Intensity Thresholded Cluster Image'; 
     [p,n]          = fileparts(outhdr.fname); 
-    deffn          = sprintf('%s/Cluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);  
+    deffn          = sprintf('%s%sCluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, filesep, n, blob.xyz, str);  
     if regexp(lab, 'Binary Mask')
-        outimg(isnan(outimg)) = 0; 
         outimg(outimg~=0)     = 1;
         outhdr.descrip        = 'Binary Mask Cluster Image'; 
         putmsg                = 'Save mask image as'; 
-        deffn                 = sprintf('%s/ClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, n, xyz, str);   
+        deffn                 = sprintf('%s%sClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, filesep, n, blob.xyz, str);   
     end
     fn           = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
@@ -1003,43 +996,16 @@ function cb_saveroi(varargin)
     {'Shape'; 'shape'}          ,   {'Sphere' 'Box'}, ...
     {'Size (mm)'; 'size'}       ,   12);
     if strcmpi(button, 'cancel'), return; end
-    [mm, voxidx] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm0);
-    refhdr = st.ol.hdr; 
-    roihdr = refhdr;
-    roihdr.pinfo = [1;0;0];
-    roipath = pwd;
-    [R,C,P]  = ndgrid(1:refhdr.dim(1),1:refhdr.dim(2),1:refhdr.dim(3));
-    RCP      = [R(:)';C(:)';P(:)'];
-    clear R C P
-    RCP(4,:)    = 1;
-    XYZmm       = refhdr.mat(1:3,:)*RCP;   
-    Q           = ones(1,size(XYZmm,2));
-    cROI        = zeros(roihdr.dim);
-    switch roi.shape
-        case 'Sphere'
-            j = find(sum((XYZmm - mm*Q).^2) <= roi.size^2);
-        case 'Box'
-            j      = find(all(abs(XYZmm - mm*Q) <= [roi.size roi.size roi.size]'*Q/2));
-    end
-    cROI(j) = 1;
-    if roi.intersectflag
-        T   = getthresh; 
-        di  = strcmpi({'+' '-' '+/-'}, T.direct);
-        clidx = st.ol.C0IDX(di,:);
-        clidx = clidx==(clidx(voxidx)); 
-        opt = [1 -1 1]; 
-        img = st.ol.Y*opt(di);
-        img(clidx==0) = 0;
-        cROI = double(cROI & img); 
-    end
-    cHDR            = roihdr;
-    cHDR.descrip    = sprintf('ROI - x=%d, y=%d, z=%d - %s %d', mm, roi.shape, roi.size); 
-    [p,n]   = fileparts(cHDR.fname); 
-    deffn   = sprintf('%s/ROI_x=%d_y=%d_z=%d_%dvoxels_%s%d.nii', p, mm, sum(cROI(:)), roi.shape, roi.size);  
-    putmsg  = 'Save ROI as'; 
-    fn      = uiputvol(deffn, putmsg);
+    xyz             = getroundvoxel; 
+    cROI            = growregion(roi, xyz);
+    cHDR            = st.ol.hdr;
+    cHDR.descrip    = sprintf('ROI - x=%d, y=%d, z=%d - %s %d', xyz, roi.shape, roi.size); 
+    [p,n]           = fileparts(cHDR.fname); 
+    deffn           = sprintf('%s/ROI_x=%d_y=%d_z=%d_%dvoxels_%s%d.nii', p, xyz, sum(cROI(:)), roi.shape, roi.size);  
+    putmsg          = 'Save ROI as'; 
+    fn              = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
-    cHDR.fname = fn; 
+    cHDR.fname      = fn; 
     spm_write_vol(cHDR,cROI);
     fprintf('\nROI image saved to %s\n', fn);     
 function cb_savergb(varargin)
@@ -1537,6 +1503,178 @@ function cb_montagepaneldelete(varargin)
     tightfig;
     drawnow; 
     
+% | ROI EXPLORER
+% =========================================================================
+function cb_clustexplore(varargin)
+
+    global st
+    
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    if strcmp(str, 'n/a'), return; end
+
+    %% Get Design Variable %%
+    [impath, imname] = fileparts(st.ol.fname);
+    if exist([impath filesep 'I.mat'],'file') 
+        matfile     = [impath filesep 'I.mat']; 
+        maskfile    = [impath filesep 'mask.nii'];
+    elseif exist([impath filesep 'SPM.mat'],'file') 
+        matfile     = [impath filesep 'SPM.mat'];
+    else
+        headsup('This feature requires that an SPM.mat or I.mat design in the same directory as the overlay image.'); 
+        return; 
+    end
+    
+    %% Load Design Variable %%
+    load(matfile);
+    subhdr      = SPM.xY.VY; 
+    subcon      = {subhdr.fname}';
+    subdescrip  = {subhdr.descrip}';
+    nscan       = length(subcon);
+    ncond       = length(SPM.xX.iH);
+    nsub        = nscan/ncond;
+    subcon      = reshape(subcon, ncond, nsub)';
+    [studydir, subname] = parentpath(subcon(:,1));
+    subname     = regexprep(subname, '_', ' ');
+    conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+    
+    %% Check that contrast images exist on filesystem %%
+    existidx = cellfun(@exist, subcon(:));
+    if any(existidx==0)
+        headsup(sprintf('Single-subject images could not be found. Subject directories should be in: %s', studydir));
+        return; 
+    end 
+
+    %% Get Cluster Indices %%
+    blob           = getcurrentblob; 
+    rname          = sprintf('%s (x=%d, y=%d, z=%d)', blob.label, blob.xyz);
+
+    %% Get Subject Data %%
+    switch lower(varargin{3})
+        case 'cluster'
+            dataidx = blob.clidx; 
+        case 'voxel'
+            dataidx = blob.xyzidx; 
+        otherwise
+            [roi, button] = settingsdlg(...  
+            'title'                     ,   'ROI Parameters', ...
+            {'Intersect ROI with Overlay?'; 'intersectflag'}    ,  true, ...
+            {'Shape'; 'shape'}          ,   {'Sphere' 'Box'}, ...
+            {'Size (mm)'; 'size'}       ,   12);
+            if strcmpi(button, 'cancel'), return; end
+            dataidx = growregion(roi, blob.xyz);
+            dataidx = dataidx(:) > 0; 
+    end
+    data    = spm_get_data(SPM.xY.VY, st.ol.XYZ0(:, dataidx));
+    data(data==0) = NaN;
+    datakwy = spm_filter(SPM.xX.K,SPM.xX.W*data);
+    Mraw    = nanmean(data, 2);
+    M       = nanmean(datakwy, 2);
+    K       = sum(isnan(data), 2);
+    if ncond > 1
+        M       = reshape(M, ncond, nsub)';
+        K       = reshape(K, ncond, nsub)';
+        Mavg    = nanmean(M, 2);
+        Z       = abs(oneoutzscore(M)); 
+        Zavg    = abs(oneoutzscore(Mavg));
+        DAT     = [subname num2cell([Zavg Mavg K(:,1)])]; 
+        DAT     = sortrows(DAT, -2);
+        header  = {'Subject Name' 'Mean Resp Z' 'Mean Resp' 'N Missing Voxels'};
+    else
+        Z       = abs(oneoutzscore(M));
+        DAT     = [subname num2cell([Z M K])]; 
+        DAT     = sortrows(DAT, -2);
+        header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
+    end
+    figpos = setposition_auxwindow; 
+    figpos(4) = round(figpos(4)*.80);
+    figpos(2) = figpos(2) + round(figpos(4)*.20);
+    
+    
+    % | CREATE FIGURE
+    hfig  =  figure( ...
+       'Name'                     ,        'bspmview Plot'      ,...
+       'Units'                    ,        'pix'              ,...
+       'Position'                 ,        figpos                   ,...
+       'Resize'                   ,        'on'                 ,...
+       'Color'                    ,        st.color.bg           ,...
+       'Renderer'                 ,        'zbuffer'           ,...
+       'NumberTitle'              ,        'off'               ,...
+       'DockControls'             ,        'off'               ,...
+       'MenuBar'                  ,        'none'              ,...
+       'Toolbar'                  ,        'none'              ,...
+       'Tag'                      ,        'bspmviewplot'      ,...
+       'WindowStyle'              ,        'normal'            ,...
+       'Visible'                  ,        'off'                 ...
+                           );
+
+    % | CREATE GRID LAYOUT
+    hgrid   = pgrid(2, 1, 'relheight', [3 4], 'backg', [0 0 0]);
+    hgrid   = psplit(hgrid, 1);
+    hgrid   = psplit(hgrid, 2);
+    hgrid   = pmerge(hgrid, 1:2);
+    
+    % | PLOT
+    set(hgrid(3), 'backg', st.color.fg);
+    axhist  = axes('parent', hgrid(3));
+    axes(axhist);
+    Mx      = repmat(1:ncond, nsub, 1);
+    hscat   = scatter(axhist, Mx(:), M(:));
+    for i = 1:ncond
+        ln(i)      = line([i-.25 i+.25], repmat(nanmean(M(:,i)), 1, 2), 'color', [0 0 0]);
+        outidx     = find(Z(:,i) > 2.5);
+        if outidx
+           text(repmat(i, length(outidx), 1), M(outidx, i), subname(outidx), 'fontsize', st.fonts.sz6);
+        end
+    end
+
+    % | FORMAT
+    title(rname, 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz3);
+    ylabel(axhist, 'Whitened And Filtered Y');
+    Mmax = max(M(:)); Mmin = min(M(:)); Mrng = range(M(:));
+    ylim    = [Mmin-(Mrng*.075) Mmax+(Mrng*.075)];
+    set(axhist, ...
+        'Fontname', st.fonts.name, ...
+        'Fontsize', st.fonts.sz4, ...
+        'ylim', ylim, ...
+        'xlim', [.5 ncond+.5], ...
+        'ytick', linspace(ylim(1), ylim(2), 5), ...
+        'xtick', 1:ncond ...
+        );
+    yt  = get(axhist, 'ytick');
+    yts = cell(size(yt)); 
+    for i = 1:length(yt), yts{i} = sprintf('%.2f', yt(i)); end
+    set(axhist, 'yticklabel', yts, 'xticklabel', conname);
+
+    % | TABLE
+    set(hgrid(1), 'units', 'pix');
+    tw = get(hgrid(1), 'pos');
+    tw = tw(3) - tw(1);
+    set(hgrid(1), 'units', 'norm');
+%     DAT(:,2:3) = cellnum2str(DAT(:,2:3));
+%     DAT(:,4) = cellnum2str(DAT(:,4), 0); 
+    th = uitable('Parent', hgrid(1), ...
+        'Data', DAT, ...
+        'Units', 'norm', ...
+        'RowName', [], ...
+        'ColumnName', header, ...
+        'Pos', [0 0 1 1], ...
+        'RearrangeableColumns', 'on', ...
+        'FontName', 'Fixed-Width', ...
+        'FontUnits', 'Points', ...
+        'FontSize', st.fonts.sz6);
+    set(th, 'units', 'pixels');
+    set(th, 'ColumnWidth', {tw/3 tw*(2/9) tw*(2/9) tw/5});
+    
+    % | IMAGE
+    h       = gethandles; 
+    axim    = axes('parent', hgrid(2));
+    axes(axim); axis off; 
+    copyobj(get(h.axial, 'Children'), axim); 
+    cmap = [gray(64); getcolormap];
+    set(hfig, 'Colormap', cmap);
+    set(hfig, 'visible', 'on');
+    drawnow;
+
 % | SETTERS
 % =========================================================================
 function setstatus(msg)
@@ -1866,6 +2004,16 @@ function [xyz, xyzidx, dist]     = getroundvoxel
 function [xyz, voxidx, dist]     = getnearestvoxel 
     global st
     [xyz, voxidx, dist] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm);
+function blob                    = getcurrentblob
+    global st
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    if strcmp(str, 'n/a'), blob = []; return; end
+    [blob.xyz, blob.xyzidx]   = getroundvoxel; 
+    blob.label          = char(getregionnames(blob.xyz));
+    blob.thresh         = getthresh;
+    di                  = strcmpi({'+' '-' '+/-'}, blob.thresh.direct);
+    blob.clidx          = st.ol.C0(di,:)==st.ol.C0(di, blob.xyzidx);
+    blob.extent         = sum(blob.clidx);   
 function y                       = getcurrentoverlay(dilateflag)
     if nargin==0, dilateflag = 0; end
     global st
@@ -2479,6 +2627,29 @@ function out = erode_image(in)
 % Dilate non-zero values in 3D volume - Wrapper for spm_dilate.m
 kernel  = cat(3,[0 0 0; 0 1 0; 0 0 0],[0 1 0; 1 1 1; 0 1 0],[0 0 0; 0 1 0; 0 0 0]);
 out     = spm_erode(in, kernel);
+function out = growregion(roi, xyz)
+    global st
+    refhdr = st.ol.hdr; 
+    roihdr = refhdr;
+    roihdr.pinfo = [1;0;0];
+    [R,C,P]  = ndgrid(1:refhdr.dim(1),1:refhdr.dim(2),1:refhdr.dim(3));
+    RCP      = [R(:)';C(:)';P(:)'];
+    clear R C P
+    RCP(4,:)    = 1;
+    XYZmm       = refhdr.mat(1:3,:)*RCP;   
+    Q           = ones(1,size(XYZmm,2));
+    out         = zeros(roihdr.dim);
+    switch roi.shape
+        case 'Sphere'
+            j = find(sum((XYZmm - xyz*Q).^2) <= roi.size^2);
+        case 'Box'
+            j = find(all(abs(XYZmm - xyz*Q) <= [roi.size roi.size roi.size]'*Q/2));
+    end
+    out(j) = 1;
+    if roi.intersectflag
+        col = getcurrentoverlay; 
+        out(col==0) = 0; 
+    end
 
 % | IMAGE TYPE CHECKS
 % =========================================================================
@@ -2521,6 +2692,26 @@ function df         = check4df(descrip)
     
 % | MISC UTILITIES
 % =========================================================================
+function zx = oneoutzscore(x, returnas)
+% ONEOUTZSCORE Perform columnwise leave-one-out zscoring
+% 
+% USAGE: zx = oneoutzscore(x, returnas)
+% 
+%   returnas: 0, signed values (default); 1, absolute values
+%
+if nargin<1, disp('USAGE: zx = oneoutzscore(x, returnas)'); return; end
+if nargin<2, returnas = 0; end
+if size(x,1)==1, x=x'; end
+zx              = x; 
+[nrow, ncol]    = size(x);
+for c = 1:ncol
+    cin         = repmat(x(:,c), 1, nrow);
+    theoneout   = cin(logical(eye(nrow)))';
+    theleftin   = reshape(cin(logical(~eye(nrow))),nrow-1,nrow);
+    cz          = (theoneout-nanmean(theleftin))./nanstd(theleftin);
+    zx(:,c)     = cz';
+end
+if returnas, zx = abs(zx); end
 function str        = nicetime
     str = strtrim(datestr(now,'HH:MM:SS PM on mmm. DD, YYYY'));
 function [strw, strh] = strsize(string, varargin)
@@ -2951,6 +3142,44 @@ function p          = bob_t2p(t, df)
     p = 1 - p;
 function y          = range(x)
 y = nanmax(x) - nanmin(x); 
+function out        = replace(in, exp1, exp2)
+    out  = in;
+    if ischar(exp1), exp1 = cellstr(exp1); end
+    if ischar(exp2), exp2 = cellstr(exp2); end
+    if numel(exp2)==1, exp2 = repmat(exp2, size(exp1)); end
+    for i = 1:length(exp1), out = regexprep(out, exp1{i}, exp2{i}); end
+    out = strtrim(out);
+function [parpath, branchpar] = parentpath(subpaths)
+% PARENTPATH Find parent path from multiple subpaths
+%
+%   USAGE:      parpath = parentpath(subpaths)
+% __________________________________________________________________________
+%   SUBPATHS:   CHAR or CELL array containing strings for multiple paths
+%
+
+% ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
+%	Created:  2015-03-27
+%	Email:    spunt@caltech.edu
+% __________________________________________________________________________
+if      nargin < 1, disp('USAGE: parpath = parentpath(subpaths)'); return; end
+if      iscell(subpaths), subpaths = char(subpaths); end
+if      size(subpaths, 1)==1
+    parpath = fileparts(subpaths); 
+    disp('Only one subpath!'); 
+    return; 
+end
+
+% | Get indices of noncommon characters
+if      size(subpaths, 1)==2, diffidx = find(diff(subpaths));
+else    diffidx = find(sum(diff(subpaths))); end
+
+% | Assign parent path
+parpath = fileparts(subpaths(1, 1:diffidx(1)));
+
+if nargout==2
+   tmp = regexp(regexprep(cellstr(subpaths), parpath, ''), filesep, 'split');
+   branchpar = cellfun(@(x) x(2), tmp); 
+end
 function writereport(incell, outname)
 % WRITEREPORT Write cell array to CSV file
 %
@@ -3047,9 +3276,9 @@ function vol        = uigetvol(message, multitag, defaultdir)
     if nargin < 2, multitag = 0; end
     if nargin < 1, message = 'Select Image File'; end
     if ~multitag
-        [imname, pname] = uigetfile({'*.img; *.nii; *.nii.gz', 'Image File'; '*.*', 'All Files (*.*)'}, message, defaultdir);
+        [imname, pname] = uigetfile({fullfile(defaultdir, '*.img;*.nii;*.nii.gz'), 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message);
     else
-        [imname, pname] = uigetfile({'*.img; *.nii', 'Image File'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on', defaultdir);
+        [imname, pname] = uigetfile({fullfile(defaultdir, '*.img;*.nii;*.nii.gz'), 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on');
     end
     if isequal(imname,0) || isequal(pname,0)
         vol = [];

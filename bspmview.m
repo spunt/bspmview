@@ -813,18 +813,31 @@ function cb_clustminmax(varargin)
     clidx         = spm_clusters(st.ol.XYZ);
     clidx         = clidx==(clidx(voxidx)); 
     tmpXYZmm      = st.ol.XYZmm(:,clidx); 
-    centre        = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
-    bspm_orthviews('reposition', centre);
+    
+    xyz        = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
+    if size(xyz, 2) > 1
+        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the cluster maximum value', size(xyz, 2)), 'NOTE');
+        xyz = xyz(:,randperm(size(xyz, 2)));
+    end
+    bspm_orthviews('reposition', xyz(:,1)); 
     drawnow;
 function cb_localmax(varargin)
     global st
     xyz = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.maxima);
-    bspm_orthviews('reposition', xyz);
+    if size(xyz, 2) > 1
+        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the local maximum value', size(xyz, 2)), 'NOTE');
+        xyz = xyz(:,randperm(size(xyz, 2)));
+    end
+    bspm_orthviews('reposition', xyz(:,1)); 
     drawnow;
 function cb_minmax(varargin)
     global st
-    centre = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
-    bspm_orthviews('reposition', centre); 
+    xyz = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
+    if size(xyz, 2) > 1
+        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the maximum value', size(xyz, 2)), 'NOTE');
+        xyz = xyz(:,randperm(2));
+    end
+    bspm_orthviews('reposition', xyz(:,1)); 
     drawnow;
 function cb_maxval(varargin)
     global st
@@ -1530,12 +1543,18 @@ function cb_clustexplore(varargin)
     subcon      = {subhdr.fname}';
     subdescrip  = {subhdr.descrip}';
     nscan       = length(subcon);
-    ncond       = length(SPM.xX.iH);
-    nsub        = nscan/ncond;
-    subcon      = reshape(subcon, ncond, nsub)';
-    [studydir, subname] = parentpath(subcon(:,1));
-    subname     = regexprep(subname, '_', ' ');
-    conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+    if isfield(SPM, 'Sess')
+       headsup('Image appears to be based on single-subject data. This feature supports only group-level results.');   
+        return; 
+    else
+        ncond       = length(SPM.xX.iH);
+        nsub        = nscan/ncond;
+        subcon      = reshape(subcon, ncond, nsub)';
+        [studydir, subname] = parentpath(subcon(:,1));
+        subname     = regexprep(subname, '_', ' ');
+        conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+    end
+
     
     %% Check that contrast images exist on filesystem %%
     existidx = cellfun(@exist, subcon(:));
@@ -1684,6 +1703,7 @@ function setstatus(msg)
     drawnow; 
 function setmaxima
     global st
+    
     Dis = st.preferences.separation; 
     Num = st.preferences.numpeaks; 
     T   = getthresh;
@@ -2692,7 +2712,7 @@ function df         = check4df(descrip)
     
 % | MISC UTILITIES
 % =========================================================================
-function zx = oneoutzscore(x, returnas)
+function zx         = oneoutzscore(x, returnas)
 % ONEOUTZSCORE Perform columnwise leave-one-out zscoring
 % 
 % USAGE: zx = oneoutzscore(x, returnas)
@@ -3275,10 +3295,11 @@ function vol        = uigetvol(message, multitag, defaultdir)
     if nargin < 3, defaultdir = pwd; end
     if nargin < 2, multitag = 0; end
     if nargin < 1, message = 'Select Image File'; end
+    
     if ~multitag
-        [imname, pname] = uigetfile({fullfile(defaultdir, '*.img;*.nii;*.nii.gz'), 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message);
+        [imname, pname] = uigetfile({'*.img;*.nii;*.nii.gz', 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message);
     else
-        [imname, pname] = uigetfile({fullfile(defaultdir, '*.img;*.nii;*.nii.gz'), 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on');
+        [imname, pname] = uigetfile({'*.img;*.nii;*.nii.gz', 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message, 'MultiSelect', 'on');
     end
     if isequal(imname,0) || isequal(pname,0)
         vol = [];
@@ -3459,7 +3480,7 @@ function cb_ok(varargin)
 
 % | BSPM_OPTHVIEWS (MODIFIED FROM SPM8 SPM_OPTHVIEWS)
 % =========================================================================
-function varargout = bspm_orthviews(action,varargin)
+function varargout          = bspm_orthviews(action,varargin)
 % John Ashburner et al% Display orthogonal views of a set of images
 % The basic fields of st are:
 %         n        - the number of images currently being displayed
@@ -3816,7 +3837,7 @@ switch lower(action)
             feval(['spm_ov_' st.plugins{addonaction}],varargin{:});
         end
 end
-function H  = specify_image(img)
+function H                  = specify_image(img)
 global st
 H = [];
 if isstruct(img)
@@ -3853,7 +3874,7 @@ V.window    = 'auto';
 V.mapping   = 'linear';
 st.vols{ii} = V;
 H = ii;
-function bb = maxbb
+function bb                 = maxbb
 global st
 mn = [Inf Inf Inf];
 mx = -mn;
@@ -3864,14 +3885,14 @@ for i=valid_handles
     mn = min([bb ; mn]);
 end
 bb = [mn ; mx];
-function H  = pos(handle)
+function H                  = pos(handle)
 global st
 H = [];
 for i=valid_handles(handle)
     is = inv(st.vols{i}.premul*st.vols{i}.mat);
     H = is(1:3,1:3)*st.centre(:) + is(1:3,4);
 end
-function mx = maxval(vol)
+function mx                 = maxval(vol)
 if isstruct(vol)
     mx = -Inf;
     for i=1:vol.dim(3)
@@ -3882,7 +3903,7 @@ if isstruct(vol)
 else
     mx = max(vol(isfinite(vol)));
 end
-function mn = minval(vol)
+function mn                 = minval(vol)
 if isstruct(vol)
     mn = Inf;
     for i=1:vol.dim(3)
@@ -3893,9 +3914,9 @@ if isstruct(vol)
 else
     mn = min(vol(isfinite(vol)));
 end
-function m  = max_img
+function m                  = max_img
 m = 24;
-function centre = findcent
+function centre             = findcent
     global st
     obj    = get(st.fig,'CurrentObject');
     centre = [];
@@ -3930,7 +3951,7 @@ function centre = findcent
         if ~isempty(cent), break; end
     end
     if ~isempty(cent), centre = st.Space(1:3,1:3)*cent(:) + st.Space(1:3,4); end
-function handles = valid_handles(handles)
+function handles            = valid_handles(handles)
     global st
     if ~nargin, handles = 1:max_img; end
     if isempty(st) || ~isfield(st,'vols')
@@ -3944,7 +3965,7 @@ function handles = valid_handles(handles)
             if isempty(st.vols{h}), handles(handles==h)=[]; end
         end
     end
-function img = scaletocmap(inpimg,mn,mx,cmap,miscol)
+function img                = scaletocmap(inpimg,mn,mx,cmap,miscol)
 if nargin < 5, miscol=1; end
 cml = size(cmap,1);
 scf = (cml-1)/(mx-mn);
@@ -3952,7 +3973,7 @@ img = round((inpimg-mn)*scf)+1;
 img(img<1)   = 1;
 img(img>cml) = cml;
 img(~isfinite(img)) = miscol;
-function item_parent = addcontext(volhandle)
+function item_parent        = addcontext(volhandle)
 global st
 % create context menu
 set(0,'CurrentFigure',st.fig);
@@ -4100,12 +4121,32 @@ for k = 1:numel(st.plugins)
         set(h(1),'Separator','on'); 
     end
 end
-function cm_handles = get_cm_handles
+function cm_handles         = get_cm_handles
 global st
 cm_handles = [];
 for i = valid_handles
     cm_handles = [cm_handles st.vols{i}.ax{1}.cm];
 end
+function cmap               = getcmap(acmapname)
+% get colormap of name acmapname
+if ~isempty(acmapname)
+    cmap = evalin('base',acmapname,'[]');
+    if isempty(cmap) % not a matrix, is .mat file?
+        acmat = spm_file(acmapname, 'ext','.mat');
+        if exist(acmat, 'file')
+            s    = struct2cell(load(acmat));
+            cmap = s{1};
+        end
+    end
+end
+if size(cmap, 2)~=3
+    warning('Colormap was not an N by 3 matrix')
+    cmap = [];
+end
+function current_handle     = get_current_handle
+    cm_handle      = get(gca,'UIContextMenu');
+    cm_handles     = get_cm_handles;
+    current_handle = find(cm_handles==cm_handle);
 function addblobs(handle, xyz, t, mat, name)
 global st
 if nargin < 5
@@ -5299,10 +5340,6 @@ switch lower(varargin{1})
         end
         redraw_all;
 end
-function current_handle = get_current_handle
-    cm_handle      = get(gca,'UIContextMenu');
-    cm_handles     = get_cm_handles;
-    current_handle = find(cm_handles==cm_handle);
 function zoom_all(zoom,res)
 cm_handles = get_cm_handles;
 zoom_op(zoom,res);
@@ -5343,22 +5380,6 @@ function addcolourbar(vh,bh)
     if isfield(st.vols{vh}.blobs{bh},'name')
         ylabel(st.vols{vh}.blobs{bh}.name,'parent',st.vols{vh}.blobs{bh}.cbar);
     end    
-function cmap = getcmap(acmapname)
-% get colormap of name acmapname
-if ~isempty(acmapname)
-    cmap = evalin('base',acmapname,'[]');
-    if isempty(cmap) % not a matrix, is .mat file?
-        acmat = spm_file(acmapname, 'ext','.mat');
-        if exist(acmat, 'file')
-            s    = struct2cell(load(acmat));
-            cmap = s{1};
-        end
-    end
-end
-if size(cmap, 2)~=3
-    warning('Colormap was not an N by 3 matrix')
-    cmap = [];
-end
 function redraw_colourbar(vh,bh,interval,cdata)
     global st
     setunits('norm');
@@ -6156,7 +6177,7 @@ end
 
 % | NAN SUITE
 % =========================================================================
-function y = nanmean(x,dim)
+function y       = nanmean(x,dim)
 % FORMAT: Y = NANMEAN(X,DIM)
 % 
 %    Average or mean value ignoring NaNs
@@ -6206,7 +6227,7 @@ count(i) = ones(size(i));
 
 y = sum(x,dim)./count;
 y(i) = i + NaN;
-function y = nanmedian(x,dim)
+function y       = nanmedian(x,dim)
 % FORMAT: Y = NANMEDIAN(X,DIM)
 % 
 %    Median ignoring NaNs
@@ -6282,7 +6303,7 @@ y(i) = i + nan;
 % permute and reshape back
 siz(dim) = 1;
 y = ipermute(reshape(y,siz(perm)),perm);
-function y = nanstd(x,flag,dim)
+function y       = nanstd(x,flag,dim)
 % FORMAT: Y = NANSTD(X,FLAG,DIM)
 % 
 %    Standard deviation ignoring NaNs
@@ -6360,7 +6381,7 @@ else
 	y = sqrt(sum(x.*x,dim)./max(count,1));
 end
 y(i) = i + NaN;
-function y = nanvar(x,dim,flag)
+function y       = nanvar(x,dim,flag)
 % FORMAT: Y = NANVAR(X,DIM,FLAG)
 % 
 %    Variance ignoring NaNs
@@ -6438,7 +6459,7 @@ else
 	y = sum(x.*x,dim)./max(count,1);
 end
 y(i) = i + NaN;
-function y = nansem(x,dim)
+function y       = nansem(x,dim)
 % FORMAT: Y = NANSEM(X,DIM)
 % 
 %    Standard error of the mean ignoring NaNs
@@ -6485,7 +6506,7 @@ count(i) = 1;
 y = nanstd(x,dim)./sqrt(count);
 
 y(i) = i + NaN;
-function y = nansum(x,dim)
+function y       = nansum(x,dim)
 % FORMAT: Y = NANSUM(X,DIM)
 % 
 %    Sum of values ignoring NaNs

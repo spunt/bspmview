@@ -56,7 +56,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20151210
+%   Version:  20151214
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20151210'; 
+version='20151214'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -809,12 +809,9 @@ function cb_clustminmax(varargin)
     global st
     str           = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
     if strcmp(str, 'n/a'), return; end
-    [xyz, voxidx] = getnearestvoxel;
-    clidx         = spm_clusters(st.ol.XYZ);
-    clidx         = clidx==(clidx(voxidx)); 
-    tmpXYZmm      = st.ol.XYZmm(:,clidx); 
-    
-    xyz        = tmpXYZmm(:,st.ol.Z(clidx)==max(st.ol.Z(clidx)));
+    blob    = getcurrentblob;
+    if all(blob.values < 0), blob.values = abs(blob.values); end
+    xyz     = blob.clxyz(:, blob.values==max(blob.values));
     if size(xyz, 2) > 1
         printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the cluster maximum value', size(xyz, 2)), 'NOTE');
         xyz = xyz(:,randperm(size(xyz, 2)));
@@ -982,25 +979,25 @@ st.ol.Y = y;
 cb_updateoverlay
 setstatus('Ready'); 
 function cb_mask(varargin)
-global st
-mfname = uigetvol('Select an Image File for Overlay');
-if isempty(mfname), disp('User cancelled.'); return; end
-setstatus('Working, please wait...'); 
-mask    = reslice_image(mfname, st.ol.fname);
-mask    = double(mask > 0);
-y       = st.ol.Y .* mask; 
-% | Check surviving voxels
-ydi     = [any(y(:)>0) any(y(:)<0) (any(y(:)>0) & any(y(:)<0))];
-di      = strcmpi({'+' '-' '+/-'}, st.direct);
-if ~ydi(di)
-    headsup('No suprathreshold voxels remain after intersecting with mask. Doing nothing...');
-    setstatus('Ready'); 
-    return; 
-end
-st.ol.null 	= check4sign(y);
-st.ol.Y     = y; 
-cb_updateoverlay
-setstatus('Ready');
+    global st
+    mfname = uigetvol('Select an Image File for Overlay');
+    if isempty(mfname), disp('User cancelled.'); return; end
+    setstatus('Working, please wait...'); 
+    mask    = reslice_image(mfname, st.ol.fname);
+    mask    = double(mask > 0);
+    y       = st.ol.Y .* mask; 
+    % | Check surviving voxels
+    ydi     = [any(y(:)>0) any(y(:)<0) (any(y(:)>0) & any(y(:)<0))];
+    di      = strcmpi({'+' '-' '+/-'}, st.direct);
+    if ~ydi(di)
+        headsup('No suprathreshold voxels remain after intersecting with mask. Doing nothing...');
+        setstatus('Ready'); 
+        return; 
+    end
+    st.ol.null 	= check4sign(y);
+    st.ol.Y     = y; 
+    cb_updateoverlay
+    setstatus('Ready');
 function cb_saveroi(varargin)
     global st
     [roi, button] = settingsdlg(...  
@@ -1539,23 +1536,44 @@ function cb_clustexplore(varargin)
     
     %% Load Design Variable %%
     load(matfile);
-    subhdr      = SPM.xY.VY; 
+    if isfield(SPM, 'Sess')
+        headsup('Image appears to be based on single-subject data. This feature supports only group-level results.');   
+        return; 
+    end
+    xsDes       = SPM.xsDes;
+    subhdr      = SPM.xY.VY;
     subcon      = {subhdr.fname}';
     subdescrip  = {subhdr.descrip}';
     nscan       = length(subcon);
-    if isfield(SPM, 'Sess')
-       headsup('Image appears to be based on single-subject data. This feature supports only group-level results.');   
-        return; 
-    else
-        ncond       = length(SPM.xX.iH);
-        nsub        = nscan/ncond;
-        subcon      = reshape(subcon, ncond, nsub)';
-        [studydir, subname] = parentpath(subcon(:,1));
-        subname     = regexprep(subname, '_', ' ');
-        conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+    groupflag   = 0;
+    
+    switch lower(xsDes.Design)
+        case 'one sample t-test'
+            ncond       = 1;
+            nsub        = nscan/ncond;
+            [studydir, subname] = parentpath(subcon(:,1));
+            subname     = regexprep(subname, '_', ' ');
+            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+        case 'two-sample t-test'
+            ncond       = 1;
+            npergroup   = sum(SPM.xX.X);
+            conidx      = SPM.xX.X; 
+            [studydir, subname] = parentpath(subcon(:,1));
+            subname     = regexprep(subname, '_', ' ');
+            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '});
+            groupflag   = 1; 
+        case 'flexible factorial'
+            ncond       = length(SPM.xX.iH);
+            nsub        = nscan/ncond;
+            subcon      = reshape(subcon, ncond, nsub)';
+            [studydir, subname] = parentpath(subcon(:,1));
+            subname     = regexprep(subname, '_', ' ');
+            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+        otherwise
+            headsup('Unrecognized or unsupported design type! Click to return to the main window...'); 
+            return; 
     end
 
-    
     %% Check that contrast images exist on filesystem %%
     existidx = cellfun(@exist, subcon(:));
     if any(existidx==0)
@@ -1586,28 +1604,43 @@ function cb_clustexplore(varargin)
     data    = spm_get_data(SPM.xY.VY, st.ol.XYZ0(:, dataidx));
     data(data==0) = NaN;
     datakwy = spm_filter(SPM.xX.K,SPM.xX.W*data);
-    Mraw    = nanmean(data, 2);
-    M       = nanmean(datakwy, 2);
-    K       = sum(isnan(data), 2);
-    if ncond > 1
-        M       = reshape(M, ncond, nsub)';
-        K       = reshape(K, ncond, nsub)';
-        Mavg    = nanmean(M, 2);
-        Z       = abs(oneoutzscore(M)); 
-        Zavg    = abs(oneoutzscore(Mavg));
-        DAT     = [subname num2cell([Zavg Mavg K(:,1)])]; 
-        DAT     = sortrows(DAT, -2);
-        header  = {'Subject Name' 'Mean Resp Z' 'Mean Resp' 'N Missing Voxels'};
-    else
+    if groupflag
+        Mraw = NaN(max(npergroup), length(npergroup));
+        M = Mraw; 
+        K = Mraw; 
+        for i = 1:size(conidx, 2) 
+            idx        = find(conidx(:,i)); 
+            Mraw(1:npergroup(i), i)    = nanmean(data(idx,:), 2);
+            M(1:npergroup(i), i)       = nanmean(datakwy(idx,:), 2);
+            K(1:npergroup(i), i)       = sum(isnan(data(idx,:)), 2);
+        end
         Z       = abs(oneoutzscore(M));
-        DAT     = [subname num2cell([Z M K])]; 
+        DAT     = [subname num2cell([Z(~isnan(Z)) M(~isnan(Z)) K(~isnan(Z))])]; 
         DAT     = sortrows(DAT, -2);
         header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
+    else
+        Mraw    = nanmean(data, 2);
+        M       = nanmean(datakwy, 2);
+        K       = sum(isnan(data), 2);
+        if ncond > 1
+            M       = reshape(M, ncond, nsub)';
+            K       = reshape(K, ncond, nsub)';
+            Mavg    = nanmean(M, 2);
+            Z       = abs(oneoutzscore(M)); 
+            Zavg    = abs(oneoutzscore(Mavg));
+            DAT     = [subname num2cell([Zavg Mavg K(:,1)])]; 
+            DAT     = sortrows(DAT, -2);
+            header  = {'Subject Name' 'Mean Resp Z' 'Mean Resp' 'N Missing Voxels'};
+        else
+            Z       = abs(oneoutzscore(M));
+            DAT     = [subname num2cell([Z M K])]; 
+            DAT     = sortrows(DAT, -2);
+            header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
+        end
     end
     figpos = setposition_auxwindow; 
     figpos(4) = round(figpos(4)*.80);
     figpos(2) = figpos(2) + round(figpos(4)*.20);
-    
     
     % | CREATE FIGURE
     hfig  =  figure( ...
@@ -1636,8 +1669,14 @@ function cb_clustexplore(varargin)
     set(hgrid(3), 'backg', st.color.fg);
     axhist  = axes('parent', hgrid(3));
     axes(axhist);
-    Mx      = repmat(1:ncond, nsub, 1);
-    hscat   = scatter(axhist, Mx(:), M(:));
+    if groupflag
+        ncond   = 2; 
+        nsub    = nansum(npergroup);
+        Mx      = [repmat(1, npergroup(1), 1); repmat(2, npergroup(2), 1)];
+    else
+        Mx      = repmat(1:ncond, nsub, 1);
+    end
+    hscat   = scatter(axhist, Mx(:), M(~isnan(M)));
     for i = 1:ncond
         ln(i)      = line([i-.25 i+.25], repmat(nanmean(M(:,i)), 1, 2), 'color', [0 0 0]);
         outidx     = find(Z(:,i) > 2.5);
@@ -1647,7 +1686,6 @@ function cb_clustexplore(varargin)
     end
 
     % | FORMAT
-    title(rname, 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz3);
     ylabel(axhist, 'Whitened And Filtered Y');
     Mmax = max(M(:)); Mmin = min(M(:)); Mrng = range(M(:));
     ylim    = [Mmin-(Mrng*.075) Mmax+(Mrng*.075)];
@@ -1662,7 +1700,13 @@ function cb_clustexplore(varargin)
     yt  = get(axhist, 'ytick');
     yts = cell(size(yt)); 
     for i = 1:length(yt), yts{i} = sprintf('%.2f', yt(i)); end
-    set(axhist, 'yticklabel', yts, 'xticklabel', conname);
+    if groupflag
+        set(axhist, 'yticklabel', yts, 'xticklabel', SPM.xX.name); 
+        title(sprintf('%s | %s', char(conname), rname), 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz3);
+    else
+        set(axhist, 'yticklabel', yts, 'xticklabel', conname);
+        title(rname, 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz3);
+    end
 
     % | TABLE
     set(hgrid(1), 'units', 'pix');
@@ -2033,7 +2077,10 @@ function blob                    = getcurrentblob
     blob.thresh         = getthresh;
     di                  = strcmpi({'+' '-' '+/-'}, blob.thresh.direct);
     blob.clidx          = st.ol.C0(di,:)==st.ol.C0(di, blob.xyzidx);
-    blob.extent         = sum(blob.clidx);   
+    blob.clxyz          = st.ol.XYZmm0(:,blob.clidx); 
+    blob.extent         = sum(blob.clidx);
+    blob.values         = st.ol.Y(find(blob.clidx));
+    blob                = orderfields(blob);
 function y                       = getcurrentoverlay(dilateflag)
     if nargin==0, dilateflag = 0; end
     global st
@@ -2257,7 +2304,7 @@ function OL = load_overlay(fname, pval, k)
 
     % | - CHECK IMAGE
     posneg  = check4sign(od);  
-    df      = check4df(oh.descrip);
+    df      = check4df(oh.descrip, fileparts(st.ol.fname));
     if isempty(df)
         u       = .0001;
         k       = 0;
@@ -2701,13 +2748,17 @@ function flag       = check4sign(img)
             set(allh(strcmp(allhstr, opt{~flag})), 'Value', 1, 'Enable', 'inactive'); 
         end
     end
-function df         = check4df(descrip)
-    df = regexp(descrip, '\[\d+.*]', 'match'); 
+function df         = check4df(descrip, imdir)
+    if exist(fullfile(imdir, 'dof'), 'file')
+        df = load(fullfile(imdir, 'dof'));
+        return; 
+    end
+    df = regexp(descrip, '\[\d+.*]', 'match');
     if isempty(df)
         df = []; 
-        headsup('Degrees of freedom not found in image header. Showing unthresholded image.')
+        headsup('Degrees of freedom not found in image header or its parent directory. Showing unthresholded image.')
     else
-        df = str2num(char(df)); 
+        df = str2num(char(df));
     end
     
 % | MISC UTILITIES

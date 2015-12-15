@@ -2304,7 +2304,7 @@ function OL = load_overlay(fname, pval, k)
 
     % | - CHECK IMAGE
     posneg  = check4sign(od);  
-    df      = check4df(oh.descrip, fileparts(st.ol.fname));
+    df      = check4df(oh);
     if isempty(df)
         u       = .0001;
         k       = 0;
@@ -2748,12 +2748,13 @@ function flag       = check4sign(img)
             set(allh(strcmp(allhstr, opt{~flag})), 'Value', 1, 'Enable', 'inactive'); 
         end
     end
-function df         = check4df(descrip, imdir)
+function df         = check4df(hdr)
+    imdir = fileparts(hdr.fname);
     if exist(fullfile(imdir, 'dof'), 'file')
         df = load(fullfile(imdir, 'dof'));
         return; 
     end
-    df = regexp(descrip, '\[\d+.*]', 'match');
+    df = regexp(hdr.descrip, '\[\d+.*]', 'match');
     if isempty(df)
         df = []; 
         headsup('Degrees of freedom not found in image header or its parent directory. Showing unthresholded image.')

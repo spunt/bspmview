@@ -814,15 +814,15 @@ function cb_changeguisize(varargin)
     set(st.fig, 'pos', guipos);
     pause(.50);
     drawnow;
-cb_changefontname(varargin)
+function cb_changefontname(varargin)
     global st
-    uigetfont
-    F = 0.9; 
-    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.1; end
-    guipos = get(st.fig, 'pos');
-    guipos(3:4) = guipos(3:4)*F; 
-    set(st.fig, 'pos', guipos);
-    pause(.50);
+    T = uisetfont
+    T.FontName = 'DejaVu Sans Mono';
+    T.FontWeight = 'normal';
+    T.FontAngle = 'normal';
+    T.FontUnits = 'points';
+    T.FontSize = 14;
+    pause(.25);
     drawnow;
 function cb_changefontsize(varargin)
     global st
@@ -1758,7 +1758,12 @@ function cb_clustexplore(varargin)
         for i = 1:ncond
             ln(i) = line([i-.125 i+.125], repmat(nanmean(M(:,i)), 1, 2), 'color', [0 0 0]);
             outidx = find(Z(:,i) > 2.5);
-            if outidx, text(repmat(i+.01, length(outidx), 1), M(outidx, i), subname(outidx), 'fontsize', st.fonts.sz6); end
+            if groupflag 
+                csubname = subname(find(conidx(:,i)));
+            else
+                csubname = subname; 
+            end
+            if outidx, text(repmat(i+.01, length(outidx), 1), M(outidx, i), csubname(outidx), 'fontsize', st.fonts.sz6); end
         end
 %     end
 

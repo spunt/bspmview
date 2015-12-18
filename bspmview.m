@@ -44,6 +44,8 @@ function varargout = bspmview(ol, ul)
 %   - SURFPLOT (mrtools.mgh.harvard.edu/index.php/SurfPlot)
 %   - PEAK_NII (nitrc.org/projects/peak_nii)
 %   - Anatomy Toolbox (fil.ion.ucl.ac.uk/spm/ext/#Anatomy)
+%   - Anatomical Automatic Labeling 2 (AAL2) (http://www.gin.cnrs.fr/AAL2)
+%   - Harvard-Oxford Atlas (from FSL) (http://cma.mgh.harvard.edu/fsl_atlas.html)
 %
 % Finally, several contributions to the MATLAB File Exchange
 % (mathworks.com/matlabcentral/fileexchange/) are called by the code. These
@@ -56,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20151214
+%   Version:  20151217
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -70,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20151214'; 
+version='20151217'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -82,9 +84,10 @@ else
     addpath(fullfile(spmdir,'config'));
 end
 
-% | CHECK FOR SUPPORTFILES AND SPM FOLDER
+% | CHECK FOR SUPPORTFILES, USERPREF, AND SPM FOLDER
 % | =======================================================================
-supportdir = fullfile(fileparts(mfilename('fullpath')), 'supportfiles');
+mfilepath   = fileparts(mfilename('fullpath'));
+supportdir  = fullfile(mfilepath, 'supportfiles');
 if ~exist(supportdir, 'dir'), printmsg('The folder "supportfiles" was not found', 'ERROR'); return; end
 addpath(supportdir);
 
@@ -97,7 +100,7 @@ if nargin < 1
         huserdata = get(hcon, 'UserData');
         selectdir = huserdata.swd;
     else
-        selectdir = pwd; 
+        selectdir = pwd;
     end
     ol = uigetvol('Select an Image File for Overlay', 0, selectdir);
     if isempty(ol), disp('Must select an overlay!'); return; end
@@ -105,12 +108,23 @@ else
     if iscell(ol), ol = char(ol); end
 end
 if nargin < 2
-    ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii');
+    ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii.gz');
 else
     if iscell(ul), ul = char(ul); end
 end
-global prevsect 
+
+% | DEFAULTS
+% | =======================================================================
+global prevsect st
 prevsect = ul;
+st.guipath = mfilepath; 
+st.supportpath = supportdir; 
+preffile = fullfile(supportdir, 'defpref.mat');
+if exist(preffile, 'file')
+    st.preferences = load(preffile); 
+else
+    st.preferences = default_settings; 
+end
 
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
 % | =======================================================================
@@ -131,6 +145,91 @@ end
 
 % | GUI DEFAULTS
 % =========================================================================
+function def    = default_settings
+ def  = struct( ...
+            'atlasname'     ,   'AnatomyToolbox'      , ...
+            'alphacorrect'  ,   .05         , ...
+            'separation'    ,   20          , ...
+            'numpeaks'      ,   3           , ...
+            'surfshow'      ,   4           , ...
+            'surface'       ,   'Inflated'  , ...
+            'shading'       ,   'Sulc'      , ...
+            'nverts'        ,   40962       , ...
+            'round'         ,   false       , ...
+            'neighbor'      ,   0           , ...
+            'dilate'        ,   false       , ...
+            'shadingmin'    ,   .15         , ...
+            'shadingmax'    ,   .70         , ...
+            'colorbar'      ,   true          ...
+        );
+function prefs  = default_preferences(initial)
+
+    if nargin < 1, initial = 0; end
+    global st
+    deffile         = fullfile(st.supportpath, 'defpref.mat');
+    st.preferences  = catstruct(default_settings, st.preferences);
+    def             = st.preferences; 
+    if initial, save(deffile, '-struct', 'def'); return; end
+    pos = get(st.fig, 'pos'); 
+    w   = pos(3)*.65;
+    opt             = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'};
+    optmap          = [4 2 1.9 2.1 -1 1]; 
+    opt             = [opt(optmap==def.surfshow) opt(optmap~=def.surfshow)]; 
+    optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)]; 
+    surftypeopt     = {'Inflated' 'Pial' 'White'}; 
+    surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))]; 
+    surftypeshade   = {'Sulc' 'Curv'};
+    surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))]; 
+    nvertopt        = [40962 642 2562 10242 163842]; 
+    nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
+    atlasopt        = {                                      ...
+                        'AAL2'                              ,...
+                        'HarvardOxford-maxprob-thr0'        ,...
+                        'HarvardOxford-cort-maxprob-thr0'   ,...
+                        'HarvardOxford-sub-maxprob-thr0'    ,...
+                        'AnatomyToolbox'                     ...
+                      }; 
+    atlasopt        = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];          
+    
+    [prefs, button] = settingsdlg('title', 'Settings', 'WindowWidth', w, 'ControlWidth', w/2, ...
+        'separator'                                 ,       'Thresholding', ...
+        {'Voxelwise FWE'; 'alphacorrect'}           ,       def.alphacorrect, ...
+        {'Peak Separation'; 'separation'}           ,       def.separation, ...
+        {'# Peaks/Cluster'; 'numpeaks'}             ,       def.numpeaks, ...
+        'separator'                                 ,       'Anatomical Labeling', ...
+        {'Name'; 'atlasname'}                       ,       atlasopt, ...
+        'separator'                                 ,       'Surface Rendering', ...
+        {'Surfaces to Render'; 'surfshow'}          ,       opt, ...
+        {'Surface Type'; 'surface'}                 ,       surftypeopt, ...
+        {'Shading Type'; 'shading'}                 ,       surftypeshade, ...
+        {'N Vertices'; 'nverts'}                    ,       num2cell(nvertopt), ...
+        {'Shading Min'; 'shadingmin'}               ,       def.shadingmin, ...
+        {'Shading Max'; 'shadingmax'}               ,       def.shadingmax, ...
+        {'Add Color Bar?'; 'colorbar'}               ,       logical(def.colorbar), ...
+        {'Dilate Inclusive Mask?'; 'dilate'}        ,       logical(def.dilate), ...
+        {'Round Values? (binary images)'; 'round'}  ,       logical(def.round), ...
+        {'Nearest Neighbor? (binary/label images)'; 'neighbor'}, logical(def.neighbor)); 
+    if strcmpi(button, 'cancel')
+        return
+    else
+        st.preferences = prefs;
+    end
+    
+    if ~strcmpi(st.preferences.atlasname, def.atlasname)
+        %% LABEL MAP
+        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+        atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
+        atlasvol = reslice_image(atlas_vol, st.ol.fname);
+        atlasvol = single(round(atlasvol(:)))'; 
+        load(atlas_labels);
+        
+        st.ol.atlaslabels = atlas; 
+        st.ol.atlas0 = atlasvol;
+        setregionname; 
+    end
+    st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow));
+    def = st.preferences;
+    save(deffile, '-struct', 'def'); 
 function pos    = default_positions 
     screensize      = get(0, 'ScreenSize');
     pos.ss          = screensize(3:4);
@@ -154,15 +253,22 @@ function color  = default_colors(darktag)
     if darktag
         color.fg        = [248/255 248/255 248/255];
         color.bg        = [20/255 23/255 24/255] * 2;
+        color.border    = [023/255 024/255 020/255]*2;
+        color.panel     = [.01 .22 .34];
+        color.edit      = [.95 .95 .95];
+        color.font      = [0 0 0]; 
     else
         color.fg       = [20/255 23/255 24/255]; 
-        color.bg       = [248/255 248/255 248/255] * .90;
+        color.bg       = [248/255 248/255 248/255] * .95;
+        color.edit     = [.95 .95 .95];
+        color.border   = 1 - ([023/255 024/255 020/255]*2);
+        color.edit      = [.95 .95 .95];
+        color.font      = [0 0 0]; 
     end
-    color.border    = [023/255 024/255 020/255]*2;
     color.xhair     = [0.7020    0.8039    0.8902];
-    color.panel     = [.01 .22 .34];
     color.blues     = brewermap(40, 'Blues'); 
 function fonts  = default_fonts
+
     % | Font Size
     PROP = 1/100; 
     SS   = get(0, 'screensize');
@@ -186,8 +292,9 @@ function fonts  = default_fonts
     fonts.sz4  = sz(4);
     fonts.sz5  = sz(5); 
     fonts.sz6  = sz(6);
+    
     % | Font Name
-    fonts.name = 'Arial';   
+    fonts.name = 'Verdana';   
 function prop   = default_properties(varargin)
     global st
     prop.darkbg     = {'backg', st.color.bg, 'foreg', st.color.fg};
@@ -252,178 +359,70 @@ urls = {
 'SnPM'                          'http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/software/snpm/'
 };
 urls = cell2struct(urls, {'label' 'url'}, 2); 
-function prefs  = default_preferences(initial)
-    if nargin==0, initial = 0; end
-    global st
-    
-    deffile = fullfile(st.supportpath, 'defpref.mat');
-    if ~isfield(st, 'preferences')
-        def  = struct( ...
-            'atlasname', 'AnatomyToolbox', ...
-            'alphacorrect'  ,   .05, ...
-            'separation',   20, ...
-            'numpeaks'  ,   3,  ...
-            'surfshow'  ,   4, ...
-            'surface'   ,   'Inflated', ...
-            'shading'   ,   'Sulc', ...
-            'nverts'    ,   40962, ...
-            'round'     ,   false, ...
-            'neighbor'  ,   0, ...
-            'dilate'    ,   false, ...
-            'shadingmin',   .15, ...
-            'shadingmax',   .70, ...
-            'colorbar'  ,   true);
-        if ~exist(deffile, 'file')
-            save(deffile, '-struct', 'def'); 
-        else
-            deffn   = fieldnames(def); 
-            def1    = load(deffile);
-            missing = find(~ismember(deffn, fieldnames(def1)));
-            for i = 1:length(missing)
-                def1.(deffn{missing(i)}) = def.(deffn{missing(i)}); 
-            end
-        end
-        if initial, st.preferences = def; return; end
-    else
-        def = st.preferences; 
-    end
-    
-    pos = get(st.fig, 'pos'); 
-    w   = pos(3)*.65;
-    opt             = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'};
-    optmap          = [4 2 1.9 2.1 -1 1]; 
-    opt             = [opt(optmap==def.surfshow) opt(optmap~=def.surfshow)]; 
-    optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)]; 
-    surftypeopt     = {'Inflated' 'Pial' 'White'}; 
-    surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))]; 
-    surftypeshade   = {'Sulc' 'Curv'};
-    surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))]; 
-    nvertopt        = [40962 642 2562 10242 163842]; 
-    nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
-    atlasopt        = {'AnatomyToolbox'                    ,...
-                    'HarvardOxford-cort-maxprob-thr0'   ,...
-                    'HarvardOxford-sub-maxprob-thr0'    ,...
-                    'AAL2'                               ...
-                    }; 
-    atlasopt     = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];             
-    [prefs, button] = settingsdlg(...
-        'title'                     ,   'Settings', ...
-        'WindowWidth'               ,   w,    ...
-        'ControlWidth'              ,   w/2,    ...
-        'separator'                 ,   'Thresholding', ...
-        {'Corrected Alpha'; 'alphacorrect'}, def.alphacorrect, ...
-        {'Peak Separation'; 'separation'},   def.separation, ...
-        {'# Peaks/Cluster'; 'numpeaks'},    def.numpeaks, ...
-        'separator'                 ,   'Anatomical Labeling', ...
-        {'Name'; 'atlasname'}          , atlasopt, ...
-        'separator'                 ,   'Surface Rendering', ...
-        {'Surfaces to Render'; 'surfshow'}  , opt, ...
-        {'Surface Type'; 'surface'}      ,   surftypeopt, ...
-        {'Shading Type'; 'shading'}      ,   surftypeshade, ...
-        {'N Vertices'; 'nverts'}    ,   num2cell(nvertopt), ...
-        {'Shading Min'; 'shadingmin'},      def.shadingmin, ...
-        {'Shading Max'; 'shadingmax'},      def.shadingmax, ...
-        {'Add Color Bar'; 'colorbar'},      logical(def.colorbar), ...
-        {'Round Values? (good for binary images)'; 'round'}   ,      logical(def.round), ...
-        {'Nearest Neighbor? (good for binary/label images)'; 'neighbor'}, logical(def.neighbor), ...
-        {'Dilate Inclusive Mask?'; 'dilate'}      ,   logical(def.dilate)); 
-    if strcmpi(button, 'cancel')
-        return
-    else
-        st.preferences = prefs; 
-    end
-    if ~strcmpi(st.preferences.atlasname, def.atlasname)
-        %% LABEL MAP
-        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
-        atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
-        atlasvol = reslice_image(atlas_vol, st.ol.fname);
-        atlasvol = single(round(atlasvol(:)))'; 
-        load(atlas_labels);
-        st.ol.atlaslabels = atlas; 
-        st.ol.atlas0 = atlasvol;
-        setregionname; 
-    end
-    st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow));
-    def = st.preferences; 
-    save(deffile, '-struct', 'def'); 
     
 % | GUI COMPONENTS
 % =========================================================================
 function S = put_figure(ol, ul)
 
-    global st
-
+    default_preferences(1);
     % | Check for open GUI, close if one is found
-    delete(findobj(0, 'tag', 'bspmview')); 
-
+    delete(findobj(0, 'tag', 'bspmview'));
+    
+    global st
+    
     % | Setup new fig
-    fonts   = default_fonts; 
-    pos     = default_positions; 
-    color   = default_colors; 
+    st.fonts   = default_fonts; 
+    st.pos     = default_positions;
+    if isfield(st.preferences, 'fontname'), st.fonts.name   = st.preferences.fontname; end
+    if isfield(st.preferences, 'color')
+        st.color   = st.preferences.color; 
+    else
+        st.color   = default_colors;
+    end
     S.hFig  = figure(...
             'Name', abridgepath(ol), ...
             'Units', 'pixels', ...
-            'Position',pos.gui,...
+            'Position',st.pos.gui,...
             'Resize','off',...
-            'Color',color.bg,...
+            'Color',st.color.bg,...
             'ColorMap',gray(64),...
             'NumberTitle','off',...
             'DockControls','off',...
             'MenuBar','none',...
             'Tag', 'bspmview', ...
             'CloseRequestFcn', @cb_closegui, ...
-            'DefaultTextColor',color.fg,...
+            'DefaultTextColor', st.color.font,...
             'DefaultTextInterpreter','none',...
             'DefaultTextFontName','Arial',...
-            'DefaultTextFontSize',12,...
-            'DefaultAxesColor',color.border,...
-            'DefaultAxesXColor',color.border,...
-            'DefaultAxesYColor',color.border,...
-            'DefaultAxesZColor',color.border,...
+            'DefaultTextFontSize',st.fonts.sz6,...
+            'DefaultAxesColor',st.color.border,...
+            'DefaultAxesXColor',st.color.border,...
+            'DefaultAxesYColor',st.color.border,...
+            'DefaultAxesZColor',st.color.border,...
             'DefaultAxesFontName','Arial',...
-            'DefaultPatchFaceColor',color.fg,...
-            'DefaultPatchEdgeColor',color.fg,...
-            'DefaultSurfaceEdgeColor',color.fg,...
-            'DefaultLineColor',color.border,...
-            'DefaultUicontrolFontName',fonts.name,...
-            'DefaultUicontrolFontSize',fonts.sz3,...
+            'DefaultPatchFaceColor',st.color.fg,...
+            'DefaultPatchEdgeColor',st.color.fg,...
+            'DefaultSurfaceEdgeColor',st.color.fg,...
+            'DefaultLineColor',st.color.border,...
+            'DefaultUicontrolFontName',st.fonts.name,...
+            'DefaultUicontrolFontSize',st.fonts.sz3,...
             'DefaultUicontrolInterruptible','on',...
             'Visible','off',...
             'Toolbar','none');
     uicontrol('Parent', S.hFig, 'Units', 'Normal', 'Style', 'Text', ...
-    'pos', [0 0 1 .001], 'backg', color.blues(8,:));
+    'pos', [0 0 1 .001], 'backg', st.color.blues(8,:));
     uicontrol('Parent', S.hFig, 'Units', 'Normal', 'Style', 'Text', ...
-    'pos', [0 .001 .001 1], 'backg', color.blues(10,:));
+    'pos', [0 .001 .001 1], 'backg', st.color.blues(10,:));
     uicontrol('Parent', S.hFig, 'Units', 'Normal', 'Style', 'Text', ...
-    'pos', [.999 .001 .001 .999], 'backg', color.blues(10,:));
+    'pos', [.999 .001 .001 .999], 'backg', st.color.blues(10,:));
 
     % | REGISTRY OBJECT (HREG)
-    S.hReg = uipanel('Parent',S.hFig,'Units','Pixels','Position',pos.pane.axes,...
-            'BorderType', 'none', 'BackgroundColor',color.bg);
+    S.hReg = uipanel('Parent',S.hFig,'Units','Pixels','Position',st.pos.pane.axes,...
+            'BorderType', 'none', 'BackgroundColor',st.color.bg);
     set(S.hReg, 'units', 'norm');
+    [st.fig, st.figax, st.direct] = deal(S.hFig, S.hReg, '+/-');
     bspm_orthviews('Reset');
-    st          = struct( ...
-                'fig',          S.hFig,...
-                'figax',        S.hReg,...
-                'guipath',      fileparts(mfilename('fullpath')),...
-                'supportpath',  fullfile(fileparts(mfilename('fullpath')), 'supportfiles'),...
-                'n',            0,...
-                'bb',           [],...
-                'callback',     {';'}, ...
-                'Space',        eye(4),...
-                'centre',       [],...
-                'xhairs',       1,...
-                'plugins',      {''},...
-                'hld',          1,...
-                'mode',         [],...
-                'color',        color,...
-                'pos',          pos,...
-                'fonts',        fonts,...
-                'direct',       '+/-',...
-                'snap',         []);
-    default_preferences(1);
     st.cmap     = default_colormaps(64); 
-    st.vols     = cell(24,1);
     st.ol       = load_overlay(ol, .001, 5);
     bspm_XYZreg('InitReg',S.hReg,st.ol.M,st.ol.DIM,[0;0;0]); % initialize registry object
     st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
@@ -442,8 +441,10 @@ function S = put_figure(ol, ul)
     setfontunits('points'); 
     setunits;
     check4design;
+    cb_minmax;
     if nargout, S.handles = gethandles; end
 function put_upperpane(varargin)
+
     global st
     cnamepos     = [.01 .15 .98 .85]; 
     prop         = default_properties('units', 'norm', 'fontu', 'norm', 'fonts', .55); 
@@ -478,6 +479,7 @@ function put_upperpane(varargin)
 function put_lowerpane(varargin)
 
     global st
+    
     % | UNITS
     figpos  = get(st.fig, 'pos');
     axpos   = get(st.figax, 'pos');
@@ -488,11 +490,10 @@ function put_lowerpane(varargin)
     [h,subaxpos] = gethandles_axes;
     lowpos = subaxpos(1,:);
     lowpos(1) = subaxpos(3, 1) + .01; 
-    lowpos(3) = 1 - lowpos(1); 
-    
-    prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', 19);  
+    lowpos(3) = 1 - lowpos(1);
+    prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', 19);
     panelh = uipanel('parent', st.figax, prop.panel{:}, 'pos',lowpos, 'tag', 'lowerpanel');
-    
+   
     % | Create each subpanel 
     panepos         = getpositions(1, [1 4 4 1 1 4 4], .025, .025);
     panepos(:,1:2)  = [];
@@ -517,14 +518,23 @@ function put_lowerpane(varargin)
     Tdefvalues  = {st.ol.K st.ol.U st.ol.P st.ol.DF};
     if length(st.ol.DF)==2, dfstrform = '%d,%d'; else dfstrform = '%d'; end
     Tstrform = {'%d' '%2.2f' '%2.3f' dfstrform}; 
-    
     for i = 1:length(Tdefvalues), set(hndl(i), 'str', sprintf(Tstrform{i}, Tdefvalues{i})); end
-    arrayset(ph{4}.edit([1 3]), 'enable', 'inactive'); 
+    arrayset(ph{4}.edit([1 3]), 'enable', 'inactive');
     set(ph{3}.edit, 'FontSize', st.fonts.sz2); 
     set(ph{4}.edit(2), 'callback', @cb_changexyz); 
     set(ph{5}.label, 'FontSize', st.fonts.sz2); 
     set(ph{5}.edit, 'enable', 'inactive', 'str', 'n/a'); 
     set(panelh, 'units', 'norm');
+    
+    % | Fix Sizes
+    set(ph{3}.edit, 'units', 'pixel');
+    eext = get(ph{3}.edit, 'extent');
+    if eext(2) < 0
+        ppos = get(ph{3}.edit, 'position');
+        ppos(2) = ppos(2) + abs(eext(2)) + 1; 
+        set(ph{3}.edit, 'position', ppos);
+    end
+    
     drawnow;
 function put_figmenu
     global st
@@ -534,14 +544,23 @@ function put_figmenu
     S.checkversion  = uimenu(S.menu1, 'Label', 'Check Version', 'Callback', @cb_checkversion);
     S.appear        = uimenu(S.menu1, 'Label','Appearance', 'Separator', 'on'); 
     S.skin          = uimenu(S.appear, 'Label', 'Skin');
+%     if isfield(st.preferences, 'light')
+%         S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', st.preferences.dark, 'Callback', @cb_changeskin);
+%         S.changeskin(2) = uimenu(S.skin, 'Label', 'Light', 'Checked', st.preferences.light, 'Separator', 'on', 'Callback',@cb_changeskin);
+%     else
     S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', 'on', 'Callback', @cb_changeskin);
     S.changeskin(2) = uimenu(S.skin, 'Label', 'Light', 'Separator', 'on', 'Callback',@cb_changeskin);
-    S.guisize       = uimenu(S.appear, 'Label','GUI Size','Separator', 'on'); 
+%     end
+    S.guisize       = uimenu(S.appear, 'Label','GUI Size'); 
     S.gui(1)        = uimenu(S.guisize, 'Label', 'Increase', 'Accelerator', 'i', 'Callback', @cb_changeguisize);
     S.gui(2)        = uimenu(S.guisize, 'Label', 'Decrease', 'Accelerator', 'd', 'Separator', 'on', 'Callback',@cb_changeguisize);
-    S.fontsize      = uimenu(S.appear, 'Label','Font Size', 'Separator', 'on'); 
+    S.fontsize      = uimenu(S.appear, 'Label','Font Size'); 
     S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
-    S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Separator', 'on', 'Callback',@cb_changefontsize);
+    S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Callback',@cb_changefontsize);
+%     S.fontname      = uimenu(S.appear, 'Label','Font Name', 'Callback', @cb_changefontname);
+%     S.setasdef      = uimenu(S.appear, 'Label', 'Set Current as Default', 'Separator', 'on', 'Callback', @cb_setasdefault);
+
+    %% Help Menu
     S.helpme        = uimenu(S.menu1,'Label','Help', 'Separator', 'on');
     S.helpme1       = uimenu(S.helpme,'Label','Online Manual', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
     S.helpme2       = uimenu(S.helpme,'Label','Online Issues Forum', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues'});
@@ -596,10 +615,15 @@ function put_axesmenu
     ctmax      = uimenu(cmenu, 'Label', 'Go to Global Peak', 'callback', @cb_minmax, 'separator', 'off');
     ctlocalmax = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax); 
     ctclustmax = uimenu(cmenu, 'Label', 'Go to Cluster Peak', 'callback', @cb_clustminmax);
-    ctplot     = uimenu(cmenu, 'Label', 'Plot (beta)', 'separator', 'on');
-    ctclustexp = uimenu(ctplot, 'Label', 'Cluster', 'callback', {@cb_clustexplore, 'Cluster'});
-    ctclustexp = uimenu(ctplot, 'Label', 'Voxel', 'callback', {@cb_clustexplore, 'Voxel'});
-    ctclustexp = uimenu(ctplot, 'Label', 'Shape around Voxel', 'callback', {@cb_clustexplore, 'Shape around Voxel'});
+    ctplot     = uimenu(cmenu, 'Label', 'Plot', 'separator', 'on');
+    spaceopt   = {'Cluster' 'Voxel' 'Shape around Voxel'};
+    dataopt    = {'Raw' 'Whitened And Filtered'};
+    for c = 1:length(spaceopt)
+        hs(c) = uimenu(ctplot, 'Label', spaceopt{c});
+        for i = 1:length(dataopt)
+            uimenu(hs(c), 'Label', dataopt{i}, 'callback', {@cb_clustexplore, spaceopt{c}, dataopt{i}});
+        end
+    end
     ctsave     = uimenu(cmenu, 'Label', 'Save', 'separator', 'on');
     ctsavemap  = uimenu(ctsave, 'Label', 'Save Current Cluster (Intensity)', 'callback', @cb_saveclust);
     ctsavemask = uimenu(ctsave, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
@@ -635,7 +659,7 @@ function put_axesxyz
     end
     drawnow;
 
-% | GUI CALLBACKS
+% | CALLBACKS - THRESHOLDING
 % =========================================================================
 function cb_updateoverlay(varargin)
     global st
@@ -761,124 +785,137 @@ function cb_directmenu(varargin)
     end
     setthreshinfo(T); 
     setthresh(C, find(di));
-function cb_loadol(varargin)
-    global st
-    fname = uigetvol('Select an Image File for Overlay', 0);
-    if isempty(fname), disp('An overlay image was not selected.'); return; end
-    hcorrect = findobj(st.fig, 'tag', 'Correction');
-    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
-    T       = getthresh;
-    if isinf(T.pval)
-        st.ol   = load_overlay(fname);
-    else
-        st.ol   = load_overlay(fname, T.pval, T.extent);
-    end
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
-    setthresh(st.ol.C0(3,:), find(di));
-    setthreshinfo;
-    check4design; 
-    drawnow;
-function cb_resetol(varargin)
-    global st
-    st.ol.Y = spm_read_vols(st.ol.hdr); 
-    st.ol.Y(isnan(st.ol.Y)) = 0;
-    check4sign(st.ol.Y); 
-    cb_updateoverlay
-function cb_loadul(varargin)
     
-    ul = uigetvol('Select an Image File for Underlay', 0);
-    if isempty(ul), disp('An underlay image was not selected.'); return; end
-    global st prevsect
-    prevsect    = ul;
-    h = gethandles_axes; 
-    delete(h.ax);
-    bspm_orthviews('Delete', st.ho);
-    st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
-    bspm_orthviews('MaxBB');
-    bspm_orthviews('AddBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
-    bspm_orthviews('Register', st.registry.hReg);
-    setposition_axes;
-    setxhaircolor;
-    put_axesxyz;
-    put_axesmenu;
-    h = findall(st.fig, 'Tag', 'Crosshairs'); 
-    set(h,'Checked','on');
-    bspm_orthviews('Xhairs','on') 
-    drawnow;
-function cb_clustminmax(varargin)
+% | CALLBACKS - BSPMVIEW MENU
+% =========================================================================
+function cb_setasdefault(varargin)
     global st
-    str           = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
-    if strcmp(str, 'n/a'), return; end
-    blob    = getcurrentblob;
-    if all(blob.values < 0), blob.values = abs(blob.values); end
-    xyz     = blob.clxyz(:, blob.values==max(blob.values));
-    if size(xyz, 2) > 1
-        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the cluster maximum value', size(xyz, 2)), 'NOTE');
-        xyz = xyz(:,randperm(size(xyz, 2)));
+    % | POSITION
+    % st.preferences.guipos   = get(st.fig, 'pos');
+    if get(findobj(st.fig, 'Label', 'Light'), 'Checked')
+        st.preferences.color = default_colors(0);
+    else
+        st.preferences.color = default_colors(1); 
     end
-    bspm_orthviews('reposition', xyz(:,1)); 
-    drawnow;
-function cb_localmax(varargin)
+    deffile = fullfile(st.supportpath, 'defpref.mat');
+    st.preferences.dark = get(findobj(st.fig, 'label', 'Dark'), 'checked'); 
+    st.preferences.light = get(findobj(st.fig, 'label', 'Light'), 'checked'); 
+    def     = st.preferences; 
+    save(deffile, '-struct', 'def'); 
+    h = headsup('Default Appearance Updated', 'Success', 0);
+    pause(.50); 
+    delete(h);
+function cb_changeguisize(varargin)
     global st
-    xyz = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.maxima);
-    if size(xyz, 2) > 1
-        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the local maximum value', size(xyz, 2)), 'NOTE');
-        xyz = xyz(:,randperm(size(xyz, 2)));
+    F = 0.9; 
+    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.1; end
+    guipos = get(st.fig, 'pos');
+    guipos(3:4) = guipos(3:4)*F; 
+    set(st.fig, 'pos', guipos);
+    pause(.50);
+    drawnow;
+cb_changefontname(varargin)
+    global st
+    uigetfont
+    F = 0.9; 
+    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.1; end
+    guipos = get(st.fig, 'pos');
+    guipos(3:4) = guipos(3:4)*F; 
+    set(st.fig, 'pos', guipos);
+    pause(.50);
+    drawnow;
+function cb_changefontsize(varargin)
+    global st
+    minsize = 5; 
+    F = -1; 
+    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1; end
+    setfontunits('points'); 
+    h   = findall(st.fig, '-property', 'FontSize');
+    fs  = cell2mat(get(h, 'FontSize')) + F;
+    h(fs<minsize) = []; 
+    fs(fs<minsize)  = [];
+    arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
+    pause(.50);
+    drawnow;
+    setfontunits('norm'); 
+function cb_changeskin(varargin)
+    if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
+    global st
+    skin = get(varargin{1}, 'Label');
+    h       = gethandles; 
+    col     = st.color; 
+    switch lower(skin)
+        case {'dark'}
+            st.color = default_colors(1);
+            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'on'); 
+            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'off'); 
+        case {'light'}
+            st.color = default_colors(0);
+            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'off'); 
+            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'on'); 
     end
-    bspm_orthviews('reposition', xyz(:,1)); 
+    set(st.fig, 'color', st.color.bg); 
+    set(findall(st.fig, '-property', 'ycolor'), 'ycolor', st.color.bg);
+    set(findall(st.fig, '-property', 'xcolor'), 'xcolor', st.color.bg);
+    al = findall(h.lowerpanel, 'type', 'axes'); 
+    ul = findall(h.upperpanel, 'type', 'axes'); 
+    set([al; ul], 'color', st.color.bg); 
+    al = findall(h.lowerpanel, 'type', 'text'); 
+    ul = findall(h.upperpanel, 'type', 'text'); 
+    set([al; ul], 'color', st.color.fg); 
+    set(findall(st.fig, 'type', 'uipanel'), 'backg', st.color.bg, 'foreg', st.color.fg);
+    set(findall(st.fig, 'type', 'uicontrol', 'style', 'text'), 'backg', st.color.bg, 'foreg', st.color.fg);
+    set(findall(st.fig, 'style', 'radio'), 'backg', st.color.bg, 'foreg', st.color.fg);
+    set(h.colorbar, 'ycolor', st.color.fg); 
+    set(varargin{1}, 'Checked', 'on'); 
     drawnow;
-function cb_minmax(varargin)
+function cb_opencode(varargin)
+    open(mfilename('fullpath'));
+function cb_uiinspect(varargin)
     global st
-    xyz = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
-    if size(xyz, 2) > 1
-        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the maximum value', size(xyz, 2)), 'NOTE');
-        xyz = xyz(:,randperm(2));
-    end
-    bspm_orthviews('reposition', xyz(:,1)); 
-    drawnow;
-function cb_maxval(varargin)
-    global st
-    % | Check for Numeric Input
-    if isnan(str2double(get(varargin{1}, 'string')))
-        warndlg('Input must be numerical');
-        mm = getminmax;
-        set(varargin{1}, 'string', num2str(mm(2))); 
+    setstatus('Running UIINSPECT, please wait...'); 
+    uiinspect(st.fig);
+    setstatus('Ready');
+function cb_checkversion(varargin)
+    global version
+    url     = 'https://github.com/spunt/bspmview/blob/master/README.md';
+    h       = headsup('Checking GitHub repository. Please be patient.', 'Checking Version', 0);
+    try
+        str = webread(url);
+    catch
+        set(h(2), 'String', 'Could not read web data. Are you connected to the internet?');
+        figure(h(1)); 
         return
     end
-    val = str2double(get(varargin{1}, 'string'));
-    bspm_orthviews('SetBlobsMax', 1, 1, val);
-    redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
-    drawnow;
-function cb_minval(varargin)
-    global st
-    % | Check for Numeric Input
-    if isnan(str2double(get(varargin{1}, 'string')))
-        warndlg('Input must be numerical');
-        mm = getminmax;
-        set(varargin{1}, 'string', num2str(mm(1))); 
-        return
-    end
-    val = str2double(get(varargin{1}, 'string'));
-    bspm_orthviews('SetBlobsMin', 1, 1, val);
-    redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
-    drawnow;
-function cb_changexyz(varargin)
-    xyz = str2num(get(varargin{1}, 'string')); 
-    bspm_orthviews('reposition', xyz');
-    drawnow;
-function cb_crosshair(varargin)
-    global st
-    state = get(varargin{1},'Checked');
-    h = findall(st.fig, 'Tag', 'Crosshairs'); 
-    if strcmpi(state,'on');
-        bspm_orthviews('Xhairs','off')
-        set(h,'Checked','off');
-    end
-    if strcmpi(state,'off');
-        bspm_orthviews('Xhairs','on')
-        set(h,'Checked','on');
-    end
-    drawnow;
+    [idx1, idx2] = regexp(str, 'Version:  ');
+    gitversion = str(idx2+1:idx2+8);
+    if strcmp(version, gitversion)
+        delete(h(1)); 
+        headsup('You have the latest version.', 'Checking Version', 1);
+        return; 
+    else
+        delete(h(1)); 
+        answer = yesorno('An update is available. Would you like to download the latest version?', 'Update Available');
+        if strcmpi(answer, 'Yes')
+            guidir      = fileparts(mfilename('fullpath')); 
+            newguidir   = fullfile(fileparts(guidir), 'bspmview-master');
+            url         = 'https://github.com/spunt/bspmview/archive/master.zip';
+            h = headsup('Downloading...', 'Please Wait', 0);
+            unzip(url, fileparts(guidir));
+            delete(h(1));
+            h = headsup(sprintf('Latest version saved to: %s', newguidir), 'Update', 1);
+        else
+            return; 
+        end
+    end     
+function cb_closegui(varargin)
+   if length(varargin)==3, h = varargin{3};
+   else h = varargin{1}; end
+   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
+   delete(h); % Bye-bye figure 
+   
+% | CALLBACKS - SAVE MENU
+% =========================================================================
 function cb_saveimg(varargin)
     global st
     lab     = get(varargin{1}, 'label');
@@ -924,6 +961,109 @@ function cb_saveclust(varargin)
     outhdr.fname = fn; 
     spm_write_vol(outhdr, outimg);
     fprintf('\nCluster image saved to %s\n', fn);     
+function cb_saveroi(varargin)
+    global st
+    [roi, button] = settingsdlg(...  
+    'title'                     ,   'ROI Parameters', ...
+    {'Intersect ROI with Overlay?'; 'intersectflag'}    ,  true, ...
+    {'Shape'; 'shape'}          ,   {'Sphere' 'Box'}, ...
+    {'Size (mm)'; 'size'}       ,   12);
+    if strcmpi(button, 'cancel'), return; end
+    xyz             = getroundvoxel; 
+    cROI            = growregion(roi, xyz);
+    cHDR            = st.ol.hdr;
+    cHDR.descrip    = sprintf('ROI - x=%d, y=%d, z=%d - %s %d', xyz, roi.shape, roi.size); 
+    [p,n]           = fileparts(cHDR.fname); 
+    deffn           = sprintf('%s/ROI_x=%d_y=%d_z=%d_%dvoxels_%s%d.nii', p, xyz, sum(cROI(:)), roi.shape, roi.size);  
+    putmsg          = 'Save ROI as'; 
+    fn              = uiputvol(deffn, putmsg);
+    if isempty(fn), disp('User cancelled.'); return; end
+    cHDR.fname      = fn; 
+    spm_write_vol(cHDR,cROI);
+    fprintf('\nROI image saved to %s\n', fn);     
+function cb_savergb(varargin)
+    %% Handles for axes
+    % 1 - transverse
+    % 2 - coronal
+    % 3 - sagittal 
+    % st.vols{1}.ax{1}.ax   - axes
+    % st.vols{1}.ax{1}.d    - image
+    % st.vols{1}.ax{1}.lx   - crosshair (x)
+    % st.vols{1}.ax{1}.ly   - crosshair (y)
+    global st
+    setbackgcolor;
+    im = screencapture(st.fig);
+    setbackgcolor(st.color.bg)
+    [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf', 'Image'; '*.*', 'All Files (*.*)'}, 'Specify output directory and name', construct_filename);
+    if ~imname, disp('User cancelled.'); return; end
+    imwrite(im, fullfile(pname, imname)); 
+    fprintf('\nImage saved to %s\n', fullfile(pname, imname));   
+   
+% | CALLBACKS - LOAD MENU
+% =========================================================================    
+function cb_loadol(varargin)
+    global st
+    fname = uigetvol('Select an Image File for Overlay', 0);
+    if isempty(fname), disp('An overlay image was not selected.'); return; end
+    hcorrect = findobj(st.fig, 'tag', 'Correction');
+    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
+    T       = getthresh;
+    if isinf(T.pval)
+        st.ol   = load_overlay(fname);
+    else
+        st.ol   = load_overlay(fname, T.pval, T.extent);
+    end
+    di = strcmpi({'+' '-' '+/-'}, T.direct); 
+    setthresh(st.ol.C0(3,:), find(di));
+    setthreshinfo;
+    check4design; 
+    drawnow;
+function cb_resetol(varargin)
+    global st
+    st.ol.Y = spm_read_vols(st.ol.hdr); 
+    st.ol.Y(isnan(st.ol.Y)) = 0;
+    check4sign(st.ol.Y); 
+    cb_updateoverlay
+function cb_loadul(varargin)
+    
+    ul = uigetvol('Select an Image File for Underlay', 0);
+    if isempty(ul), disp('An underlay image was not selected.'); return; end
+    global st prevsect
+    prevsect    = ul;
+    h = gethandles_axes; 
+    delete(h.ax);
+    bspm_orthviews('Delete', st.ho);
+    st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
+    bspm_orthviews('MaxBB');
+    bspm_orthviews('AddBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
+    bspm_orthviews('Register', st.registry.hReg);
+    setposition_axes;
+    setxhaircolor;
+    put_axesxyz;
+    put_axesmenu;
+    h = findall(st.fig, 'Tag', 'Crosshairs'); 
+    set(h,'Checked','on');
+    bspm_orthviews('Xhairs','on') 
+    drawnow;
+    
+% | CALLBACKS - DISPLAY MENU
+% =========================================================================    
+function cb_preferences(varargin)
+    global st
+    default_preferences; 
+function cb_crosshair(varargin)
+    global st
+    state = get(varargin{1},'Checked');
+    h = findall(st.fig, 'Tag', 'Crosshairs'); 
+    if strcmpi(state,'on');
+        bspm_orthviews('Xhairs','off')
+        set(h,'Checked','off');
+    end
+    if strcmpi(state,'off');
+        bspm_orthviews('Xhairs','on')
+        set(h,'Checked','on');
+    end
+    drawnow;
 function cb_smooth(varargin)
 global st
 pos = get(st.fig, 'pos'); 
@@ -998,99 +1138,6 @@ function cb_mask(varargin)
     st.ol.Y     = y; 
     cb_updateoverlay
     setstatus('Ready');
-function cb_saveroi(varargin)
-    global st
-    [roi, button] = settingsdlg(...  
-    'title'                     ,   'ROI Parameters', ...
-    {'Intersect ROI with Overlay?'; 'intersectflag'}    ,  true, ...
-    {'Shape'; 'shape'}          ,   {'Sphere' 'Box'}, ...
-    {'Size (mm)'; 'size'}       ,   12);
-    if strcmpi(button, 'cancel'), return; end
-    xyz             = getroundvoxel; 
-    cROI            = growregion(roi, xyz);
-    cHDR            = st.ol.hdr;
-    cHDR.descrip    = sprintf('ROI - x=%d, y=%d, z=%d - %s %d', xyz, roi.shape, roi.size); 
-    [p,n]           = fileparts(cHDR.fname); 
-    deffn           = sprintf('%s/ROI_x=%d_y=%d_z=%d_%dvoxels_%s%d.nii', p, xyz, sum(cROI(:)), roi.shape, roi.size);  
-    putmsg          = 'Save ROI as'; 
-    fn              = uiputvol(deffn, putmsg);
-    if isempty(fn), disp('User cancelled.'); return; end
-    cHDR.fname      = fn; 
-    spm_write_vol(cHDR,cROI);
-    fprintf('\nROI image saved to %s\n', fn);     
-function cb_savergb(varargin)
-    %% Handles for axes
-    % 1 - transverse
-    % 2 - coronal
-    % 3 - sagittal 
-    % st.vols{1}.ax{1}.ax   - axes
-    % st.vols{1}.ax{1}.d    - image
-    % st.vols{1}.ax{1}.lx   - crosshair (x)
-    % st.vols{1}.ax{1}.ly   - crosshair (y)
-    global st
-    setbackgcolor;
-    im = screencapture(st.fig);
-    setbackgcolor(st.color.bg)
-    [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf', 'Image'; '*.*', 'All Files (*.*)'}, 'Specify output directory and name', construct_filename);
-    if ~imname, disp('User cancelled.'); return; end
-    imwrite(im, fullfile(pname, imname)); 
-    fprintf('\nImage saved to %s\n', fullfile(pname, imname));   
-function cb_changeguisize(varargin)
-    global st
-    F = 0.9; 
-    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.1; end
-    guipos = get(st.fig, 'pos');
-    guipos(3:4) = guipos(3:4)*F; 
-    set(st.fig, 'pos', guipos);
-    pause(.50);
-    drawnow;
-function cb_changefontsize(varargin)
-    global st
-    minsize = 5; 
-    F = -1; 
-    if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1; end
-    setfontunits('points'); 
-    h   = findall(st.fig, '-property', 'FontSize');
-    fs  = cell2mat(get(h, 'FontSize')) + F;
-    h(fs<minsize) = []; 
-    fs(fs<minsize)  = [];
-    arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
-    pause(.50);
-    drawnow;
-    setfontunits('norm'); 
-function cb_changeskin(varargin)
-    if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
-    global st
-    skin = get(varargin{1}, 'Label');
-    h       = gethandles; 
-    switch lower(skin)
-        case {'dark'}
-            st.color = default_colors(1);
-            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'on'); 
-            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'off'); 
-        case {'light'}
-            st.color = default_colors(0);
-            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'off'); 
-            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'on'); 
-    end
-    set(st.fig, 'color', st.color.bg); 
-    set(findall(st.fig, '-property', 'ycolor'), 'ycolor', st.color.bg);
-    set(findall(st.fig, '-property', 'xcolor'), 'xcolor', st.color.bg);
-    al = findall(h.lowerpanel, 'type', 'axes'); 
-    ul = findall(h.upperpanel, 'type', 'axes'); 
-    set([al; ul], 'color', st.color.bg); 
-    al = findall(h.lowerpanel, 'type', 'text'); 
-    ul = findall(h.upperpanel, 'type', 'text'); 
-    set([al; ul], 'color', st.color.fg); 
-    set(findall(st.fig, 'type', 'uipanel'), 'backg', st.color.bg, 'foreg', st.color.fg);
-    set(findall(st.fig, 'type', 'uicontrol', 'style', 'text'), 'backg', st.color.bg, 'foreg', st.color.fg);
-    set(findall(st.fig, 'style', 'radio'), 'backg', st.color.bg, 'foreg', st.color.fg);
-    set(h.colorbar, 'ycolor', st.color.fg); 
-    set(varargin{1}, 'Checked', 'on'); 
-    drawnow;
-function cb_preferences(varargin)
-    global st
-    default_preferences; 
 function cb_reversemap(varargin)
     state = get(varargin{1},'Checked');
     if strcmpi(state,'on');
@@ -1170,59 +1217,82 @@ function cb_render(varargin)
     [h1, hh1] = surfPlot5(obj);
     drawnow;
     setstatus('Ready'); 
-function cb_opencode(varargin)
-    open(mfilename('fullpath'));
-function cb_uiinspect(varargin)
-    global st
-    setstatus('Running UIINSPECT, please wait...'); 
-    uiinspect(st.fig);
-    setstatus('Ready');
+ 
+% | CALLBACKS - WEB MENU
+% =========================================================================
 function cb_web(varargin)
-    stat = web(varargin{3}, '-browser');
-    if stat, headsup('Could not open a browser window.'); end
-function cb_checkversion(varargin)
-    global version
-    url     = 'https://github.com/spunt/bspmview/blob/master/README.md';
-    h       = headsup('Checking GitHub repository. Please be patient.', 'Checking Version', 0);
-    try
-        str = webread(url);
-    catch
-        set(h(2), 'String', 'Could not read web data. Are you connected to the internet?');
-        figure(h(1)); 
-        return
-    end
-    [idx1, idx2] = regexp(str, 'Version:  ');
-    gitversion = str(idx2+1:idx2+8);
-    if strcmp(version, gitversion)
-        delete(h(1)); 
-        headsup('You have the latest version.', 'Checking Version', 1);
-        return; 
-    else
-        delete(h(1)); 
-        answer = yesorno('An update is available. Would you like to download the latest version?', 'Update Available');
-        if strcmpi(answer, 'Yes')
-            guidir      = fileparts(mfilename('fullpath')); 
-            newguidir   = fullfile(fileparts(guidir), 'bspmview-master');
-            url         = 'https://github.com/spunt/bspmview/archive/master.zip';
-            h = headsup('Downloading...', 'Please Wait', 0);
-            unzip(url, fileparts(guidir));
-            delete(h(1));
-            h = headsup(sprintf('Latest version saved to: %s', newguidir), 'Update', 1);
-        else
-            return; 
-        end
-    end     
+stat = web(varargin{3}, '-browser');
+if stat, headsup('Could not open a browser window.'); end
 function cb_neurosynth(varargin)
     baseurl = 'http://neurosynth.org/locations/?x=%d&y=%d&z=%d&r=6';
     stat = web(sprintf(baseurl, getroundvoxel), '-browser');
     if stat, headsup('Could not open a browser window..'); end
-function cb_closegui(varargin)
-   if length(varargin)==3, h = varargin{3};
-   else h = varargin{1}; end
-   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
-   delete(h); % Bye-bye figure 
- 
-% | TABLE/REPORT
+       
+% | CALLBACKS - CROSSHAIR LOCATION
+% =========================================================================
+function cb_clustminmax(varargin)
+    global st
+    str           = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    if strcmp(str, 'n/a'), return; end
+    blob    = getcurrentblob;
+    if all(blob.values < 0), blob.values = abs(blob.values); end
+    xyz     = blob.clxyz(:, blob.values==max(blob.values));
+    if size(xyz, 2) > 1
+        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the cluster maximum value', size(xyz, 2)), 'NOTE');
+        xyz = xyz(:,randperm(size(xyz, 2)));
+    end
+    bspm_orthviews('reposition', xyz(:,1)); 
+    drawnow;
+function cb_localmax(varargin)
+    global st
+    xyz = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.maxima);
+    if size(xyz, 2) > 1
+        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the local maximum value', size(xyz, 2)), 'NOTE');
+        xyz = xyz(:,randperm(size(xyz, 2)));
+    end
+    bspm_orthviews('reposition', xyz(:,1)); 
+    drawnow;
+function cb_minmax(varargin)
+    global st
+    xyz = st.ol.XYZmm(:,st.ol.Z==max(st.ol.Z));
+    if size(xyz, 2) > 1
+        printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the maximum value', size(xyz, 2)), 'NOTE');
+        xyz = xyz(:,randperm(2));
+    end
+    bspm_orthviews('reposition', xyz(:,1)); 
+    drawnow;
+function cb_maxval(varargin)
+    global st
+    % | Check for Numeric Input
+    if isnan(str2double(get(varargin{1}, 'string')))
+        warndlg('Input must be numerical');
+        mm = getminmax;
+        set(varargin{1}, 'string', num2str(mm(2))); 
+        return
+    end
+    val = str2double(get(varargin{1}, 'string'));
+    bspm_orthviews('SetBlobsMax', 1, 1, val);
+    redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
+    drawnow;
+function cb_minval(varargin)
+    global st
+    % | Check for Numeric Input
+    if isnan(str2double(get(varargin{1}, 'string')))
+        warndlg('Input must be numerical');
+        mm = getminmax;
+        set(varargin{1}, 'string', num2str(mm(1))); 
+        return
+    end
+    val = str2double(get(varargin{1}, 'string'));
+    bspm_orthviews('SetBlobsMin', 1, 1, val);
+    redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
+    drawnow;
+function cb_changexyz(varargin)
+    xyz = str2num(get(varargin{1}, 'string')); 
+    bspm_orthviews('reposition', xyz');
+    drawnow;
+    
+% | CALLBACKS - TABLE/REPORT
 % =========================================================================
 function cb_report(varargin)
     global st
@@ -1313,17 +1383,18 @@ function cb_savetable(varargin)
     if ~fname, disp('User cancelled.'); return; end
     writereport(allcell, fullfile(pname, fname)); 
     
-% | SLICE MONTAGE
+% | CALLBACKS - SLICE MONTAGE
 % =========================================================================
 function cb_montage(varargin)
     global st
+    
     pos = setposition_auxwindow; 
     % | View GUI
     viewopt     = {'sagittal','coronal', 'axial'};
     viewoptin   = strcat('|', viewopt);
     pref = menuN('Montage Settings', ...
                 {strcat('p', viewoptin{:}),'Select View'; ...
-              'x|hide colorbar|hide labels','Display Options'; ...
+              'x|hide colorbar|*hide labels','Display Options'; ...
               't|t-stat', 'Colorbar Title'; ...
               't|auto', 'N Slices Per Row'}); 
     if strcmpi(pref, 'cancel'), return; end
@@ -1513,13 +1584,13 @@ function cb_montagepaneldelete(varargin)
     tightfig;
     drawnow; 
     
-% | ROI EXPLORER
+% | CALLBACKS - PLOT
 % =========================================================================
 function cb_clustexplore(varargin)
 
     global st
     
-    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string');
     if strcmp(str, 'n/a'), return; end
 
     %% Get Design Variable %%
@@ -1586,6 +1657,8 @@ function cb_clustexplore(varargin)
     rname          = sprintf('%s (x=%d, y=%d, z=%d)', blob.label, blob.xyz);
 
     %% Get Subject Data %%
+    spacechoice = varargin{3};
+    datachoice = varargin{4}; 
     switch lower(varargin{3})
         case 'cluster'
             dataidx = blob.clidx; 
@@ -1603,7 +1676,10 @@ function cb_clustexplore(varargin)
     end
     data    = spm_get_data(SPM.xY.VY, st.ol.XYZ0(:, dataidx));
     data(data==0) = NaN;
-    datakwy = spm_filter(SPM.xX.K,SPM.xX.W*data);
+    switch lower(varargin{4})
+        case 'whitened and filtered'
+            data = spm_filter(SPM.xX.K,SPM.xX.W*data);
+    end
     if groupflag
         Mraw = NaN(max(npergroup), length(npergroup));
         M = Mraw; 
@@ -1611,7 +1687,7 @@ function cb_clustexplore(varargin)
         for i = 1:size(conidx, 2) 
             idx        = find(conidx(:,i)); 
             Mraw(1:npergroup(i), i)    = nanmean(data(idx,:), 2);
-            M(1:npergroup(i), i)       = nanmean(datakwy(idx,:), 2);
+            M(1:npergroup(i), i)       = nanmean(data(idx,:), 2);
             K(1:npergroup(i), i)       = sum(isnan(data(idx,:)), 2);
         end
         Z       = abs(oneoutzscore(M));
@@ -1620,7 +1696,7 @@ function cb_clustexplore(varargin)
         header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
     else
         Mraw    = nanmean(data, 2);
-        M       = nanmean(datakwy, 2);
+        M       = nanmean(data, 2);
         K       = sum(isnan(data), 2);
         if ncond > 1
             M       = reshape(M, ncond, nsub)';
@@ -1638,37 +1714,6 @@ function cb_clustexplore(varargin)
             header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
         end
     end
-    figpos = setposition_auxwindow; 
-    figpos(4) = round(figpos(4)*.80);
-    figpos(2) = figpos(2) + round(figpos(4)*.20);
-    
-    % | CREATE FIGURE
-    hfig  =  figure( ...
-       'Name'                     ,        'bspmview Plot'      ,...
-       'Units'                    ,        'pix'              ,...
-       'Position'                 ,        figpos                   ,...
-       'Resize'                   ,        'on'                 ,...
-       'Color'                    ,        st.color.bg           ,...
-       'Renderer'                 ,        'zbuffer'           ,...
-       'NumberTitle'              ,        'off'               ,...
-       'DockControls'             ,        'off'               ,...
-       'MenuBar'                  ,        'figure'              ,...
-       'Toolbar'                  ,        'none'              ,...
-       'Tag'                      ,        'bspmviewplot'      ,...
-       'WindowStyle'              ,        'normal'            ,...
-       'Visible'                  ,        'off'                 ...
-                           );
-
-    % | CREATE GRID LAYOUT
-    hgrid   = pgrid(2, 1, 'relheight', [3 4], 'backg', [0 0 0]);
-    hgrid   = psplit(hgrid, 1);
-    hgrid   = psplit(hgrid, 2);
-    hgrid   = pmerge(hgrid, 1:2);
-    
-    % | PLOT
-    set(hgrid(3), 'backg', st.color.fg);
-    axhist  = axes('parent', hgrid(3));
-    axes(axhist);
     if groupflag
         ncond   = 2; 
         nsub    = nansum(npergroup);
@@ -1676,17 +1721,49 @@ function cb_clustexplore(varargin)
     else
         Mx      = repmat(1:ncond, nsub, 1);
     end
-    hscat   = scatter(axhist, Mx(:), M(~isnan(M)));
-    for i = 1:ncond
-        ln(i)      = line([i-.25 i+.25], repmat(nanmean(M(:,i)), 1, 2), 'color', [0 0 0]);
-        outidx     = find(Z(:,i) > 2.5);
-        if outidx
-           text(repmat(i, length(outidx), 1), M(outidx, i), subname(outidx), 'fontsize', st.fonts.sz6);
-        end
+
+    % | CREATE FIGURE
+    if length(varargin) < 5
+        figpos = setposition_auxwindow; 
+        hfig  =  figure( ...
+           'Name'                     ,        'bspmview Plot'          ,...
+           'Units'                    ,        'pix'                    ,...
+           'Position'                 ,        figpos                   ,...
+           'Resize'                   ,        'on'                     ,...
+           'Color'                    ,        st.color.bg              ,...
+           'Renderer'                 ,        'zbuffer'                ,...
+           'NumberTitle'              ,        'off'                    ,...
+           'DockControls'             ,        'off'                    ,...
+           'MenuBar'                  ,        'figure'                 ,...
+           'Toolbar'                  ,        'none'                   ,...
+           'Tag'                      ,        'bspmviewplot'           ,...
+           'Visible'                  ,        'on'                     ...
+                               );
+    else
+        hfig = varargin{5};
     end
+    
+    % | CREATE GRID LAYOUT
+    hgrid = pgrid(2, 1, 'relheight', [1 6], 'backg', [0 0 0]);
+%     if ncond > 1, hgrid = pmerge(hgrid, 1:ncond); end
+
+    % | PLOT
+    set(hgrid(2:end), 'backg', st.color.fg);
+    
+%     for i = 1:ncond
+        axhist = axes('parent', hgrid(2));
+        axes(axhist);
+        hscat = scatter(axhist, Mx(:), M(~isnan(M)));
+%         plotdata(M(~isnan(M)), subname);
+        for i = 1:ncond
+            ln(i) = line([i-.125 i+.125], repmat(nanmean(M(:,i)), 1, 2), 'color', [0 0 0]);
+            outidx = find(Z(:,i) > 2.5);
+            if outidx, text(repmat(i+.01, length(outidx), 1), M(outidx, i), subname(outidx), 'fontsize', st.fonts.sz6); end
+        end
+%     end
 
     % | FORMAT
-    ylabel(axhist, 'Whitened And Filtered Y');
+    ylabel(axhist, varargin{4});
     Mmax = max(M(:)); Mmin = min(M(:)); Mrng = range(M(:));
     ylim    = [Mmin-(Mrng*.075) Mmax+(Mrng*.075)];
     set(axhist, ...
@@ -1702,41 +1779,58 @@ function cb_clustexplore(varargin)
     for i = 1:length(yt), yts{i} = sprintf('%.2f', yt(i)); end
     if groupflag
         set(axhist, 'yticklabel', yts, 'xticklabel', SPM.xX.name); 
-        title(sprintf('%s | %s', char(conname), rname), 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz3);
+        title(sprintf('%s | %s', char(conname), rname), 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz4);
     else
         set(axhist, 'yticklabel', yts, 'xticklabel', conname);
-        title(rname, 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz3);
+        title(rname, 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz4);
     end
 
-    % | TABLE
-    set(hgrid(1), 'units', 'pix');
-    tw = get(hgrid(1), 'pos');
-    tw = tw(3) - tw(1);
-    set(hgrid(1), 'units', 'norm');
-%     DAT(:,2:3) = cellnum2str(DAT(:,2:3));
-%     DAT(:,4) = cellnum2str(DAT(:,4), 0); 
-    th = uitable('Parent', hgrid(1), ...
-        'Data', DAT, ...
-        'Units', 'norm', ...
-        'RowName', [], ...
-        'ColumnName', header, ...
-        'Pos', [0 0 1 1], ...
-        'RearrangeableColumns', 'on', ...
-        'FontName', 'Fixed-Width', ...
-        'FontUnits', 'Points', ...
-        'FontSize', st.fonts.sz6);
-    set(th, 'units', 'pixels');
-    set(th, 'ColumnWidth', {tw/3 tw*(2/9) tw*(2/9) tw/5});
+%     % | TABLE
+%     set(hgrid(1), 'units', 'pix');
+%     tw = get(hgrid(1), 'pos');
+%     tw = tw(3) - tw(1);
+%     set(hgrid(1), 'units', 'norm');
+% %     DAT(:,2:3) = cellnum2str(DAT(:,2:3));
+% %     DAT(:,4) = cellnum2str(DAT(:,4), 0); 
+%     th = uitable('Parent', hgrid(1), ...
+%         'Data', DAT, ...
+%         'Units', 'norm', ...
+%         'RowName', [], ...
+%         'ColumnName', header, ...
+%         'Pos', [0 0 1 1], ...
+%         'RearrangeableColumns', 'on', ...
+%         'FontName', 'Fixed-Width', ...
+%         'FontUnits', 'Points', ...
+%         'FontSize', st.fonts.sz6);
+%     set(th, 'units', 'pixels');
+%     set(th, 'ColumnWidth', {tw/3 tw*(2/9) tw*(2/9) tw/5});
+    
+    % | MENU PANEL
+    uigrid = pgrid(1, 3, 'marginsep', 0, 'panelsep', 0, 'parent', hgrid(1));
+    set(uigrid, 'units', 'pixel');
+    uipos = cell2mat(get(uigrid, 'pos'));
     
     % | IMAGE
-    h       = gethandles; 
-    axim    = axes('parent', hgrid(2));
-    axes(axim); axis off; 
-    copyobj(get(h.axial, 'Children'), axim); 
-    cmap = [gray(64); getcolormap];
-    set(hfig, 'Colormap', cmap);
+    setunits('pixel');
+    [h, relpos, abspos] = gethandles_axes;
+    sim = imresize(screencapture(h.ax(2)), [uipos(1,end) NaN]); 
+    cim = imresize(screencapture(h.ax(3)), [uipos(1,end) NaN]); 
+    tim = [sim cim];
+    axim = axes('parent', uigrid(end));
+    axes(axim);
+    imdisp(tim);
+    set(axim, 'Units', 'Norm', 'Pos', [0 0 1 1]);  axis off; 
+    uicontrol('parent', uigrid(1), 'units', 'norm', 'pos', [.1 .25 .8 .5], 'fontsize', st.fonts.sz3, 'style', 'push', 'string', 'Reload for New Location', 'callback', {@cb_clustexplore, spacechoice, datachoice, hfig});
+%     h2 = pgrid(2, 1, 'parent', uigrid(2));
+%     m(1) = uicontrol('parent', h2(1), 'units', 'norm', 'pos', [0 0 1 .5], 'backg', [0 0 0], 'foreg', [1 1 1], 'fontname', st.fonts.name, 'style', 'text', 'string', 'Change Plotted Variable');
+%     dataopt = {'Mean across voxels - Raw' 'Mean across voxels - Whitened And Filtered' 'SD across voxels - Raw' 'SD across voxels - Whitened And Filtered'};
+%     m(2) = uicontrol('parent', h2(2), 'units', 'norm', 'HorizontalAlignment', 'center', ....
+%         'pos', [.1 .1 .8 .8], 'foreg', st.color.font, 'backg', st.color.edit, 'fontname', 'fixed-width', 'style', 'Popup', 'string', dataopt, 'value', 2, 'Callback', @cb_changevariable)
+%     set(m, 'fontsize', st.fonts.sz3); 
     set(hfig, 'visible', 'on');
+    setunits('norm');
     drawnow;
+function cb_changevariable(varargin)
 
 % | SETTERS
 % =========================================================================
@@ -1953,6 +2047,17 @@ function setregionname(varargin)
     end
     set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
     drawnow;
+function setatlas(varargin)
+    global st
+    %% LABEL MAP
+    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+    atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
+    atlasvol = reslice_image(atlas_vol, st.ol.fname);
+    atlasvol = single(round(atlasvol(:)))'; 
+    load(atlas_labels);
+    st.ol.atlaslabels = atlas; 
+    st.ol.atlas0 = atlasvol;
+    setregionname; 
 
 % | GETTERS
 % =========================================================================
@@ -2037,12 +2142,13 @@ function [clustsize, clustidx]   = getclustidx(rawol, u, k)
     clustsize       = [pos; neg]; 
     clustsize(3,:)  = sum(clustsize);
     clustidx(3,:)   = sum(clustidx); 
-function [h, axpos]              = gethandles_axes(varargin)
+function [h, axpos, absaxpos]    = gethandles_axes(varargin)
     global st
     axpos = zeros(3,4);
     if isfield(st.vols{1}, 'blobs');
         h.cb = st.vols{1}.blobs{1}.cbar; 
     end
+    ppanel = get(findobj(st.fig, 'Tag', 'hReg'), 'Position');
     for a = 1:3
         tmp = st.vols{1}.ax{a};
         h.ax(a) = tmp.ax; 
@@ -2050,6 +2156,10 @@ function [h, axpos]              = gethandles_axes(varargin)
         h.lx(a) = tmp.lx; 
         h.ly(a) = tmp.ly;
         axpos(a,:) = get(h.ax(a), 'position');
+    end
+    if nargout==3
+       absaxpos = axpos; 
+       absaxpos(:,1:2) =  absaxpos(:,1:2) + repmat(ppanel(1:2), 3, 1);
     end
 function T                       = getthresh
     global st
@@ -2154,6 +2264,7 @@ function h      = buipanel(parent, uilabels, uistyles, relwidth, varargin)
 %	Email:    spunt@caltech.edu
 % __________________________________________________________________________
 global st
+
 easyparse(varargin, ... 
             { ...
             'panelposition', ...
@@ -2182,10 +2293,10 @@ defaults = easydefaults(...
             'paneltitleposition', 'centertop', ...
             'panelborder',      'none', ... 
             'panelbackcolor',   st.color.bg, ...
-            'editbackcolor',    st.color.fg, ...
+            'editbackcolor',    st.color.edit, ...
             'labelbackcolor',   st.color.bg, ...
             'panelforecolor',   st.color.fg, ...
-            'editforecolor',    [0 0 0], ...
+            'editforecolor',    st.color.font, ...
             'labelforecolor',   st.color.fg, ...
             'panelfontname',    st.fonts.name, ...
             'editfontname',     'fixed-width', ...
@@ -2285,6 +2396,7 @@ function pos    = getpositions(relwidth, relheight, marginsep, uicontrolsep)
 % | IMAGE PROCESSING UTILITIES
 % =========================================================================
 function OL = load_overlay(fname, pval, k)
+
     global st
     if nargin<3, k = 5; end
     if nargin<2, pval = .001; end
@@ -2351,6 +2463,7 @@ function OL = load_overlay(fname, pval, k)
                 'C0IDX',    I, ...
                 'XYZmm0',   XYZmm,...
                 'XYZ0',     XYZ);    
+    
             
     %% LABEL MAP
     atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
@@ -2764,6 +2877,21 @@ function df         = check4df(hdr)
     
 % | MISC UTILITIES
 % =========================================================================
+function h          = plotdata(v, subname)
+    tmp       = sortrows([subname num2cell(v)], -2);
+    h.ax      = gca; 
+    h.data    = cell2mat(tmp(:,2)); 
+    h.subname = tmp(:,1);; 
+    h.bar     = barh(h.data);
+    xlim      = [floor(2*min(v))/2 ceil(2*max(v))/2];
+    set(h.ax, 'xlim', xlim, 'ytick', []);
+    x         = get(h.bar, 'xdata');
+    y         = get(h.bar, 'ydata');
+    y(y<0)    = 0;
+    y         = y + range(y)*.005;
+    for i = 1:length(x)
+        h.label(i) = text(y(i), x(i), h.subname{i}); 
+    end
 function zx         = oneoutzscore(x, returnas)
 % ONEOUTZSCORE Perform columnwise leave-one-out zscoring
 % 
@@ -3055,6 +3183,156 @@ n   = cell2mat(in);
 out = cellfun(@sprintf, repmat({['%2.' num2str(ndec) 'f']}, size(in)), in, 'Unif', false); 
 out = regexprep(out, '0\.', '\.');
 out(mod(n,1)==0) = cellfun(@num2str, in(mod(n,1)==0), 'unif', false);
+function A          = catstruct(varargin)
+% CATSTRUCT   Concatenate or merge structures with different fieldnames
+%   X = CATSTRUCT(S1,S2,S3,...) merges the structures S1, S2, S3 ...
+%   into one new structure X. X contains all fields present in the various
+%   structures. An example:
+%
+%     A.name = 'Me' ;
+%     B.income = 99999 ;
+%     X = catstruct(A,B) 
+%     % -> X.name = 'Me' ;
+%     %    X.income = 99999 ;
+%
+%   If a fieldname is not unique among structures (i.e., a fieldname is
+%   present in more than one structure), only the value from the last
+%   structure with this field is used. In this case, the fields are 
+%   alphabetically sorted. A warning is issued as well. An axample:
+%
+%     S1.name = 'Me' ;
+%     S2.age  = 20 ; S3.age  = 30 ; S4.age  = 40 ;
+%     S5.honest = false ;
+%     Y = catstruct(S1,S2,S3,S4,S5) % use value from S4
+%
+%   The inputs can be array of structures. All structures should have the
+%   same size. An example:
+%
+%     C(1).bb = 1 ; C(2).bb = 2 ;
+%     D(1).aa = 3 ; D(2).aa = 4 ;
+%     CD = catstruct(C,D) % CD is a 1x2 structure array with fields bb and aa
+%
+%   The last input can be the string 'sorted'. In this case,
+%   CATSTRUCT(S1,S2, ..., 'sorted') will sort the fieldnames alphabetically. 
+%   To sort the fieldnames of a structure A, you could use
+%   CATSTRUCT(A,'sorted') but I recommend ORDERFIELDS for doing that.
+%
+%   When there is nothing to concatenate, the result will be an empty
+%   struct (0x0 struct array with no fields).
+%
+%   NOTE: To concatenate similar arrays of structs, you can use simple
+%   concatenation: 
+%     A = dir('*.mat') ; B = dir('*.m') ; C = [A ; B] ;
+
+%   NOTE: This function relies on unique. Matlab changed the behavior of
+%   its set functions since 2013a, so this might cause some backward
+%   compatibility issues when dulpicated fieldnames are found.
+%
+%   See also CAT, STRUCT, FIELDNAMES, STRUCT2CELL, ORDERFIELDS
+
+% version 4.1 (feb 2015), tested in R2014a
+% (c) Jos van der Geest
+% email: jos@jasen.nl
+
+% History
+% Created in 2005
+% Revisions
+%   2.0 (sep 2007) removed bug when dealing with fields containing cell
+%                  arrays (Thanks to Rene Willemink)
+%   2.1 (sep 2008) added warning and error identifiers
+%   2.2 (oct 2008) fixed error when dealing with empty structs (thanks to
+%                  Lars Barring)
+%   3.0 (mar 2013) fixed problem when the inputs were array of structures
+%                  (thanks to Tor Inge Birkenes).
+%                  Rephrased the help section as well.
+%   4.0 (dec 2013) fixed problem with unique due to version differences in
+%                  ML. Unique(...,'last') is no longer the deafult.
+%                  (thanks to Isabel P)
+%   4.1 (feb 2015) fixed warning with narginchk
+
+narginchk(1,Inf) ;
+N = nargin ;
+
+if ~isstruct(varargin{end}),
+    if isequal(varargin{end},'sorted'),
+        narginchk(2,Inf) ;
+        sorted = 1 ;
+        N = N-1 ;
+    else
+        error('catstruct:InvalidArgument','Last argument should be a structure, or the string "sorted".') ;
+    end
+else
+    sorted = 0 ;
+end
+
+sz0 = [] ; % used to check that all inputs have the same size
+
+% used to check for a few trivial cases
+NonEmptyInputs = false(N,1) ; 
+NonEmptyInputsN = 0 ;
+
+% used to collect the fieldnames and the inputs
+FN = cell(N,1) ;
+VAL = cell(N,1) ;
+
+% parse the inputs
+for ii=1:N,
+    X = varargin{ii} ;
+    if ~isstruct(X),
+        error('catstruct:InvalidArgument',['Argument #' num2str(ii) ' is not a structure.']) ;
+    end
+    
+    if ~isempty(X),
+        % empty structs are ignored
+        if ii > 1 && ~isempty(sz0)
+            if ~isequal(size(X), sz0)
+                error('catstruct:UnequalSizes','All structures should have the same size.') ;
+            end
+        else
+            sz0 = size(X) ;
+        end
+        NonEmptyInputsN = NonEmptyInputsN + 1 ;
+        NonEmptyInputs(ii) = true ;
+        FN{ii} = fieldnames(X) ;
+        VAL{ii} = struct2cell(X) ;
+    end
+end
+
+if NonEmptyInputsN == 0
+    % all structures were empty
+    A = struct([]) ;
+elseif NonEmptyInputsN == 1,
+    % there was only one non-empty structure
+    A = varargin{NonEmptyInputs} ;
+    if sorted,
+        A = orderfields(A) ;
+    end
+else
+    % there is actually something to concatenate
+    FN = cat(1,FN{:}) ;    
+    VAL = cat(1,VAL{:}) ;    
+    FN = squeeze(FN) ;
+    VAL = squeeze(VAL) ;
+    
+    
+    [UFN,ind] = unique(FN, 'last') ;
+    % If this line errors, due to your matlab version not having UNIQUE
+    % accept the 'last' input, use the following line instead
+    % [UFN,ind] = unique(FN) ; % earlier ML versions, like 6.5
+    
+    if numel(UFN) ~= numel(FN),
+%         warning('catstruct:DuplicatesFound','Fieldnames are not unique between structures.') ;
+        sorted = 1 ;
+    end
+    
+    if sorted,
+        VAL = VAL(ind,:) ;
+        FN = FN(ind,:) ;
+    end
+    
+    A = cell2struct(VAL, FN);
+    A = reshape(A, sz0) ; % reshape into original format
+end
 function out        = adjustbrightness(in)
     lim = .5;
     dat.min = min(in(in>0)); 
@@ -4928,32 +5206,33 @@ function redraw(arg1)
 function redraw_all
 redraw(1:max_img);
 function reset_st
-global st
-fig = spm_figure('FindWin','Graphics');
-bb  = []; %[ [-78 78]' [-112 76]' [-50 85]' ];
-st  = struct('n', 0, 'vols',{cell(max_img,1)}, 'bb',bb, 'Space',eye(4), ...
-             'centre',[0 0 0], 'callback',';', 'xhairs',1, 'hld',1, ...
-             'fig',fig, 'mode',1, 'plugins',{{}}, 'snap',[]);
-xTB = spm('TBs');
-if ~isempty(xTB)
-    pluginbase = {spm('Dir') xTB.dir};
-else
-    pluginbase = {spm('Dir')};
-end
-for k = 1:numel(pluginbase)
-    pluginpath = fullfile(pluginbase{k},'spm_orthviews');
-    pluginpath = fileparts(mfilename); 
-    if isdir(pluginpath)
-        pluginfiles = dir(fullfile(pluginpath,'spm_ov_*.m'));
-        if ~isempty(pluginfiles)
-            if ~isdeployed, addpath(pluginpath); end
-            for l = 1:numel(pluginfiles)
-                pluginname = spm_file(pluginfiles(l).name,'basename');
-                st.plugins{end+1} = strrep(pluginname, 'spm_ov_','');
+    global st
+    fig     = spm_figure('FindWin','Graphics');
+    bb      = []; %[ [-78 78]' [-112 76]' [-50 85]' ];
+    stdef   = struct('n', 0, 'vols',{cell(max_img,1)}, 'bb',bb, 'Space',eye(4), ...
+                 'centre',[0 0 0], 'callback',';', 'xhairs',1, 'hld',1, ...
+                 'fig',fig, 'mode',1, 'plugins',{{}}, 'snap',[]);
+    st      = catstruct(stdef, st); 
+    xTB = spm('TBs');
+    if ~isempty(xTB)
+        pluginbase = {spm('Dir') xTB.dir};
+    else
+        pluginbase = {spm('Dir')};
+    end
+    for k = 1:numel(pluginbase)
+        pluginpath = fullfile(pluginbase{k},'spm_orthviews');
+        pluginpath = fileparts(mfilename); 
+        if isdir(pluginpath)
+            pluginfiles = dir(fullfile(pluginpath,'spm_ov_*.m'));
+            if ~isempty(pluginfiles)
+                if ~isdeployed, addpath(pluginpath); end
+                for l = 1:numel(pluginfiles)
+                    pluginname = spm_file(pluginfiles(l).name,'basename');
+                    st.plugins{end+1} = strrep(pluginname, 'spm_ov_','');
+                end
             end
         end
     end
-end
 function c_menu(varargin)
 global st
 

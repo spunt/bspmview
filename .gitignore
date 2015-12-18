@@ -5,8 +5,10 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+supportfiles/defpref.mat
 defpref.mat
 Error*
 gh-pages/
 testdata/
 todo/
+testdata_bspmview.mat

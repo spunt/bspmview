@@ -18,8 +18,8 @@ function choice = menuN(mtitle, options, Opt)
 %           |-----------------|
 %     (r) [string && options(1:2) == 'r|' ]: 
 %           Radiobuttons for single selection, separate options with |:      
-%           Start an option string part with ¤ to have it default toggled on.    
-%     ex. options = 'r|option1|¤option2|...', results in:
+%           Start an option string part with ? to have it default toggled on.    
+%     ex. options = 'r|option1|?option2|...', results in:
 %           |--mtitle--------|
 %           |  O  option1    |
 %           |  x  option2    |
@@ -28,7 +28,7 @@ function choice = menuN(mtitle, options, Opt)
 %           |----------------|
 %     (p) [string && options(1:2) == 'p|' ]: 
 %           Popupmenu for single selection, separate options with |:      
-%           Start an option string part with ¤ to set it default toggled on.    
+%           Start an option string part with ? to set it default toggled on.    
 %     ex. options = 'p|option1|option2|...', results in:
 %           |--mtitle--------|
 %           |  | optionX |v| |        
@@ -36,8 +36,8 @@ function choice = menuN(mtitle, options, Opt)
 %           |----------------|
 %     (x) [string && options(1:2) == 'x|' ]: 
 %           Checkboxes with mutliselection, separate options with |:      
-%           Start an option string part with ¤ to set it default toggled on.    
-%     ex. options = 'x|option1|¤option2|...', results in:
+%           Start an option string part with ? to set it default toggled on.    
+%     ex. options = 'x|option1|?option2|...', results in:
 %           |--mtitle--------|
 %           | | | options    |
 %           | |x| options    |
@@ -45,7 +45,7 @@ function choice = menuN(mtitle, options, Opt)
 %           | [    OK     ]  |
 %           |----------------|
 %     (l) [string]: Listbox with mutliselection, separate options with |.    
-%           Start an option string part with ¤ to set it default toggled on.    
+%           Start an option string part with ? to set it default toggled on.    
 %     ex. options = 'option1|option2|...', results in: 
 %           |--mtitle----------|
 %           |  |  option1  |   |
@@ -101,9 +101,9 @@ function choice = menuN(mtitle, options, Opt)
 % Example of usage with input of type (*):
 %  choice = menuN('menuN',...
 %        {  [1,2,1.75], 'Loss Parameter:';   ...
-%           'r|optA1|op2|¤defasdfasdfa','Operating Model:';...
-%           'p|a|b|¤c','Select a, b or c:';...
-%           'x|Use1|¤Use2|¤Use3','Use methods:';...
+%           'r|optA1|op2|?defasdfasdfa','Operating Model:';...
+%           'p|a|b|?c','Select a, b or c:';...
+%           'x|Use1|?Use2|?Use3','Use methods:';...
 %           't|first test|all is ok','Comment:'});
 %  If OK is selected directly we are returned the following choice:
 %   choice = 
@@ -123,7 +123,7 @@ function choice = menuN(mtitle, options, Opt)
 
 %% Set up default Opt struct:
 defOpt = struct();
-defOpt.defaultOptionSymbol    = '*'; % ¤ in original
+defOpt.defaultOptionSymbol    = '*'; % ? in original
 defOpt.fontName               = 'Arial';
 defOpt.subtitleFontSize       = 13;
 defOpt.subtitleFontWeight     = 'Bold';
@@ -642,7 +642,7 @@ for idxOptions = numOptionsGroups:-1:1
          'Position',    tmpPosition,...
          'Userdata',    hSliderGroup{1},...
          'Callback',    {@updateSliderText,hSliderGroup{1}},...
-         'SliderStep',  sliderStepsFraction);
+         'SliderStep',  defOpt.sliderStepsFraction);
       
       % For continous updates when we move the slider we add a listener:
       if exist('addlistener','builtin')

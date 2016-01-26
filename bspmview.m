@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20151217
+%   Version:  20160126
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20151217'; 
+version='20160126'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -217,7 +217,8 @@ function prefs  = default_preferences(initial)
     
     if ~strcmpi(st.preferences.atlasname, def.atlasname)
         %% LABEL MAP
-        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
+        if ~exist(atlas_vol, 'file'), atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); end
         atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
         atlasvol = reslice_image(atlas_vol, st.ol.fname);
         atlasvol = single(round(atlasvol(:)))'; 
@@ -1437,10 +1438,10 @@ function cb_montage(varargin)
     o.img(2).vol = slover('matrix2vol', mat3d, st.ol.hdr.mat); 
     o.img(2).prop = 1; 
     o.img(2).type = 'split';
-    o.img(2).range = getminmax';
-    o.img(2).cmap = getcolormap;
-    o.cbar = cbar; 
-    o.labels = labels; 
+    o.img(2).range  = getminmax';
+    o.img(2).cmap   = getcolormap;
+    o.cbar          = cbar; 
+    o.labels        = labels; 
 
     % | More Settings
     o.slices    = slices2show;
@@ -1503,9 +1504,17 @@ function cb_montage(varargin)
        set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh); 
        set(get(hpan(i), 'children'), 'uicontextmenu', cmh);
     end
-    if cbar   
-        hc = findobj(obj.figure, 'tag', 'cbar');
+    if cbar
+        
+        hc = findobj(obj.figure, 'tag', 'cbar'); 
+%         cm = unique(obj.img(2).cmap, 'rows', 'stable'); 
+%         rg = obj.img(2).range;
+%         ytl = get(hc, 'yticklabel');
         set(hc, 'units', 'pix', 'fontunits', 'points'); 
+        hcm = uicontextmenu; 
+        uimenu(hcm, 'Label', 'Edit', 'callback', {@cb_editcbar, hc});
+        set(hc, 'uicontextmenu', hcm);
+        set(get(hc, 'children'), 'uicontextmenu', hcm);
         cpos = get(hc, 'position');
         cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 10; 
         gridheight = max(sum(hpos(:,[2 4]), 2));
@@ -1535,6 +1544,8 @@ function cb_savemontage(varargin)
     fmt = strcat('-', regexprep(e, '\.', 'd'));
     print(varargin{3}, fmt, strcat('-', 'painters'), strcat('-', 'noui'), fullfile(pname,n)); 
     fprintf('\nImage saved to %s\n', fullfile(pname, strcat(imname, e)));  
+function cb_editcbar(varargin)
+    inspect(varargin{3});
 function cb_montagelabelposition(varargin)
     set(findall(varargin{3}, 'Tag', 'positionmenu'), 'Checked', 'off'); 
     hstr = findall(varargin{3},  'tag', 'slicelabel'); 
@@ -2055,7 +2066,8 @@ function setregionname(varargin)
 function setatlas(varargin)
     global st
     %% LABEL MAP
-    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
+    if ~exist(atlas_vol, 'file'), atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); end
     atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
     atlasvol = reslice_image(atlas_vol, st.ol.fname);
     atlasvol = single(round(atlasvol(:)))'; 
@@ -2471,7 +2483,8 @@ function OL = load_overlay(fname, pval, k)
     
             
     %% LABEL MAP
-    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
+    if ~exist(atlas_vol, 'file'), atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); end
     atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
     atlasvol = reslice_image(atlas_vol, fname);
     atlasvol = single(round(atlasvol(:)))'; 

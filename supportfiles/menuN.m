@@ -167,30 +167,23 @@ end
 % Set up a large amount of padding options []:
 extentWidthUniversal          = 200;   % It is increased/decreased when necessary
 extentWidthUniversalMin       = 195;   % Minimum allowed width of uicontrols
-
 extentWidthSliderMin          = 100;
 extentHeigthTextInPadding     = 0;
 extentHeigthTextPadding       = 2;
 extentWidthTextInPadding      = 40;
-
 extentHeigthPushbuttonPadding    = 4;
 extentHeigthPushbuttonInPadding  = 2;
 extentWidthPushbuttonInPadding   = 10;
-
 extentWidthPopupmenuInPadding = 12;
 extentHeightPopupmenuPadding  = 0;
-
 extentHeigthCheckboxInPadding = 2;
 extentHeigthCheckboxPadding   = 1;
 extentWidthCheckboxInPadding  = 20;
-
 extentHeigthRadiobuttonInPadding = 2;
 extentHeigthRadiobuttonPadding   = 1;
 extentWidthRadiobuttonInPadding  = 20;
-
 extentWidthGroupPadding       = 15;
 extentHeightTitlePadding      = -Opt.pixelPaddingHeigth(2);
-
 thewindowstyle = 'normal'; % 'modal'
 
 %% Create a figure

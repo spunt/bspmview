@@ -105,12 +105,16 @@ if nargin < 1
     ol = uigetvol('Select an Image File for Overlay', 0, selectdir);
     if isempty(ol), disp('Must select an overlay!'); return; end
 else
+    if all([~ischar(ol) ~iscell(ol)]), disp('First argument must be a string or cell array!'); return; end
     if iscell(ol), ol = char(ol); end
+    if ~exist(ol, 'file'), disp('Overlay image file cannot be found!'); return; end
 end
 if nargin < 2
     ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii.gz');
 else
+    if all([~ischar(ul) ~iscell(ul)]), disp('Second argument must be a string or cell array!'); return; end
     if iscell(ul), ul = char(ul); end
+    if ~exist(ul, 'file'), disp('Underlay image file cannot be found!'); return; end
 end
 
 % | DEFAULTS

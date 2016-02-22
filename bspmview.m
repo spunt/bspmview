@@ -110,7 +110,7 @@ else
     if ~exist(ol, 'file'), disp('Overlay image file cannot be found!'); return; end
 end
 if nargin < 2
-    ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii.gz');
+    ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii');
 else
     if all([~ischar(ul) ~iscell(ul)]), disp('Second argument must be a string or cell array!'); return; end
     if iscell(ul), ul = char(ul); end

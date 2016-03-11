@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160126
+%   Version:  20160310
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global version
-version='20160126'; 
+version='20160310'; 
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -110,7 +110,7 @@ else
     if ~exist(ol, 'file'), disp('Overlay image file cannot be found!'); return; end
 end
 if nargin < 2
-    ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii.gz');
+    ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii');
 else
     if all([~ischar(ul) ~iscell(ul)]), disp('Second argument must be a string or cell array!'); return; end
     if iscell(ul), ul = char(ul); end
@@ -180,9 +180,9 @@ function prefs  = default_preferences(initial)
     optmap          = [4 2 1.9 2.1 -1 1]; 
     opt             = [opt(optmap==def.surfshow) opt(optmap~=def.surfshow)]; 
     optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)]; 
-    surftypeopt     = {'Inflated' 'Pial' 'White'}; 
+    surftypeopt     = {'Inflated' 'Pial' 'White' 'PI'}; 
     surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))]; 
-    surftypeshade   = {'Sulc' 'Curv'};
+    surftypeshade   = {'Sulc' 'Curv' 'Thk' 'LogCurv' 'Mixed'};
     surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))]; 
     nvertopt        = [40962 642 2562 10242 163842]; 
     nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
@@ -194,7 +194,6 @@ function prefs  = default_preferences(initial)
                         'AnatomyToolbox'                     ...
                       }; 
     atlasopt        = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];          
-    
     [prefs, button] = settingsdlg('title', 'Settings', 'WindowWidth', w, 'ControlWidth', w/2, ...
         'separator'                                 ,       'Thresholding', ...
         {'Voxelwise FWE'; 'alphacorrect'}           ,       def.alphacorrect, ...
@@ -218,18 +217,8 @@ function prefs  = default_preferences(initial)
     else
         st.preferences = prefs;
     end
-    
     if ~strcmpi(st.preferences.atlasname, def.atlasname)
-        %% LABEL MAP
-        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
-        if ~exist(atlas_vol, 'file'), atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); end
-        atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
-        atlasvol = reslice_image(atlas_vol, st.ol.fname);
-        atlasvol = single(round(atlasvol(:)))'; 
-        load(atlas_labels);
-        
-        st.ol.atlaslabels = atlas; 
-        st.ol.atlas0 = atlasvol;
+        setatlas; 
         setregionname; 
     end
     st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow));
@@ -370,6 +359,7 @@ urls = cell2struct(urls, {'label' 'url'}, 2);
 function S = put_figure(ol, ul)
 
     default_preferences(1);
+    
     % | Check for open GUI, close if one is found
     delete(findobj(0, 'tag', 'bspmview'));
     
@@ -427,8 +417,8 @@ function S = put_figure(ol, ul)
     set(S.hReg, 'units', 'norm');
     [st.fig, st.figax, st.direct] = deal(S.hFig, S.hReg, '+/-');
     bspm_orthviews('Reset');
-    st.cmap     = default_colormaps(64); 
-    st.ol       = load_overlay(ol, .001, 5);
+    st.cmap     = default_colormaps(64);
+    load_overlay(ol, .001, 5);
     bspm_XYZreg('InitReg',S.hReg,st.ol.M,st.ol.DIM,[0;0;0]); % initialize registry object
     st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
     bspm_orthviews('Register', S.hReg);
@@ -1014,9 +1004,9 @@ function cb_loadol(varargin)
     set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
     T       = getthresh;
     if isinf(T.pval)
-        st.ol   = load_overlay(fname);
+        load_overlay(fname);
     else
-        st.ol   = load_overlay(fname, T.pval, T.extent);
+        load_overlay(fname, T.pval, T.extent);
     end
     di = strcmpi({'+' '-' '+/-'}, T.direct); 
     setthresh(st.ol.C0(3,:), find(di));
@@ -1159,7 +1149,8 @@ function cb_render(varargin)
     global st
     setstatus('Working, please wait...'); 
     T = getthresh; 
-    direct = char(T.direct); 
+    direct = char(T.direct);
+    
     obj = [];
     obj.figno = 0;
     obj.newfig = 1;
@@ -1168,6 +1159,7 @@ function cb_render(varargin)
     obj.round = st.preferences.round;          % if = 1, rounds all values on the surface to nearest whole number.  Useful for masks       
     obj.shadingrange = [st.preferences.shadingmin st.preferences.shadingmax];
     obj.Nsurfs = st.preferences.surfshow ;
+    
     % fsaverage map to use
     switch st.preferences.nverts
         case 642
@@ -1182,6 +1174,7 @@ function cb_render(varargin)
             obj.fsaverage = 'fsaverage.mat';
         otherwise
     end
+    
     obj.fsaverage       = fullfile(st.supportpath, obj.fsaverage); 
     obj.background      = [0 0 0];
     obj.figname         = st.ol.fname; 
@@ -1191,6 +1184,24 @@ function cb_render(varargin)
     obj.surface         = st.preferences.surface; 
     obj.shading         = st.preferences.shading;
     obj.colorlims       = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max];
+    
+%     switch obj.surface
+%         case 'white'
+%             obj.shading = 'curv';
+%             obj.shadingrange = [-2 2];
+%         case 'pi'
+%             obj.shading = 'mixed';
+%             obj.shadingrange = [-2 2];
+%         case 'inflated'
+%             obj.shading = 'logcurv';
+%             obj.shadingrange = [-.75 .75];
+%         case 'pial'
+%             obj.shading = 'curv';
+%             obj.shadingrange = [-2 3];
+%         otherwise
+%             obj.shading = 'curv';
+%             obj.shadingrange = [-2 3];
+%     end
 
     % | Determine Input
     obj.input.m = getcurrentoverlay(st.preferences.dilate);
@@ -1198,11 +1209,8 @@ function cb_render(varargin)
     obj.input.m(obj.input.m==0) = NaN; 
     obj.overlaythresh       = 0;
     obj.reverse             = 0;
-    if strcmpi(direct, '+/-')
-        obj.overlaythresh   = [0 0];
-    end
+    if strcmpi(direct, '+/-'), obj.overlaythresh   = [0 0]; end
     obj.colormap    = getcolormap; 
-    
     ss = get(0, 'ScreenSize');
     ts = floor(ss/2);     
     switch obj.Nsurfs
@@ -1219,7 +1227,7 @@ function cb_render(varargin)
     otherwise
     end
     obj.position = ts; 
-    [h1, hh1] = surfPlot5(obj);
+    [h1, hh1] = surfPlot6(obj);
     drawnow;
     setstatus('Ready'); 
  
@@ -2069,16 +2077,17 @@ function setregionname(varargin)
     drawnow;
 function setatlas(varargin)
     global st
-    %% LABEL MAP
-    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
-    if ~exist(atlas_vol, 'file'), atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); end
-    atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
-    atlasvol = reslice_image(atlas_vol, st.ol.fname);
-    atlasvol = single(round(atlasvol(:)))'; 
+    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname));
+    if ~exist(atlas_vol, 'file')
+        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+    end
+    atlas_labels    = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
+    int             = 0; % 0=Nearest Neighbor, 1=Trilinear(default)
+    atlasvol        = reslice_image(atlas_vol, st.ol.fname, int);
+    atlasvol        = single(round(atlasvol(:)))';
     load(atlas_labels);
-    st.ol.atlaslabels = atlas; 
-    st.ol.atlas0 = atlasvol;
-    setregionname; 
+    st.ol.atlaslabels   = atlas; 
+    st.ol.atlas0        = atlasvol;
 
 % | GETTERS
 % =========================================================================
@@ -2416,7 +2425,7 @@ function pos    = getpositions(relwidth, relheight, marginsep, uicontrolsep)
 
 % | IMAGE PROCESSING UTILITIES
 % =========================================================================
-function OL = load_overlay(fname, pval, k)
+function load_overlay(fname, pval, k)
 
     global st
     if nargin<3, k = 5; end
@@ -2462,11 +2471,11 @@ function OL = load_overlay(fname, pval, k)
     DIM         = oh.dim';
     VOX         = abs(diag(M(:,1:3))); 
     [X,Y,Z]     = ndgrid(1:DIM(1),1:DIM(2),1:DIM(3));
-    XYZ        = [X(:)';Y(:)';Z(:)'];
+    XYZ         = [X(:)';Y(:)';Z(:)'];
     RCP         = XYZ; 
     RCP(4,:)    = 1;
-    XYZmm      = M(1:3,:)*RCP;
-    OL          = struct( ...
+    XYZmm       = M(1:3,:)*RCP;
+    st.ol       = struct( ...
                 'fname',    fname,...
                 'fname_abbr', abridgepath(fname),...
                 'descrip',  oh.descrip, ...
@@ -2484,18 +2493,8 @@ function OL = load_overlay(fname, pval, k)
                 'C0IDX',    I, ...
                 'XYZmm0',   XYZmm,...
                 'XYZ0',     XYZ);    
-    
-            
-    %% LABEL MAP
-    atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
-    if ~exist(atlas_vol, 'file'), atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname)); end
-    atlas_labels = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
-    atlasvol = reslice_image(atlas_vol, fname);
-    atlasvol = single(round(atlasvol(:)))'; 
-    load(atlas_labels);
-    OL.atlaslabels = atlas; 
-    OL.atlas0 = atlasvol;    
-    set(st.fig, 'Name', abridgepath(OL.fname)); 
+    setatlas;
+    set(st.fig, 'Name', abridgepath(st.ol.fname)); 
 function u  = voxel_correct(im,alpha)
 if nargin < 1, error('USAGE: u = voxel_correct(im,alpha)'); end
 if nargin < 2, alpha = .05; end
@@ -2796,6 +2795,7 @@ function [out, outmat] = reslice_image(in, ref, int)
     % Written by YAN Chao-Gan 090302 for DPARSF. Referenced from spm_reslice.
     % State Key Laboratory of Cognitive Neuroscience and Learning 
     % Beijing Normal University, China, 100875
+    % int:        interpolation, 0=Nearest Neighbor, 1=Trilinear(default)
     if nargin<3, int = 1; end
     if nargin<2, display('USAGE: [out, outmat] = reslice_image(infile, ref, SourceHead, int)'); return; end
     if iscell(ref), ref = char(ref); end
@@ -3272,7 +3272,7 @@ function A          = catstruct(varargin)
 %                  (thanks to Isabel P)
 %   4.1 (feb 2015) fixed warning with narginchk
 
-narginchk(1,Inf) ;
+narginchk(1,Inf);
 N = nargin ;
 
 if ~isstruct(varargin{end}),

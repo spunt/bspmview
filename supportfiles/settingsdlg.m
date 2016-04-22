@@ -67,7 +67,7 @@ function [settings, button] = settingsdlg(varargin)
 % Name       : Rody P.S. Oldenhuis
 % E-mail     : oldenhuis@gmail.com    (personal)
 %              oldenhuis@luxspace.lu  (professional)
-% Affiliation: LuxSpace sàrl
+% Affiliation: LuxSpace s?rl
 % Licence    : BSD
 
 
@@ -96,7 +96,9 @@ function [settings, button] = settingsdlg(varargin)
         
     % errortraps
     narg = nargin;
-    error(nargchk(1, inf, narg, 'struct'));
+    if narg < 1, error('FEED ME MORE INPUTS, SEYMOUR!'); end
+% 
+%     error(narginchk(1, inf, narg, 'struct'));
         
     % parse input (+errortrap) 
     have_settings = 0;

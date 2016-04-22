@@ -20,7 +20,8 @@ function imageData = screencapture(varargin)
 %                   will be retrieved via interactive mouse-selection.
 %                 If handle is an image, then position is in data (not pixel) units, so the
 %                   captured region remains the same after figure/axes resize (like imcrop)
-%    target   - optional filename for storing the screen-capture, or the 'clipboard' string.
+%    target   - optional filename for storing the screen-capture, or the
+%               'clipboard'/'printer' strings.
 %                 If empty/unsupplied then no output to file will be done.
 %                 The file format will be determined from the extension (JPG/PNG/...).
 %                 Supported formats are those supported by the imwrite function.
@@ -54,8 +55,11 @@ function imageData = screencapture(varargin)
 %      hImg = imshow(img);
 %      screencapture(hImg,[60,35,140,80]);  % capture a region of an image
 %    screencapture(gcf,[],'myFigure.jpg');  % capture the entire figure into file
-%    screencapture('handle',gcf,'target','myFigure.jpg');  % same as previous
-%    screencapture('handle',gcf,'target','clipboard');     % copy to clipboard
+%    screencapture(gcf,[],'clipboard');     % capture the entire figure into clipboard
+%    screencapture(gcf,[],'printer');       % print the entire figure
+%    screencapture('handle',gcf,'target','myFigure.jpg'); % same as previous, save to file
+%    screencapture('handle',gcf,'target','clipboard');    % same as previous, copy to clipboard
+%    screencapture('handle',gcf,'target','printer');      % same as previous, send to printer
 %    screencapture('toolbar',gcf);  % adds a screen-capture button to gcf's toolbar
 %    screencapture('toolbar',[],'target','sc.bmp'); % same with default output filename
 %
@@ -69,20 +73,24 @@ function imageData = screencapture(varargin)
 %    imshow, imwrite, print
 %
 % Release history:
-%    1.7 2014-04-28: Fixed bug when capturing interactive selection
-%    1.6 2014-04-22: Only enable image formats when saving to an unspecified file via uiputfile
-%    1.5 2013-04-18: Fixed bug in capture of non-square image; fixes for Win64
-%    1.4 2013-01-27: Fixed capture of Desktop (root); enabled rbbox anywhere on desktop (not necesarily in a Matlab figure); enabled output to clipboard (based on Jiro Doke's imclipboard utility); edge-case fixes; added Java compatibility check
-%    1.3 2012-07-23: Capture current object (uicontrol/axes/figure) if w=h=0 (e.g., by clicking a single point); extra input args sanity checks; fix for docked windows and image axes; include axes labels & ticks by default when capturing axes; use data-units position vector when capturing images; many edge-case fixes
-%    1.2 2011-01-16: another performance boost (thanks to Jan Simon); some compatibility fixes for Matlab 6.5 (untested)
-%    1.1 2009-06-03: Handle missing output format; performance boost (thanks to Urs); fix minor root-handle bug; added toolbar button option
-%    1.0 2009-06-02: First version posted on <a href="http://www.mathworks.com/matlabcentral/fileexchange/authors/27420">MathWorks File Exchange</a>
+%    1.16 2016-04-19: Fix for deployes application suggested by David Bartholomew
+%    1.10 2014-11-25: Added the 'print' target
+%    1.9  2014-11-25: Fix for saving GIF files
+%    1.8  2014-11-16: Fixes for R2014b
+%    1.7  2014-04-28: Fixed bug when capturing interactive selection
+%    1.6  2014-04-22: Only enable image formats when saving to an unspecified file via uiputfile
+%    1.5  2013-04-18: Fixed bug in capture of non-square image; fixes for Win64
+%    1.4  2013-01-27: Fixed capture of Desktop (root); enabled rbbox anywhere on desktop (not necesarily in a Matlab figure); enabled output to clipboard (based on Jiro Doke's imclipboard utility); edge-case fixes; added Java compatibility check
+%    1.3  2012-07-23: Capture current object (uicontrol/axes/figure) if w=h=0 (e.g., by clicking a single point); extra input args sanity checks; fix for docked windows and image axes; include axes labels & ticks by default when capturing axes; use data-units position vector when capturing images; many edge-case fixes
+%    1.2  2011-01-16: another performance boost (thanks to Jan Simon); some compatibility fixes for Matlab 6.5 (untested)
+%    1.1  2009-06-03: Handle missing output format; performance boost (thanks to Urs); fix minor root-handle bug; added toolbar button option
+%    1.0  2009-06-02: First version posted on <a href="http://www.mathworks.com/matlabcentral/fileexchange/authors/27420">MathWorks File Exchange</a>
 
 % License to use and modify this code is granted freely to all interested, as long as the original author is
 % referenced and attributed as such. The original author maintains the right to be solely associated with this work.
 
 % Programmed and Copyright by Yair M. Altman: altmany(at)gmail.com
-% $Revision: 1.7 $  $Date: 2014/04/28 21:10:12 $
+% $Revision: 1.16 $  $Date: 2016/04/19 09:26:24 $
 
     % Ensure that java awt is enabled...
     if ~usejava('awt')
@@ -136,6 +144,15 @@ function imageData = screencapture(varargin)
             else
                 msgbox('No image area selected - not copying image to clipboard','ScreenCapture','warn');
             end
+        elseif strncmpi(paramsStruct.target,'print',5)  % 'print' or 'printer'
+            if ~isempty(imgData)
+                hNewFig = figure('visible','off');
+                imshow(imgData);
+                print(hNewFig);
+                delete(hNewFig);
+            else
+                msgbox('No image area selected - not printing screenshot','ScreenCapture','warn');
+            end
         else  % real filename
             if ~isempty(imgData)
                 imwrite(imgData,paramsStruct.target);
@@ -161,7 +178,13 @@ function imageData = screencapture(varargin)
         end
         [filename,pathname] = uiputfile(format,'Save screen capture as');
         if ~isequal(filename,0) & ~isequal(pathname,0)  %#ok Matlab6 compatibility
-            imwrite(imgData,fullfile(pathname,filename));
+            try
+                filename = fullfile(pathname,filename);
+                imwrite(imgData,filename);
+            catch  % possibly a GIF file that requires indexed colors
+                [imgData,map] = rgb2ind(imgData,256);
+                imwrite(imgData,map,filename);
+            end
         else
             % TODO - copy to clipboard
         end
@@ -174,6 +197,8 @@ function imageData = screencapture(varargin)
     end
 
     return;  % debug breakpoint
+
+%% Process optional arguments
 function paramsStruct = processArgs(varargin)
 
     % Get the properties in either direct or P-V format
@@ -262,6 +287,9 @@ function paramsStruct = processArgs(varargin)
         if ~isempty(paramName),  paramName = [' ''' paramName ''''];  end
         error('YMA:screencapture:invalidProperty','Error setting ScreenCapture property %s:\n%s',paramName,lasterr); %#ok<LERR>
     end
+%end  % processArgs
+
+%% Convert position from handle-relative to desktop Java-based pixels
 function [paramsStruct, msgStr] = convertPos(paramsStruct)
     msgStr = '';
     try
@@ -344,7 +372,7 @@ function [paramsStruct, msgStr] = convertPos(paramsStruct)
         dY = 0;
         dW = 0;
         dH = 0;
-        if ~isgraphics(hParent,'figure')
+        if ~isFigure(hParent)
             % Get the reguested component's pixel position
             parentPos = getPixelPos(hParent, 1);  % no true available in ML6
 
@@ -353,9 +381,7 @@ function [paramsStruct, msgStr] = convertPos(paramsStruct)
             deltaY = -1;
             
             % Fix for images
-            %isAxes  = isa(handle(hParent),'axes');
-            isImage = isgraphics(hParent,'image');
-            if isImage  % | (isAxes & strcmpi(get(hParent,'YDir'),'reverse'))  %#ok ML6
+            if isImage(hParent)  % | (isAxes(hParent) & strcmpi(get(hParent,'YDir'),'reverse'))  %#ok ML6
 
                 % Compensate for resized image axes
                 hAxes = get(hParent,'Parent');
@@ -463,6 +489,9 @@ function [paramsStruct, msgStr] = convertPos(paramsStruct)
             paramsStruct.position = [javaX, javaY, paramsStruct.position(3:4)];
         end
     end
+%end  % convertPos
+
+%% Interactively get the requested capture rectangle
 function [positionRect, jFrameUsed, msgStr] = getInteractivePosition(hFig)
     msgStr = '';
     try
@@ -487,6 +516,7 @@ function [positionRect, jFrameUsed, msgStr] = getInteractivePosition(hFig)
                ... %'or single-click any Matlab figure to capture the entire figure.' ...
                };
     catch
+        % Something failed, so revert to a simple rbbox on a visible figure
         try delete(f); drawnow; catch, end  %Cleanup...
         jFrameUsed = 0;  % no false available in ML6
         msg = {'Mouse-click within any Matlab figure and then', ...
@@ -494,8 +524,13 @@ function [positionRect, jFrameUsed, msgStr] = getInteractivePosition(hFig)
                'or single-click to capture the entire figure'};
     end
     uiwait(msgbox(msg,'ScreenCapture'));
-    pause; 
+    
+    k = waitforbuttonpress;  %#ok k is unused
+    %hFig = getCurrentFig;
+    %p1 = get(hFig,'CurrentPoint');
     positionRect = rbbox;
+    %p2 = get(hFig,'CurrentPoint');
+
     if jFrameUsed
         jFrameOrigin = getPixelPos(f);
         delete(f); drawnow;
@@ -517,11 +552,17 @@ function [positionRect, jFrameUsed, msgStr] = getInteractivePosition(hFig)
     if prod(positionRect(3:4)) > 0
         msgStr = sprintf('%dx%d area captured',positionRect(3),positionRect(4));
     end
+%end  % getInteractivePosition
+
+%% Get current figure (even if its handle is hidden)
 function hFig = getCurrentFig
     oldState = get(0,'showHiddenHandles');
     set(0,'showHiddenHandles','on');
     hFig = get(0,'CurrentFigure');
     set(0,'showHiddenHandles',oldState);
+%end  % getCurrentFig
+
+%% Get ancestor figure - used for old Matlab versions that don't have a built-in ancestor()
 function hObj = ancestor(hObj,type)
     if ~isempty(hObj) & ishandle(hObj)  %#ok for Matlab 6 compatibility
         try
@@ -551,6 +592,9 @@ function hObj = ancestor(hObj,type)
             % never mind...
         end
     end
+%end  % ancestor
+
+%% Get position of an HG object in specified units
 function pos = getPos(hObj,field,units)
     % Matlab 6 did not have hgconvertunits so use the old way...
     oldUnits = get(hObj,'units');
@@ -561,6 +605,9 @@ function pos = getPos(hObj,field,units)
         pos = get(hObj,field);
         set(hObj,'units',oldUnits);
     end
+%end  % getPos
+
+%% Get pixel position of an HG object - for Matlab 6 compatibility
 function pos = getPixelPos(hObj,varargin)
     persistent originalObj
     try
@@ -569,7 +616,7 @@ function pos = getPixelPos(hObj,varargin)
             originalObj = hObj;
         end
 
-        if isgraphics(hObj,'figure') %| isa(handle(hObj),'axes')
+        if isFigure(hObj) %| isAxes(hObj)
         %try
             pos = getPos(hObj,'OuterPosition','pixels');
         else  %catch
@@ -577,7 +624,7 @@ function pos = getPixelPos(hObj,varargin)
             pos = getpixelposition(hObj,varargin{:});
 
             % add the axes labels/ticks if relevant (plus a tiny margin to fix 2px label/title inconsistencies)
-            if isgraphics(hObj,'axes') & ~isgraphics(originalObj,'image')  %#ok ML6
+            if isAxes(hObj) & ~isImage(originalObj)  %#ok ML6
                 tightInsets = getPos(hObj,'TightInset','pixel');
                 pos = pos + tightInsets.*[-1,-1,1,1] + [-1,1,1+tightInsets(1:2)];
             end
@@ -596,6 +643,9 @@ function pos = getPixelPos(hObj,varargin)
     if isempty(pos)
         pos = [0,0,0,0];
     end
+%end  % getPixelPos
+
+%% Adds a ScreenCapture toolbar button
 function addToolbarButton(paramsStruct)
     % Ensure we have a valid toolbar handle
     hFig = ancestor(paramsStruct.toolbar,'figure');
@@ -648,6 +698,9 @@ function addToolbarButton(paramsStruct)
         % Otherwise, simply update the existing button
         set(hButton, 'CData',cdata, 'Tag','ScreenCaptureButton', 'TooltipString',tooltip, 'ClickedCallback',['screencapture(''' paramsStruct.target ''')']);
     end
+%end  % addToolbarButton
+
+%% Java-get the actual screen-capture image data
 function imgData = getScreenCaptureImageData(positionRect)
     if isempty(positionRect) | all(positionRect==0) | positionRect(3)<=0 | positionRect(4)<=0  %#ok ML6
         imgData = [];
@@ -682,6 +735,9 @@ function imgData = getScreenCaptureImageData(positionRect)
             transpose(reshape(pixelsData(2, :, :), w, h)), ...
             transpose(reshape(pixelsData(1, :, :), w, h)));
     end
+%end  % getInteractivePosition
+
+%% Return the figure to its pre-undocked state (when relevant)
 function redockFigureIfRelevant(paramsStruct)
   if paramsStruct.wasDocked
       try
@@ -691,6 +747,10 @@ function redockFigureIfRelevant(paramsStruct)
           % never mind - ignore...
       end
   end
+%end  % redockFigureIfRelevant
+
+%% Copy screen-capture to the system clipboard
+% Adapted from http://www.mathworks.com/matlabcentral/fileexchange/28708-imclipboard/content/imclipboard.m
 function imclipboard(imgData)
     % Import necessary Java classes
     import java.awt.Toolkit.*
@@ -699,7 +759,15 @@ function imclipboard(imgData)
 
     % Add the necessary Java class (ImageSelection) to the Java classpath
     if ~exist('ImageSelection', 'class')
-        javaaddpath(fileparts(which(mfilename)), '-end');
+        % Obtain the directory of the executable (or of the M-file if not deployed) 
+        %javaaddpath(fileparts(which(mfilename)), '-end');
+        if isdeployed % Stand-alone mode. 
+            [status, result] = system('path');  %#ok<ASGLU>
+            MatLabFilePath = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
+        else % MATLAB mode. 
+            MatLabFilePath = fileparts(mfilename('fullpath')); 
+        end 
+        javaaddpath(MatLabFilePath, '-end'); 
     end
         
     % Get System Clipboard object (java.awt.Toolkit)
@@ -728,4 +796,21 @@ function imclipboard(imgData)
     
     % Set clipboard content to the image
     cb.setContents(imSelection, []);
-    
+%end  %imclipboard
+
+%% Is the provided handle a figure?
+function flag = isFigure(hObj)
+    flag = isa(handle(hObj),'figure') | isa(hObj,'matlab.ui.Figure');
+%end  %isFigure
+
+%% Is the provided handle an axes?
+function flag = isAxes(hObj)
+    flag = isa(handle(hObj),'axes') | isa(hObj,'matlab.graphics.axis.Axes');
+%end  %isFigure
+
+%% Is the provided handle an image?
+function flag = isImage(hObj)
+    flag = isa(handle(hObj),'image') | isa(hObj,'matlab.graphics.primitive.Image');
+%end  %isFigure
+%%%%%%%%%%%%%%%%%%%%%%%%%% TODO %%%%%%%%%%%%%%%%%%%%%%%%%
+% find a way in interactive-mode to single-click another Matlab figure for screen-capture

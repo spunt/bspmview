@@ -71,8 +71,8 @@ function varargout = bspmview(ol, ul)
 %       You should have received a copy of the GNU General Public License
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
-global version
-version='20160310'; 
+global bspmview_version
+bspmview_version='20160503';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -129,10 +129,10 @@ if exist(preffile, 'file')
 else
     st.preferences = default_settings; 
 end
+put_startupmsg;
 
 % | INITIALIZE FIGURE, SPM REGISTRY, & ORTHVIEWS
 % | =======================================================================
-printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', version));
 try
     S = put_figure(ol, ul); shg;
     if nargout, varargout = {S}; end
@@ -443,6 +443,23 @@ function S = put_figure(ol, ul)
     check4design;
     cb_minmax;
     if nargout, S.handles = gethandles; end
+function put_startupmsg
+    global st bspmview_version
+    [v,r] = spm('Ver','',1);
+    st.version.bspmview = bspmview_version; 
+    st.version.spm = sprintf('%s_r%s', v, r);
+    st.version.matlab = version;
+    [mv, mstr] = version; 
+    matlabyear = str2double(regexp(mstr, '\d\d\d\d$', 'match'));
+    if matlabyear < 2014
+        fprintf(['\nWARNING: This software has only been tested on MATLAB R2014a and later.' ...
+                '\nYou are using MATLAB v%s. You may encounter errors.\n\n'], st.version.matlab); 
+    end
+    if str2double(r) < 6313
+        fprintf(['\nWARNING: This software has only been tested with SPM8 (r6313) and SPM12.' ...
+                '\nYou are currently using %s (%s). You may encounter errors.\n\n'], v, r); 
+    end
+    printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', bspmview_version));   
 function put_upperpane(varargin)
 
     global st
@@ -878,7 +895,7 @@ function cb_uiinspect(varargin)
     uiinspect(st.fig);
     setstatus('Ready');
 function cb_checkversion(varargin)
-    global version
+    global bspmview_version
     url     = 'https://github.com/spunt/bspmview/blob/master/README.md';
     h       = headsup('Checking GitHub repository. Please be patient.', 'Checking Version', 0);
     try
@@ -890,7 +907,7 @@ function cb_checkversion(varargin)
     end
     [idx1, idx2] = regexp(str, 'Version:  ');
     gitversion = str(idx2+1:idx2+8);
-    if strcmp(version, gitversion)
+    if strcmp(bspmview_version, gitversion)
         delete(h(1)); 
         headsup('You have the latest version.', 'Checking Version', 1);
         return; 
@@ -1358,7 +1375,7 @@ function cb_report(varargin)
         'FontSize', st.fonts.sz4, ...
         'CellSelectionCallback',@cb_tablexyz);
     tfigmenu  = uimenu(tfig,'Label','Options');
-    uimenu(tfigmenu,'Label','Save Report to CSV', 'CallBack', {@cb_savetable, th});
+    uimenu(tfigmenu,'Label','Save Report', 'CallBack', {@cb_savetable, th});
     uimenu(tfig, 'Label', '|  NOTE: "Sign" and "Region Name" columns are editable', 'Enable', 'off', 'Tag', 'status');
     set(th, 'units', 'pix'); 
     tpos    = get(th, 'extent');
@@ -1392,20 +1409,28 @@ function cb_savetable(varargin)
         voxels = get(varargin{3}, 'Data');
     end
     sep         = cell(1, size(voxels,2));
-    h1          = sep; 
-    h1{1}       = ['Source image: ' st.ol.fname]; 
-    h2          = sep; 
-    h2{1}       = sprintf('Table lists all local maxima separated by more than %d mm.', st.preferences.separation);
-    headers0    = [h1; h2; sep]; 
-    headers1    = {'' '' '' '' 'MNI Coordinates' '' ''};
-    headers2    = {'Sign' 'Region Name' 'Extent' 't-value' 'x' 'y' 'z'};
-    allcell     = [headers0; headers1; headers2; voxels];
+    h           = repmat(sep, 3, 1);
+    h(:,1)      = {'Source Image' 'Thresholding' 'Note'}';
+    h{1,2}        = sprintf('%s', st.ol.fname);
+    h{2,2}        = sprintf('t > %2.4f; p < %2.4f; df = %d; minimum extent = %d', T.thresh, T.pval, T.df, T.extent);
+    h{3,2}        = sprintf('Table shows all local maxima separated by more than %d mm. Regions were automatically labeled using the %s atlas. ', st.preferences.separation, st.preferences.atlasname);
+    h{3,2}        = [h{3,2} 'x, y, and z =Montreal Neurological Institute (MNI) coordinates in the left-right, anterior-posterior, and inferior-superior dimensions, respectively.'];
+    headers0    = [h; sep]; 
+    headers1    = {'Contrast Name' '' '' '' 'MNI Coordinates' '' ''};
+    headers2    = {'' 'Region Label' 'Extent' 't-value' 'x' 'y' 'z'};
+    allcell     = [headers0; headers1; headers2; sep; voxels];
     [p, imname] = fileparts(st.ol.fname);
     diname      = {'Positive' 'Negative' 'PosNeg'}; 
-    outname     = ['save_table_' imname '_' diname{di} '_I' num2str(T.thresh) '_C' num2str(T.extent) '_S' num2str(st.preferences.separation) '.csv'];
-    [fname, pname] = uiputfile({'*.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
+    outname     = ['save_table_' imname '_' diname{di} '_I' num2str(T.thresh) '_C' num2str(T.extent) '_S' num2str(st.preferences.separation) '.xlsx'];
+    [fname, pname] = uiputfile({'*.xlsx; *.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
     if ~fname, disp('User cancelled.'); return; end
-    writereport(allcell, fullfile(pname, fname)); 
+    [tmp1,tmp2,ext] = fileparts(fname);
+    if strcmpi(ext, '.csv'), writereport(allcell, fullfile(pname, fname)); return; end;
+    try
+        sts = bspm_xlwrite(fullfile(pname, fname), allcell, [], fullfile(st.supportpath, 'TABLE_TEMPLATE.xlsx')); 
+    catch
+        writereport(allcell, fullfile(pname, fname)); 
+    end    
     
 % | CALLBACKS - SLICE MONTAGE
 % =========================================================================
@@ -7054,7 +7079,7 @@ end
 % * XLWRITE
 % *
 % =========================================================================
-function status = bspm_xlwrite(filename, A, sheet, range)
+function status = bspm_xlwrite(filename, A, sheet, templatefile, range)
 % XLWRITE Write to Microsoft Excel spreadsheet file using Java
 %   XLWRITE(FILE,ARRAY) writes ARRAY to the first worksheet in the Excel
 %   file named FILE, starting at cell A1. It aims to have exactly the same
@@ -7163,7 +7188,13 @@ status = 0;
 
 % If no sheet & xlrange is defined, attribute an empty value to it
 if nargin < 3; sheet = []; end
-if nargin < 4; range = []; end
+if nargin < 4, templatefile = []; end
+if nargin < 5; range = []; end
+
+% Template file
+if all([~isempty(templatefile) ~exist(filename, 'file')])
+    copyfile(templatefile, filename); 
+end
 
 % Check if sheetvariable contains range data
 if nargin < 4 && ~isempty(strfind(sheet,':'))

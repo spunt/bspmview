@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160310
+%   Version:  20160517
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20160503';
+bspmview_version='20160517';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -1314,7 +1314,7 @@ function cb_maxval(varargin)
     val = str2double(get(varargin{1}, 'string'));
     bspm_orthviews('SetBlobsMax', 1, 1, val);
     redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
-    drawnow;
+    setcolormap; 
 function cb_minval(varargin)
     global st
     % | Check for Numeric Input
@@ -1327,7 +1327,7 @@ function cb_minval(varargin)
     val = str2double(get(varargin{1}, 'string'));
     bspm_orthviews('SetBlobsMin', 1, 1, val);
     redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
-    drawnow;
+    setcolormap; 
 function cb_changexyz(varargin)
     xyz = str2num(get(varargin{1}, 'string')); 
     bspm_orthviews('reposition', xyz');
@@ -1905,7 +1905,6 @@ function setstatus(msg)
     drawnow; 
 function setmaxima
     global st
-    
     Dis = st.preferences.separation; 
     Num = st.preferences.numpeaks; 
     T   = getthresh;
@@ -2143,8 +2142,10 @@ function [cmap, cmapname]        = getcolormap
     N = min([st.ol.Nunique, 64]); 
     switch lower(cmapname)
         case {'signed'}
-            zero_loc = (0 - min(st.ol.Z))/(max(st.ol.Z) - min(st.ol.Z));
-            if zero_loc <= .10, zero_loc = .5; end
+            mnmx = getminmax; 
+            zero_loc = (0 - mnmx(1))/(mnmx(2) - mnmx(1));
+%             zero_loc = (0 - min(st.ol.Z))/(max(st.ol.Z) - min(st.ol.Z));
+%             if zero_loc <= .10, zero_loc = .5; end
             if any([zero_loc < 0 zero_loc > 1])
                 val = find(strcmpi(list, 'hot')); 
                 set(findobj(st.fig, 'Tag', 'colormaplist'), 'Value', val); 

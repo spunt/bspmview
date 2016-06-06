@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160517
+%   Version:  20160606
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20160517';
+bspmview_version='20160606';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -155,6 +155,8 @@ function def    = default_settings
             'alphacorrect'  ,   .05         , ...
             'separation'    ,   20          , ...
             'numpeaks'      ,   3           , ...
+            'alphauncorrect',   .001        , ...
+            'clusterextent' ,   5           , ...
             'surfshow'      ,   4           , ...
             'surface'       ,   'Inflated'  , ...
             'shading'       ,   'Sulc'      , ...
@@ -196,6 +198,8 @@ function prefs  = default_preferences(initial)
     atlasopt        = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];          
     [prefs, button] = settingsdlg('title', 'Settings', 'WindowWidth', w, 'ControlWidth', w/2, ...
         'separator'                                 ,       'Thresholding', ...
+        {'Default P-Value (Uncorrected)'; 'alphauncorrect'}       ,       def.alphauncorrect, ...
+        {'Default Extent'; 'clusterextent'}         ,       def.clusterextent, ...
         {'Voxelwise FWE'; 'alphacorrect'}           ,       def.alphacorrect, ...
         {'Peak Separation'; 'separation'}           ,       def.separation, ...
         {'# Peaks/Cluster'; 'numpeaks'}             ,       def.numpeaks, ...
@@ -208,7 +212,7 @@ function prefs  = default_preferences(initial)
         {'N Vertices'; 'nverts'}                    ,       num2cell(nvertopt), ...
         {'Shading Min'; 'shadingmin'}               ,       def.shadingmin, ...
         {'Shading Max'; 'shadingmax'}               ,       def.shadingmax, ...
-        {'Add Color Bar?'; 'colorbar'}               ,       logical(def.colorbar), ...
+        {'Add Color Bar?'; 'colorbar'}              ,       logical(def.colorbar), ...
         {'Dilate Inclusive Mask?'; 'dilate'}        ,       logical(def.dilate), ...
         {'Round Values? (binary images)'; 'round'}  ,       logical(def.round), ...
         {'Nearest Neighbor? (binary/label images)'; 'neighbor'}, logical(def.neighbor)); 
@@ -239,7 +243,7 @@ function pos    = default_positions
         pos.gui(3)  = pos.gui(4)/pos.aspratio; 
     end
     guiss           = [pos.gui(3:4) pos.gui(3:4)]; 
-    panepos         = getpositions(1, [12 1], .01, .01);
+    panepos         = getpositions(1, [17 1], .01, .01);
     pos.pane.upper  = panepos(2,3:end); 
     pos.pane.axes   = panepos(1,3:end).*guiss; 
 function color  = default_colors(darktag)
@@ -264,7 +268,11 @@ function color  = default_colors(darktag)
 function fonts  = default_fonts
 
     % | Font Size
-    PROP = 1/100; 
+    if regexpi(computer, '^PCWIN')
+        PROP = 1/150;
+    else
+        PROP = 1/110; 
+    end
     SS   = get(0, 'screensize');
     sz1  = round(SS(3)*PROP); 
     sz2  = round(sz1*(3/4)); 
@@ -288,7 +296,7 @@ function fonts  = default_fonts
     fonts.sz6  = sz(6);
     
     % | Font Name
-    fonts.name = 'Verdana';   
+    fonts.name = 'Helvetica';   
 function prop   = default_properties(varargin)
     global st
     prop.darkbg     = {'backg', st.color.bg, 'foreg', st.color.fg};
@@ -357,7 +365,72 @@ urls = {
     'NeuroVault'                        'http://neurovault.org'
     'Human Connectome Project'          'http://www.humanconnectome.org/software/'
 };
-urls = cell2struct(urls, {'label' 'url'}, 2); 
+urls = cell2struct(urls, {'label' 'url'}, 2);
+function labs   = default_labels
+    labs  = struct( ...
+            'atlasname'     ,   'AnatomyToolbox'      , ...
+            'alphacorrect'  ,   .05         , ...
+            'separation'    ,   20          , ...
+            'numpeaks'      ,   3           , ...
+            'alphauncorrect',   .001        , ...
+            'clusterextent' ,   5           , ...
+            'surfshow'      ,   4           , ...
+            'surface'       ,   'Inflated'  , ...
+            'shading'       ,   'Sulc'      , ...
+            'nverts'        ,   40962       , ...
+            'round'         ,   false       , ...
+            'neighbor'      ,   0           , ...
+            'dilate'        ,   false       , ...
+            'shadingmin'    ,   .15         , ...
+            'shadingmax'    ,   .70         , ...
+            'colorbar'      ,   true          ...
+        );
+function uicell = default_lowerpane
+    global st
+    prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', st.fonts.sz2);
+    uicell = { ...
+        1, 4, 1, 'Current Location'     , 'uititle'     , prop.text ;   ...
+        2, 4, 1, ''                    , 'Location'    , [prop.edit {'Enable', 'Inactive'}] ;   ...
+        3, 1, 1, ''                    , 'rowspacer'   , []        ;   ...
+        4, 4, 3, 'Value'               , 'uilabel'     , prop.text ;   ...
+        4, 4, 5, 'Coordinate'          , 'uilabel'     , prop.text ;   ...
+        4, 4, 3, 'ClusterSize'         , 'uilabel'     , prop.text ;   ...
+        5, 4, 3, ''                    , 'voxval'      , [prop.edit {'Enable', 'Inactive'}] ;   ...
+        5, 4, 5, ''                    , 'xyz'         , [prop.edit {'Callback', @cb_changexyz}] ;   ...
+        5, 4, 3, ''                    , 'clustersize' , [prop.edit {'Enable', 'Inactive'}] ;   ...
+        6, 2, 1, ''                    , 'rowspacer'   , []        ;   ...
+        7, 4, 1, 'Threshold' , 'uititle'     , prop.text ;  ...
+        8, 4, 3, 'Extent'              , 'uilabel'     , prop.text ;   ...
+        8, 4, 4, 'Thresh'              , 'uilabel'     , prop.text ;   ...
+        8, 4, 6, 'P-Value'             , 'uilabel'     , prop.text ;   ...
+        9, 4, 3, ''                    , 'Extent'      , [prop.edit {'Callback', @cb_updateoverlay}] ;   ...
+        9, 4, 4, ''                    , 'Thresh'      , [prop.edit {'Callback', @cb_updateoverlay}] ;   ...
+        9, 4, 6, ''                    , 'P-Value'     , [prop.edit {'Callback', @cb_updateoverlay}] ;   ...
+       10, 1, 1, ''                    , 'rowspacer'   , []        ;   ...
+       11, 4, 2, 'DF'                  , 'uilabel'     , prop.text ;   ...
+       11, 4, 5, 'Type'          , 'uilabel'     , prop.text ;   ...
+       12, 4, 2, ''                    , 'DF'          , [prop.edit {'Callback', @cb_updateoverlay}] ;   ...
+       12, 4, 5, {'User-specified' 'Voxel FWE' 'Cluster FWE'}                    , 'Correction'  , [prop.popup {'Value', 1, 'Callback', @cb_correct}]     ...
+    };
+function uicell = default_upperpane
+
+    global st
+    prop = default_properties('units', 'norm', 'fontn', 'arial');
+        
+    uicell = { ...    
+    1, 1, 1, ''                    , 'rowspacer'   , []        ;   ...
+    2, 5, 4, 'Direction'          , 'uititle'     , prop.text ;   ...
+    2, 5, 2, '+'                    , 'direct'  , [prop.radio {'fontunits', 'points', 'pos', [0 0 1 1], 'Callback', @cb_directmenu}] ;  ...
+    2, 5, 2, '-'                    , 'direct'  , [prop.radio {'fontunits', 'points', 'pos', [0 0 1 1], 'Callback', @cb_directmenu}] ;  ...
+    2, 5, 3, '+/-'                    , 'direct'  , [prop.radio {'fontunits', 'points', 'pos', [0 0 1 1], 'Callback', @cb_directmenu}] ;  ...
+    2, 5, .5, ''                    , 'rowspacer'   , []        ;   ...
+    2, 5, 4, 'Colormap'           , 'uititle'     , [prop.text {'fontsize', st.fonts.sz3}] ;   ...
+    2, 5, 4, st.cmap(:,2)         , 'colormaplist'  , [prop.popup {'Value', 1, 'pos', [0 0 1 .95], 'Callback', @setcolormap, 'fonts', st.fonts.sz3}] ;  ...
+    2, 5, 2, ''                     , 'minval'  , [prop.edit {'pos', [0 .10 1 .80], 'Callback', @cb_minval, 'fonts', st.fonts.sz3}] ;  ...
+    2, 5, 2, ''                     , 'maxval'  , [prop.edit {'pos', [0 .10 1 .80], 'Callback', @cb_maxval, 'fonts', st.fonts.sz3}] ;  ...
+    3, 1, 1, ''                    , 'rowspacer'   , []        ;   ...
+
+    };
     
 % | GUI COMPONENTS
 % =========================================================================
@@ -422,8 +495,8 @@ function S = put_figure(ol, ul)
     set(S.hReg, 'units', 'norm');
     [st.fig, st.figax, st.direct] = deal(S.hFig, S.hReg, '+/-');
     bspm_orthviews('Reset');
-    st.cmap     = default_colormaps(64);
-    load_overlay(ol, .001, 5);
+    st.cmap     = default_colormaps(64); 
+    load_overlay(ol, st.preferences.alphauncorrect, st.preferences.clusterextent);
     bspm_XYZreg('InitReg',S.hReg,st.ol.M,st.ol.DIM,[0;0;0]); % initialize registry object
     st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
     bspm_orthviews('Register', S.hReg);
@@ -449,6 +522,7 @@ function put_startupmsg
     st.version.bspmview = bspmview_version; 
     st.version.spm = sprintf('%s_r%s', v, r);
     st.version.matlab = version;
+    st.version.computer = computer; 
     [mv, mstr] = version; 
     matlabyear = str2double(regexp(mstr, '\d\d\d\d$', 'match'));
     if matlabyear < 2014
@@ -464,15 +538,46 @@ function put_upperpane(varargin)
 
     global st
     cnamepos     = [.01 .15 .98 .85]; 
-    prop         = default_properties('units', 'norm', 'fontu', 'norm', 'fonts', .55); 
-    panelh       = uipanel('parent',st.fig, prop.panel{:}, 'pos', st.pos.pane.upper, 'tag', 'upperpanel'); 
-    panelabel    = {{'Effect Direction' '+' '-' '+/-' 'Colormap' 'Max' 'Min'}, {'Text' 'Radio' 'Radio' 'Radio' 'Popup' 'Edit' 'Edit'}}; 
-    relwidth     = [3 1 1 2 3 1.5 1.5]; 
-    tag          = {'label' 'direct' 'direct' 'direct' 'colormaplist' 'maxval' 'minval'};  
-    ph = buipanel(panelh, panelabel{1}, panelabel{2}, relwidth, 'paneltitle', '', 'panelposition', cnamepos, 'tag', tag, 'uicontrolsep', .01, 'marginsep', .025, 'panelfontsize', st.fonts.sz4, 'labelfontsize', st.fonts.sz4, 'editfontsize', st.fonts.sz5); 
+    prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', st.fonts.sz3);
+    panelh       = uipanel('parent',st.fig, prop.panel{:}, 'pos', st.pos.pane.upper, 'tag', 'upperpanel');
+    uicell = default_upperpane; 
+    griddim         = cell2mat(uicell(:,1:3));
+    lowpanedim      = unique(griddim(:,1:2), 'rows'); 
+    nrow            = size(lowpanedim, 1); 
     
-    % | Check valid directions for contrast display
+    [phandle, pidx] = pgrid(nrow, 1, ...
+        'parent', panelh, ...
+        'relheight', lowpanedim(:,2), ...
+        'panelsep', 0, ...
+        'marginsep', .01, ...
+        'backg', st.color.bg, ...
+        'foreg', st.color.fg);
+    uihandles       = []; 
+    for r = 1:nrow
+        spec = uicell(griddim(:,1)==r, 3:end);
+        ncol = size(spec, 1); 
+        if ncol > 1
+            chandle = pgrid(1, ncol, ...
+                'parent', phandle(r), ...
+                'relwidth', cell2mat(spec(:,1)), ...
+                'panelsep', .01, ...
+                'marginsep', 0, ...
+                'backg', st.color.bg, ...
+                'foreg', st.color.fg); 
+        else
+            chandle = phandle(r); 
+        end
+        uihandles = [uihandles; chandle]; 
+    end  
+    spaceridx = cellfun('isempty', uicell(:,end));
+    uihandles(spaceridx) = []; 
+    uicell(spaceridx,:) = []; 
+    for i = 1:length(uihandles), ph(i) = uicontrol(uihandles(i), 'string', uicell{i, 4}, uicell{i, 6}{:}, 'pos', [0 0 1 1], 'tag', uicell{i, 5}); drawnow; end
+    set(findall(panelh, 'tag', 'uititle'), 'fontsize', st.fonts.sz2, 'fontweight', 'bold');  
+    
+     % | Check valid directions for contrast display
     allh    = findobj(st.fig, 'Tag', 'direct');
+    set(allh, 'FontSize', st.fonts.sz2*1.25); 
     allhstr = get(allh, 'String');
     if any(st.ol.null)
         opt = {'+' '-'}; 
@@ -482,15 +587,6 @@ function put_upperpane(varargin)
     else
         set(allh(strcmpi(allhstr, '+/-')), 'value', 1, 'enable', 'inactive'); 
     end
- 
-    % | Set some values
-    fs = get(ph.edit(2), 'fontsize'); 
-    arrayset(ph.edit(2:4), 'fontsize', fs*1.25);
-    arrayset(ph.edit(2:4), 'Callback', @cb_directmenu);
-    set(ph.edit(1), 'FontSize', st.fonts.sz3); 
-    set(ph.edit(6), 'callback', @cb_maxval);
-    set(ph.edit(7), 'callback', @cb_minval); 
-    set(ph.edit(5), 'String', st.cmap(:,2), 'Value', 1, 'callback', @setcolormap);
     set(panelh, 'units', 'norm');
     drawnow;
 function put_lowerpane(varargin)
@@ -508,51 +604,44 @@ function put_lowerpane(varargin)
     lowpos = subaxpos(1,:);
     lowpos(1) = subaxpos(3, 1) + .01; 
     lowpos(3) = 1 - lowpos(1);
-    prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', 19);
+    prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', st.fonts.sz2);
     panelh = uipanel('parent', st.figax, prop.panel{:}, 'pos',lowpos, 'tag', 'lowerpanel');
-   
-    % | Create each subpanel 
-    panepos         = getpositions(1, [1 4 4 1 1 4 4], .025, .025);
-    panepos(:,1:2)  = [];
-    panepos([1 5],:)    = []; 
-    panename        = {'' '' '' '' ''};
-    panelabel{1}    = {{'DF' 'Correction'}, {'Edit' 'Popup'}};  
-    panelabel{2}    = {{'Extent' 'Thresh' 'P-Value'}, {'Edit' 'Edit' 'Edit'}}; 
-    panelabel{3}    = {{'Thresholding Options'}, {'Text'}}; 
-    panelabel{4}    = {{'Value' 'Coordinate' 'Cluster Size'}, {'Edit' 'Edit' 'Edit'}};
-    panelabel{5}    = {{'Current Location'}, {'Edit'}}; 
-    relwidth        = {[4 8] [3 4 5] [1] [3 5 3] [1]};
-    relheight       = {[6 6] [6 6] [6 6] [6 6] [6 6]}; 
-    tag             = {panelabel{1}{1}, panelabel{2}{1}, panelabel{3}{1}, {'voxval' 'xyz' 'clustersize'}, {'Location'}};     
-    for i = 1:length(panename)
-        ph{i} = buipanel(panelh, panelabel{i}{1}, panelabel{i}{2}, relwidth{i}, 'paneltitle', panename{i}, 'panelposition', panepos(i,:), 'tag', tag{i}, 'relheight', relheight{i}); 
-    end
-
-    % | Set some values
-    set(ph{1}.edit(2), 'String', {'None' 'Voxel FWE' 'Cluster FWE'}, 'Value', 1, 'Callback', @cb_correct);  
-    hndl = [ph{2}.edit; ph{1}.edit(1)]; 
-    arrayset(hndl, 'Callback', @cb_updateoverlay); 
-    Tdefvalues  = {st.ol.K st.ol.U st.ol.P st.ol.DF};
-    if length(st.ol.DF)==2, dfstrform = '%d,%d'; else dfstrform = '%d'; end
-    Tstrform = {'%d' '%2.2f' '%2.3f' dfstrform}; 
-    for i = 1:length(Tdefvalues), set(hndl(i), 'str', sprintf(Tstrform{i}, Tdefvalues{i})); end
-    arrayset(ph{4}.edit([1 3]), 'enable', 'inactive');
-    set(ph{3}.edit, 'FontSize', st.fonts.sz2); 
-    set(ph{4}.edit(2), 'callback', @cb_changexyz); 
-    set(ph{5}.label, 'FontSize', st.fonts.sz2); 
-    set(ph{5}.edit, 'enable', 'inactive', 'str', 'n/a'); 
+    uicell = default_lowerpane;
+    griddim         = cell2mat(uicell(:,1:3));
+    lowpanedim      = unique(griddim(:,1:2), 'rows'); 
+    nrow            = size(lowpanedim, 1); 
+    [phandle, pidx] = pgrid(nrow, 1, ...
+        'parent', panelh, ...
+        'relheight', lowpanedim(:,2), ...
+        'panelsep', .01, ...
+        'marginsep', .025, ...
+        'backg', st.color.bg, ...
+        'foreg', st.color.fg);
+    uihandles       = []; 
+    for r = 1:nrow
+        spec = uicell(griddim(:,1)==r, 3:end);
+        ncol = size(spec, 1); 
+        if ncol > 1
+            chandle = pgrid(1, ncol, ...
+                'parent', phandle(r), ...
+                'relwidth', cell2mat(spec(:,1)), ...
+                'panelsep', .025, ...
+                'marginsep', 0, ...
+                'backg', st.color.bg, ...
+                'foreg', st.color.fg); 
+        else
+            chandle = phandle(r); 
+        end
+        uihandles = [uihandles; chandle]; 
+    end 
+    spaceridx = cellfun('isempty', uicell(:,end)); 
+    uihandles(spaceridx) = []; 
+    uicell(spaceridx,:) = []; 
+    for i = 1:length(uihandles), ph(i) = uicontrol(uihandles(i), 'string', uicell{i, 4}, uicell{i, 6}{:}, 'pos', [0 0 1 1], 'tag', uicell{i, 5}); drawnow; end
+    set(findall(panelh, 'tag', 'uititle'), 'fontsize', st.fonts.sz1, 'fontweight', 'bold');  
+    set(findall(panelh, 'Enable', 'Inactive'), 'backg', st.color.fg*.80);
     set(panelh, 'units', 'norm');
-    
-    % | Fix Sizes
-    set(ph{3}.edit, 'units', 'pixel');
-    eext = get(ph{3}.edit, 'extent');
-    if eext(2) < 0
-        ppos = get(ph{3}.edit, 'position');
-        ppos(2) = ppos(2) + abs(eext(2)) + 1; 
-        set(ph{3}.edit, 'position', ppos);
-    end
-    
-    drawnow;
+    setthreshinfo;
 function put_figmenu
     global st
     
@@ -676,6 +765,39 @@ function put_axesxyz
         end
     end
     drawnow;
+function put_upperpaneinfo(parent)
+    global st
+    
+
+    data = struct2cell(st.ol.finfo);
+    data = data(2:3);  
+    
+    th = uitable('Parent', parent, ...
+        'Data', data, ...
+        'Units', 'norm', ...
+        'ColumnName', [], ...
+        'RowName', [], ...
+        'Pos', [0 0 1 1], ...
+        'RearrangeableColumns', 'on', ...
+        'ColumnWidth', 'auto', ...
+        'FontName', 'Fixed-Width', ...
+        'FontUnits', 'Points', ...
+        'FontSize', st.fonts.sz4);
+    
+    % | Column Width
+    set(th, 'units', 'pix');
+    set(parent, 'units', 'pix');
+    textent = get(th, 'extent');
+    tpos    = get(th, 'Pos'); 
+    fpos    = get(parent, 'pos'); 
+    ht      = diff([tpos([2 4])]); 
+    hw      = diff([fpos([1 3])])*.975;
+    tpos(2) = [tpos(4) - textent(4)]; 
+    tpos(4) = textent(4); 
+    set(th, 'ColumnWidth', {hw}, 'Position', tpos); 
+    set(parent, 'units', 'pix'); 
+    set(th, 'units', 'norm');
+    drawnow;
 
 % | CALLBACKS - THRESHOLDING
 % =========================================================================
@@ -686,37 +808,46 @@ function cb_updateoverlay(varargin)
 %         setthreshinfo; 
 %         return
 %     end
+    htype       = findobj(st.fig, 'tag', 'Correction');
+    htypestr    = get(htype, 'string');
+    userstr     = 'User-specified'; 
     T0  = getthresh;
     T   = T0;
     di  = strcmpi({'+' '-' '+/-'}, T.direct);
     if nargin > 0
         tag = get(varargin{1}, 'tag');
-        hcorrect = findobj(st.fig, 'tag', 'Correction');
         switch tag
             case {'Thresh'}
                 if T.df~=Inf, T.pval = bob_t2p(T.thresh, T.df); end
-                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
                     T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                else
+                    set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
+                
             case {'P-Value'}
                 if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
-                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
                     T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                else
+                    set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
             case {'DF'}
                 if ~any([T.pval T.df]==Inf)
                     T.thresh = spm_invTcdf(1-T.pval, T.df); 
                     T.pval = bob_t2p(T.thresh, T.df);
                 end
-                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
+                if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
                     T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                else
+                    set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
             case {'Extent'}
-                if find(strcmpi(get(hcorrect, 'string'), 'Cluster FWE'))==get(hcorrect, 'value')
-                    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
+                if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
+                    set(htype, 'value', find(strcmpi(htypestr, userstr))); 
                 end
                 if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
-                    headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');
+                    headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');      
                     T.extent = max(st.ol.C0(di,:));
                 end
         end
@@ -724,9 +855,10 @@ function cb_updateoverlay(varargin)
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
     C = st.ol.C0(di,:); 
     if sum(C(C>=T.extent))==0
-        T0.thresh = st.ol.U; 
-        setthreshinfo(T0);
-        headsup('No suprathreshold voxels. Try a different threshold.'); 
+        setthreshinfo;
+%         T0.thresh = st.ol.U; 
+%         setthreshinfo(T0);
+        headsup('No suprathreshold voxels. Reverting to previous threshold.'); 
         return
     end
     setthresh(C, find(di)); 
@@ -742,7 +874,8 @@ function cb_correct(varargin)
     T = T0; 
     di = strcmpi({'+' '-' '+/-'}, T.direct); 
     switch methodstr
-        case {'None'}
+        case {'User-specified'}
+            cb_resetol; 
             setstatus('Ready'); 
             return;
         case {'Voxel FWE'}
@@ -756,7 +889,7 @@ function cb_correct(varargin)
     if sum(C(C>=T.extent))==0
         T0.thresh = st.ol.U; 
         setthreshinfo(T0);
-        headsup('No suprathreshold voxels. Reverting to uncorrected threshold.');
+        headsup('No suprathreshold voxels. Reverting to previous threshold.');
         set(varargin{1}, 'value', 1);
         setstatus('Ready'); 
         return
@@ -790,6 +923,7 @@ function cb_directmenu(varargin)
     if ~ydi(di)
         lab = {'positive' 'negative'};
         if find(di)==3 && any(ydi)
+            
             headsup(sprintf('No %s suprathreshold voxels. Showing unthresholded image.', lab{ydi(1:2)==0}));
         else
             headsup('No suprathreshold voxels. Showing unthresholded image.');
@@ -1024,24 +1158,27 @@ function cb_loadol(varargin)
     fname = uigetvol('Select an Image File for Overlay', 0);
     if isempty(fname), disp('An overlay image was not selected.'); return; end
     hcorrect = findobj(st.fig, 'tag', 'Correction');
-    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'None'))); 
+    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'User-specified'))); 
     T       = getthresh;
     if isinf(T.pval)
         load_overlay(fname);
     else
         load_overlay(fname, T.pval, T.extent);
     end
+    
     di = strcmpi({'+' '-' '+/-'}, T.direct); 
-    setthresh(st.ol.C0(3,:), find(di));
+    setthresh(st.ol.C0(find(di),:), find(di));
     setthreshinfo;
     check4design; 
     drawnow;
 function cb_resetol(varargin)
     global st
-    st.ol.Y = spm_read_vols(st.ol.hdr); 
-    st.ol.Y(isnan(st.ol.Y)) = 0;
-    check4sign(st.ol.Y); 
-    cb_updateoverlay
+    set(findobj(st.fig, 'Tag', 'Correction'), 'Value', 1); 
+    load_overlay(st.ol.fname, st.preferences.alphauncorrect, st.preferences.clusterextent);
+    di = strcmpi({'+' '-' '+/-'}, st.direct); 
+    setthresh(st.ol.C0(find(di),:), find(di));
+    setthreshinfo;
+    drawnow; 
 function cb_loadul(varargin)
     
     ul = uigetvol('Select an Image File for Underlay', 0);
@@ -1424,12 +1561,14 @@ function cb_savetable(varargin)
     outname     = ['save_table_' imname '_' diname{di} '_I' num2str(T.thresh) '_C' num2str(T.extent) '_S' num2str(st.preferences.separation) '.xlsx'];
     [fname, pname] = uiputfile({'*.xlsx; *.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
     if ~fname, disp('User cancelled.'); return; end
-    [tmp1,tmp2,ext] = fileparts(fname);
+    
+    [tmp,fnameonly,ext] = fileparts(fname);
     if strcmpi(ext, '.csv'), writereport(allcell, fullfile(pname, fname)); return; end;
     try
         sts = bspm_xlwrite(fullfile(pname, fname), allcell, [], fullfile(st.supportpath, 'TABLE_TEMPLATE.xlsx')); 
     catch
-        writereport(allcell, fullfile(pname, fname)); 
+
+        writereport(allcell, fullfile(pname, strcat(fnameonly, '.csv'))); 
     end    
     
 % | CALLBACKS - SLICE MONTAGE
@@ -1443,7 +1582,7 @@ function cb_montage(varargin)
     viewoptin   = strcat('|', viewopt);
     pref = menuN('Montage Settings', ...
                 {strcat('p', viewoptin{:}),'Select View'; ...
-              'x|hide colorbar|*hide labels','Display Options'; ...
+              'x|hide colorbar|hide labels','Display Options'; ...
               't|t-stat', 'Colorbar Title'; ...
               't|auto', 'N Slices Per Row'}); 
     if strcmpi(pref, 'cancel'), return; end
@@ -1519,6 +1658,9 @@ function cb_montage(varargin)
 
     % | Menu Bar
     S.menu          = uimenu('Parent', o.figure, 'Label', 'File');
+    S.guisize       = uimenu(S.menu, 'Label','GUI Size'); 
+    S.gui(1)        = uimenu(S.guisize, 'Label', 'Increase GUI Size', 'Accelerator', 'i', 'Callback', {@cb_changesliceguisize, 1.1});
+    S.gui(2)        = uimenu(S.guisize, 'Label', 'Decrease GUI Size', 'Accelerator', 'd', 'Separator', 'on', 'Callback',{@cb_changesliceguisize, 0.9});
     S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_savemontage, o.figure});
     S.settings      = uimenu(S.menu, 'Label', 'Create New', 'Callback', @cb_montage); 
     if ~strcmpi(o.labels, 'none')
@@ -1532,51 +1674,85 @@ function cb_montage(varargin)
         S.skin          = uimenu(S.labelfont, 'Label', 'Increase',  'Accelerator', '=', 'Callback', {@cb_montagelabelsize, o.figure});
         S.skin          = uimenu(S.labelfont, 'Label', 'Decrease',  'Accelerator', '-','Callback', {@cb_montagelabelsize, o.figure});
     end
-    S.msg          = uimenu(o.figure, 'Label', '|  USAGE TIP: Right-Click to Delete Slices', 'Enable', 'off', 'Tag', 'status');
+    S.msg          = uimenu(o.figure, 'Label', '|  Right-Click to Delete Slices', 'Enable', 'off', 'Tag', 'status');
 
+    
+    
     % | Context Menu
     obj = paint(o);
     set(obj.figure, 'visible', 'off');
     set(findall(obj.figure, 'type', 'axes'), 'units', 'pixels');
-    cmh = uicontextmenu;
-    uimenu(cmh, 'Label', 'Delete Slice', 'callback', @cb_montagepaneldelete, 'separator', 'off');
     [hpan, hpos] = getpos_grid(findall(obj.figure, 'tag', 'slice overlay panel'));
-    emptyidx = find(cellfun('isempty', get(hpan, 'children'))); 
+    emptyidx = find(cellfun('isempty', get(hpan, 'children')));
     delete(hpan(emptyidx)); 
     hpan(emptyidx) = []; 
     hpos(emptyidx,:) = [];
-    hstr = findall(obj.figure,  'type', 'text');
-    set(hstr, 'tag', 'slicelabel');
-    hpos(:,2) = hpos(:,2) - min(hpos(:,2));
-    for i = 1:length(hpan)
-       set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh); 
-       set(get(hpan(i), 'children'), 'uicontextmenu', cmh);
+    nrow = length(unique(hpos(:,2))); 
+    if size(hpos, 1) > 1
+        cmh = uicontextmenu;
+        uimenu(cmh, 'Label', 'Delete Slice', 'callback', @cb_montagepaneldelete, 'separator', 'off');
+
+        hstr = findall(obj.figure,  'type', 'text');
+        set(hstr, 'tag', 'slicelabel');
+        hpos(:,2) = hpos(:,2) - min(hpos(:,2));
+
+        for i = 1:length(hpan)
+           set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh); 
+           set(get(hpan(i), 'children'), 'uicontextmenu', cmh);
+        end
     end
     if cbar
         
-        hc = findobj(obj.figure, 'tag', 'cbar'); 
-%         cm = unique(obj.img(2).cmap, 'rows', 'stable'); 
-%         rg = obj.img(2).range;
-%         ytl = get(hc, 'yticklabel');
-        set(hc, 'units', 'pix', 'fontunits', 'points'); 
-        hcm = uicontextmenu; 
+        hc = findobj(obj.figure, 'tag', 'cbar');
+        
+    
+        % Context Menu
+        set(hc, 'units', 'pix', 'fontunits', 'points');
+        hcm = uicontextmenu;
         uimenu(hcm, 'Label', 'Edit', 'callback', {@cb_editcbar, hc});
         set(hc, 'uicontextmenu', hcm);
         set(get(hc, 'children'), 'uicontextmenu', hcm);
+        
+        % Position
         cpos = get(hc, 'position');
-        cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 10; 
+        cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 20; 
         gridheight = max(sum(hpos(:,[2 4]), 2));
         cpos(4) = max([cpos(4) gridheight*.33]);
-        cpos(2) = gridheight - cpos(4); 
+        cpos(2) = gridheight - cpos(4);
+        cpos(3) = cpos(3)*.75; 
         set(hc, 'pos', cpos); 
         set(hc, 'units', 'norm');
-        set(hc, 'yaxislocation', 'right');
+        set(hc, 'yaxislocation', 'right', ...
+            'ytick', get(hc, 'ylim'), ...
+            'Box','off', ...
+            'YDir','normal', ...
+            'fontweight', 'normal', ...
+            'XTickLabel',[], ...
+            'XTick',[]);
         tick = get(hc, 'ytick'); 
         if any(tick(2:end-1)==0), tick = [tick(1) 0 tick(end)]; else tick = tick([1 end]); end
         set(hc, 'ytick', tick); 
         if ~isempty(cbartitle), ht = title(cbartitle, 'units', 'norm', 'fontunits', get(hc, 'fontunits'), 'parent', hc, 'tag', 'cbartitle', 'color', [1 1 1], 'fontsize', 1.1*get(hc,'fontsize')); end
+        tightfig;
+    else
+        tightfig; 
     end
-    tightfig;
+    if length(hpan) > 1
+        ext = sortrows(cell2mat(get(hpan, 'pos')), -2);
+        pht = sum([ext(1,[2 4])]);  
+    else
+        ext = get(hpan, 'pos');
+        pht = ext(4);
+    end
+    set(obj.figure, 'units', 'pixel');
+    fpos = get(obj.figure, 'pos');
+    fpos(4) = ceil(pht); 
+    set(obj.figure, 'pos', fpos); 
+    if and(nrow==1, cbar)
+       cpos = get(hc, 'pos');
+       cpos([2 4]) = [.05 .85];
+       set(hc, 'pos', cpos); 
+    end
     set(obj.figure, 'units', 'norm', 'visible', 'on');
     arrayset(findall(obj.figure, '-property', 'units'), 'units', 'norm');
     arrayset(findall(obj.figure, '-property', 'fontunits'), 'fontunits', 'norm');
@@ -1598,8 +1774,13 @@ function cb_montagelabelposition(varargin)
     set(findall(varargin{3}, 'Tag', 'positionmenu'), 'Checked', 'off'); 
     hstr = findall(varargin{3},  'tag', 'slicelabel'); 
     set(hstr, 'units', 'norm');
-    ext = cell2mat(get(hstr, 'extent'));
-    ext = max(ext(:,3:4)); 
+    if length(hstr) > 1
+        ext = cell2mat(get(hstr, 'extent'));
+        ext = max(ext(:,3:4)); 
+    else
+        ext = get(hstr, 'extent');
+        ext = ext(3:4); 
+    end
     height = 1 - ext(2); 
     width = 1 - ext(1); 
     chosen = get(varargin{1}, 'Label'); 
@@ -1642,6 +1823,13 @@ function cb_montagepaneldelete(varargin)
     end
     tightfig;
     drawnow; 
+function cb_changesliceguisize(varargin)    
+    [obj, f] = gcbo; 
+    guipos = get(f, 'pos');
+    guipos(3:4) = guipos(3:4)*varargin{3}; 
+    set(f, 'pos', guipos);
+    pause(.25);
+    drawnow;
     
 % | CALLBACKS - PLOT
 % =========================================================================
@@ -2026,9 +2214,10 @@ function setthreshinfo(T)
     st.ol.DF    = T.df;
     Tval        = [T.extent T.thresh T.pval T.df]; 
     Tstr        = {'Extent' 'Thresh' 'P-Value' 'DF'};
-    Tstrform    = {'%d' '%2.2f' '%2.3f' '%d'}; 
+    Tstrform    = {'%d' '%2.2f' '%2.3f' '%d'};
     for i = 1:length(Tstr)
         set(findobj(st.fig, 'Tag', Tstr{i}), 'String', num2str(Tval(i))); 
+        drawnow; 
     end
 function setthresh(C, di)
     global st
@@ -2481,6 +2670,14 @@ function load_overlay(fname, pval, k)
         end
     end
 
+    % | - IMAGE INFO
+    [fpath, fn1, fn2]   = fileparts(fname);
+    [dpath, fd]         = fileparts(fpath); 
+    finfo.name          = fullfile(fd, strcat(fn1, fn2)); 
+    finfo.descrip       = oh.descrip;
+    finfo.dimminmax     = sprintf('DIM: %d %d %d; MIN: %2.3f; MAX: %2.3f', size(od), min(od(:)), max(od(:))); 
+    
+    
     % | - CHECK IMAGE
     posneg  = check4sign(od);  
     df      = check4df(oh);
@@ -2515,6 +2712,7 @@ function load_overlay(fname, pval, k)
     st.ol       = struct( ...
                 'fname',    fname,...
                 'fname_abbr', abridgepath(fname),...
+                'finfo', finfo, ...
                 'descrip',  oh.descrip, ...
                 'hdr',      oh, ...
                 'DF',       df, ...
@@ -2529,7 +2727,8 @@ function load_overlay(fname, pval, k)
                 'C0',       C, ...
                 'C0IDX',    I, ...
                 'XYZmm0',   XYZmm,...
-                'XYZ0',     XYZ);    
+                'XYZ0',     XYZ);
+            
     setatlas;
     set(st.fig, 'Name', abridgepath(st.ol.fname)); 
 function u  = voxel_correct(im,alpha)
@@ -3401,6 +3600,31 @@ function out        = adjustbrightness(in)
     out = double(in)./255; 
     out(out>0) = out(out>0) + (lim-nanmean(nanmean(out(out>0))))*(1 - out(out>0)); 
     out(out>0) = scaledata(out(out>0), [dat.min dat.max]);
+function figpos = align_figure(uiW, uiH, valign, halign)
+screenPos   = get(0, 'ScreenSize');
+screenW     = screenPos(3);
+screenH     = screenPos(4);
+figpos      = [0 0 uiW uiH];
+switch lower(valign)
+    case 'middle'
+      figpos(2) = (screenH/2)-(uiH/2);
+    case {'top', 'upper'}
+      figpos(2) = screenH-uiH; 
+    case {'bottom', 'lower'}
+      figpos(2) = 1; 
+    otherwise
+      error('VALIGN options are: middle, top, upper, bottom, lower')
+end
+switch lower(halign)
+    case 'center'
+      figpos(1) = (screenW/2) - (uiW/2);
+    case 'right'
+      figpos(1) = screenW - uiW; 
+    case 'left'
+      figpos(1) = 1; 
+    otherwise
+      error('HALIGN options are: center, left, right')
+end
 function fn         = construct_filename
     global st
     [p,n]   = fileparts(st.ol.hdr.fname);
@@ -3606,6 +3830,10 @@ function writereport(incell, outname)
 % __________________________________________________________________________
 if nargin < 2, disp('USAGE: outname = writereport(incell, outname)'); return; end
 
+
+[p,n,e] = fileparts(outname); 
+outname = fullfile(p, strcat(n, '.csv')); 
+
 % | Convert all cell contents to character arrays
 % | ========================================================================
 [nrow, ncol] = size(incell);
@@ -3617,7 +3845,7 @@ incell = regexprep(incell, ',', '');
 
 % | Write to file
 % | ========================================================================
-fid = fopen(outname,'w');
+fid = fopen(outname,'w+');
 for r = 1:nrow
     fprintf(fid,['%s' repmat(',%s',1,ncol-1) '\n'],incell{r,:});
 end
@@ -3628,7 +3856,7 @@ function mfile_showhelp(varargin)
 % ------------------------------------------------------------------------
 ST = dbstack('-completenames');
 if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
-eval(sprintf('help %s', ST(2).file));  
+eval(sprintf('help %s', ST(2).file));    
 function error_handler(err, write)
 if nargin<2, write = 0; end
 info1 = cellstr(sprintf('UNDEFINED ERROR => %s', err.message));
@@ -3644,16 +3872,23 @@ if write
 end   
 function save_error(err)
     global st
-    errdata     = getReport(err);
-    errlogname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorMsg.txt'); 
-    errmatname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorDat.mat'); 
-    errfigname  = fullfile(fileparts(mfilename('fullpath')), 'ErrorFig.fig');
-    hgsave(errfigname); 
-    eid         = fopen(errlogname, 'w');
-    fwrite(eid, errdata);
-    fclose(eid);
-    save(errmatname, 'st');
-    fprintf('\nERROR INFORMATION WRITTEN TO:\n\t%s\n\t%s\n\t%s\n\n', errlogname, errmatname, errfigname);
+    answer = yesorno('An unknown error has occured. Would you like to save some files with information about the error?', 'Fatal Error');
+    if strcmpi(answer, 'yes')
+        outdir      = uigetdir('', 'Select an output folder'); 
+        if ~outdir, return; end
+        errdata     = getReport(err);
+        errlogname  = fullfile(outdir, 'ErrorMsg.txt'); 
+        errmatname  = fullfile(outdir, 'ErrorDat.mat'); 
+        errfigname  = fullfile(outdir, 'ErrorFig.fig');
+        hgsave(errfigname); 
+        eid         = fopen(errlogname, 'w');
+        fwrite(eid, errdata);
+        fclose(eid);
+        save(errmatname, 'st');
+        fprintf('\nERROR INFORMATION WRITTEN TO:\n\t%s\n\t%s\n\t%s\n\n', errlogname, errmatname, errfigname);
+    else
+       return 
+    end
 function arrayset(harray, propname, propvalue) 
 % ARRAYGET Set property values for array of handles
 %
@@ -5746,9 +5981,7 @@ end
 function addcolourbar(vh,bh)
     global st
     axpos = zeros(3, 4);
-    for a = 1:3
-        axpos(a,:) = get(st.vols{vh}.ax{a}.ax, 'position');
-    end
+    for a = 1:3, axpos(a,:) = get(st.vols{vh}.ax{a}.ax, 'position'); end
     cbpos = axpos(3,:); 
     cbpos(4) = cbpos(4)*.9; 
     cbpos(2) = cbpos(2) + (axpos(3,4)-cbpos(4))/2; 
@@ -5764,7 +5997,7 @@ function addcolourbar(vh,bh)
     end
     ylab = cellnum2str(num2cell(yltick), 2); 
     st.vols{vh}.blobs{bh}.cbar = axes('Parent', st.figax, 'ycolor', st.color.fg, ...
-        'position', cbpos, 'YAxisLocation', 'right', 'fontsize', 12, ...
+        'position', cbpos, 'YAxisLocation', 'right', 'fontsize', st.fonts.sz3, ...
         'ytick', yltick, 'tag', 'colorbar', ...
         'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]); 
     set(st.vols{vh}.blobs{bh}.cbar, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
@@ -7166,6 +7399,17 @@ function status = bspm_xlwrite(filename, A, sheet, templatefile, range)
 %
 %   Copyright 2012-2013, Alec de Zegher
 %==============================================================================
+
+% If no sheet & xlrange is defined, attribute an empty value to it
+if nargin < 3; sheet = []; end
+if nargin < 4, templatefile = []; end
+if nargin < 5; range = []; end
+if regexpi(computer, '^PCWIN')
+    if all([~isempty(templatefile) ~exist(filename, 'file')]), copyfile(templatefile, filename); end
+    xlswrite(filename, A); 
+    status = 1;
+    return; 
+end
 
 if exist('org.apache.poi.ss.usermodel.WorkbookFactory', 'class')~=8 ...
     || exist('org.apache.poi.hssf.usermodel.HSSFWorkbook', 'class')~=8 ...

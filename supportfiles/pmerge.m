@@ -1,4 +1,4 @@
-function mhpanel = pmerge(hpanel, grididx)
+function [mhpanel, mhpidx] = pmerge(hpanel, grididx)
 % PMERGE Utility for merging cells in a uipanel array created by PGRID
 %
 %  USAGE: mhpanel = pmerge(hpanel, grididx)
@@ -10,7 +10,8 @@ function mhpanel = pmerge(hpanel, grididx)
 
 if nargin < 2, disp('USAGE: mhpanel = pmerge(hgrid, grididx)'); mhpanel = []; return; end
 p       = hpanel(grididx);
-pidx    = cell2mat(get(p, 'UserData'));
+pidx    = get(p, 'UserData');
+pidx    = cell2mat(vertcat(pidx{:})); 
 
 % | GET DIMENSIONS 
 ppos    = cell2mat(get(p, 'pos'));
@@ -50,7 +51,7 @@ else
 end
 
 mtag    = sprintf('[%s] x [%s]', rowtag, coltag);
-userd   = {eval(rowtag) eval(coltag)};
+userd   = {repmat(eval(rowtag)', ncol, 1) repmat(eval(coltag)', nrow, 1)};
 mhgrid  = p(1);
 delete(p(2:end));
 mpos    = [min(ppos(:,1:2)) w h];
@@ -58,5 +59,12 @@ set(mhgrid, 'position', mpos, 'tag', mtag, 'userdata', userd);
 drawnow; 
 mhpanel = hpanel;
 mhpanel(grididx(2:end)) = [];
+
+if nargout==2
+    mhpidx = get(mhpanel, 'UserData');
+    mhpidx = [num2cell(1:length(mhpidx))' vertcat(mhpidx{:})];
+    mhpidx(:,1) = cellfun(@repmat, mhpidx(:,1), num2cell(cellfun('length', mhpidx(:,2))), repmat({1}, length(mhpidx), 1), 'Unif', false); 
+    mhpidx = cell2mat(mhpidx);
+end
 
 end

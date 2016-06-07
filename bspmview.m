@@ -123,6 +123,8 @@ global prevsect st
 prevsect       = ul;
 st.guipath     = mfilepath;
 st.supportpath = supportdir;
+st.fonts       = default_fonts; 
+st.pos         = default_positions;
 preffile       = fullfile(supportdir, 'defpref.mat');
 if exist(preffile, 'file')
     st.preferences = load(preffile); 
@@ -444,8 +446,6 @@ function S = put_figure(ol, ul)
     global st
     
     % | Setup new fig
-    st.fonts   = default_fonts; 
-    st.pos     = default_positions;
     if isfield(st.preferences, 'fontname'), st.fonts.name   = st.preferences.fontname; end
     if isfield(st.preferences, 'color')
         st.color   = st.preferences.color; 

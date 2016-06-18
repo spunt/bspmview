@@ -882,7 +882,8 @@ function cb_correct(varargin)
             T.thresh    = voxel_correct(st.ol.fname, st.preferences.alphacorrect);
             T.pval      = bob_t2p(T.thresh, T.df);
         case {'Cluster FWE'}
-            T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect, max(st.ol.C));
+%             T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect, max(st.ol.C));
+            T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect);
     end
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
     C = st.ol.C0(di,:); 
@@ -2325,6 +2326,7 @@ function h                       = gethandles(varargin)
     h.lowerpanel = findobj(st.fig, 'tag', 'lowerpanel'); 
 function [cmap, cmapname]        = getcolormap
     global st
+    
     val         = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
     list        = get(findobj(st.fig, 'Tag', 'colormaplist'), 'String');
     cmapname    = list{val};
@@ -2335,7 +2337,7 @@ function [cmap, cmapname]        = getcolormap
             zero_loc = (0 - mnmx(1))/(mnmx(2) - mnmx(1));
 %             zero_loc = (0 - min(st.ol.Z))/(max(st.ol.Z) - min(st.ol.Z));
 %             if zero_loc <= .10, zero_loc = .5; end
-            if any([zero_loc < 0 zero_loc > 1])
+            if any([zero_loc <= 0 zero_loc >= 1])
                 val = find(strcmpi(list, 'hot')); 
                 set(findobj(st.fig, 'Tag', 'colormaplist'), 'Value', val); 
                 cmap = st.cmap{val, 1};
@@ -2820,14 +2822,14 @@ function k  = cluster_correct(im,u,alpha,maxk)
 %
 %_________________________________________________________________________
 % $Id: CorrClusTh.m,v 1.12 2008/06/10 19:03:13 nichols Exp $ Thomas Nichols, Marko Wilke
-if nargin < 4
-    disp('USAGE: [k info] = cluster_correct(im,u,alpha,range)'); 
-    return; 
-end
 if nargin < 2, u = .001; end
 if nargin < 3, alpha = .05; end
+if nargin < 4, maxk = 1000; end
 if iscell(im), im = char(im); end
-range = 2:maxk; 
+range = 1:maxk;
+% range = 1:1000; 
+% range = NaN;
+
 
 %% Get Design Variable %%
 [impath, imname] = fileparts(im);
@@ -2993,33 +2995,33 @@ else
     Status = 'OutOfRange';
   end
 end
-if ~nargout
-    switch (Status)
-     case {'JustPvalue'}
-      fprintf(['  For a cluster-defining threshold of %0.4f a cluster size threshold of\n'...
-           '  %d has corrected P-value %g\n\n'],...
-          u,k,Pc);
-     case {'OK'}
-      fprintf(['  For a cluster-defining threshold of %0.4f the level %0.3f corrected\n'...
-           '  cluster size threshold is %d and has size (corrected P-value) %g\n\n'],...
-          u,alpha,k,Pc);
-     case 'TooRough'
-      fprintf(['\n  WARNING: Single voxel cluster is significant!\n\n',...
-               '  For a cluster-defining threshold of %0.4f a k=1 voxel cluster\n'...
-           '  size threshold has size (corrected P-value) %g\n\n'],...
-          u,Pc); 
-     case 'TooManyIter'
-      fprintf(['\n  WARNING: Automated search failed to converge\n' ...
-           '  Try systematic search.\n\n']); 
-     case 'OutOfRange'  
-      fprintf(['\n  WARNING: Within the range of cluster sizes searched (%g...%g)\n',...
-             '  a corrected P-value <= alpha was not found (smallest P: %g)\n\n'],...
-          range(1),range(end),Pc); 
-      fprintf([  '  Try increasing the range or an automatic search.\n\n']); 
-     otherwise
-      error('Unknown status code');
-    end
-end
+% if ~nargout
+%     switch (Status)
+%      case {'JustPvalue'}
+%       fprintf(['  For a cluster-defining threshold of %0.4f a cluster size threshold of\n'...
+%            '  %d has corrected P-value %g\n\n'],...
+%           u,k,Pc);
+%      case {'OK'}
+%       fprintf(['  For a cluster-defining threshold of %0.4f the level %0.3f corrected\n'...
+%            '  cluster size threshold is %d and has size (corrected P-value) %g\n\n'],...
+%           u,alpha,k,Pc);
+%      case 'TooRough'
+%       fprintf(['\n  WARNING: Single voxel cluster is significant!\n\n',...
+%                '  For a cluster-defining threshold of %0.4f a k=1 voxel cluster\n'...
+%            '  size threshold has size (corrected P-value) %g\n\n'],...
+%           u,Pc); 
+%      case 'TooManyIter'
+%       fprintf(['\n  WARNING: Automated search failed to converge\n' ...
+%            '  Try systematic search.\n\n']); 
+%      case 'OutOfRange'  
+%       fprintf(['\n  WARNING: Within the range of cluster sizes searched (%g...%g)\n',...
+%              '  a corrected P-value <= alpha was not found (smallest P: %g)\n\n'],...
+%           range(1),range(end),Pc); 
+%       fprintf([  '  Try increasing the range or an automatic search.\n\n']); 
+%      otherwise
+%       error('Unknown status code');
+%     end
+% end
 extent = k;
 info.image = im;
 info.extent = k;

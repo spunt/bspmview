@@ -3,11 +3,7 @@
 
 Online documentation can be found here: http://spunt.github.io/bspmview/.
 
-Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/)
-be in your MATLAB search path. It has only been tested on SPM8/SPM12 operating in MATLAB 2014b. It requires a number of
-supporting utility functions and data files that should have been included in the distribution of BSPMVIEW. When
-BSPMVIEW is launched, it will look for these files in a folder called "supportfiles" that should be contained in the
-same folder as BSPMVIEW.
+Requires that Statistical Parametric Mapping (SPM; Wellcome Trust Centre for Neuroimaging; www.fil.ion.ucl.ac.uk/spm/) be in your MATLAB search path. It has only been tested on SPM8/SPM12 operating in MATLAB 2014b. It requires a number of supporting utility functions and data files that should have been included in the distribution of BSPMVIEW. When BSPMVIEW is launched, it will look for these files in a folder called "supportfiles" that should be contained in the same folder as BSPMVIEW. You can use the following DOI to cite use of this software: [![DOI](https://zenodo.org/badge/21612/spunt/bspmview.svg)](https://zenodo.org/badge/latestdoi/21612/spunt/bspmview)
 
 #### OPTIONAL INPUTS
 **ol**: filename for statistical image to overlay

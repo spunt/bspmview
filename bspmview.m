@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160606
+%   Version:  20160729
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20160606';
+bspmview_version='20160729';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -1232,8 +1232,8 @@ w   = pos(3)*.65;
     'title'                             ,   'Smoothing Options',    ...
     'Description'                       ,   'To undo smoothing you apply, select "Reload Current Overlay Image" from the "Load" menu.', ...
     'WindowWidth'                       ,   w*(3/4),                      ...
-    'ControlWidth'                      ,   w*(1/3),                    ...
-    {'Select Method'; 'method'}         ,   {'Gaussian (uses gauss3filter.m)' 'Robust (uses smoothn.m)'}, ...
+    'ControlWidth'                      ,   w*(1/2),                    ...
+    {'Select Method'; 'method'}         ,   {'Gaussian (spm_smooth.m)' 'Robust (smoothn.m)'}, ...
     {'Rescale result to have same MIN/MAX'; 'dorescale'}, false, ...
     {'Restrict to suprathreshold voxels?'; 'supraonly'}, false ...
     ); 
@@ -1250,15 +1250,18 @@ end
 minmaxy = [nanmin(y(:)) nanmax(y(:))];
 y(isnan(y)) = 0; 
 switch prefs.method
-    case {'Gaussian (uses gauss3filter.m)'}
+    case {'Gaussian (spm_smooth.m)'}
         [OPTIONS, button] = settingsdlg(...
             'title'                             ,   'Smoothing Options',            ...
             'WindowWidth'                       ,   w*(2/3),                        ...
             'ControlWidth'                      ,   w*(1/3),                        ...
             {'Kernel (FWHM in mm)'; 'fwhm'}     ,   5);  
         if strcmpi(button, 'cancel'), return; end
-        y = gauss3filter(y, OPTIONS.fwhm, st.ol.VOX');
-    case {'Robust (uses smoothn.m)'}
+        kmm     = repmat(OPTIONS.fwhm, 1, 3);
+        kvox    = kmm./st.ol.VOX';
+        spm_smooth(y, y, kvox); 
+%         y = gauss3filter(y, OPTIONS.fwhm, st.ol.VOX');
+    case {'Robust (smoothn.m)'}
          [OPTIONS, button] = settingsdlg(...
             'title'                     ,   'Robust Options', ...
             'WindowWidth'               ,   w,    ...
@@ -2888,9 +2891,15 @@ else % SPM
     VOX  = sqrt(diag(M(1:3,1:3)'*M(1:3,1:3)))';
     FWHM = SPM.xVol.FWHM;
     FWHMmm= FWHM.*VOX; 				% FWHM {mm}
+    
     v2r  = 1/prod(FWHM(~isinf(FWHM))); %-voxels to resels
     
 end
+
+% | SPM METHOD (spm12)
+% global st
+% [uc,Pc,k]  = spm_uc_clusterFDR(0.05, df, STAT, R, n, st.ol.Z, st.ol.XYZ, v2r, st.ol.U); 
+
 if ~nargout
     sf_ShowVolInfo(R,SS,VOX,FWHM,FWHMmm)
 end
@@ -2995,39 +3004,7 @@ else
     Status = 'OutOfRange';
   end
 end
-% if ~nargout
-%     switch (Status)
-%      case {'JustPvalue'}
-%       fprintf(['  For a cluster-defining threshold of %0.4f a cluster size threshold of\n'...
-%            '  %d has corrected P-value %g\n\n'],...
-%           u,k,Pc);
-%      case {'OK'}
-%       fprintf(['  For a cluster-defining threshold of %0.4f the level %0.3f corrected\n'...
-%            '  cluster size threshold is %d and has size (corrected P-value) %g\n\n'],...
-%           u,alpha,k,Pc);
-%      case 'TooRough'
-%       fprintf(['\n  WARNING: Single voxel cluster is significant!\n\n',...
-%                '  For a cluster-defining threshold of %0.4f a k=1 voxel cluster\n'...
-%            '  size threshold has size (corrected P-value) %g\n\n'],...
-%           u,Pc); 
-%      case 'TooManyIter'
-%       fprintf(['\n  WARNING: Automated search failed to converge\n' ...
-%            '  Try systematic search.\n\n']); 
-%      case 'OutOfRange'  
-%       fprintf(['\n  WARNING: Within the range of cluster sizes searched (%g...%g)\n',...
-%              '  a corrected P-value <= alpha was not found (smallest P: %g)\n\n'],...
-%           range(1),range(end),Pc); 
-%       fprintf([  '  Try increasing the range or an automatic search.\n\n']); 
-%      otherwise
-%       error('Unknown status code');
-%     end
-% end
-extent = k;
-info.image = im;
-info.extent = k;
-info.alpha = alpha;
-info.u = u;
-info.Pc = Pc;
+
 function [out, outmat] = reslice_image(in, ref, int)
     % Most of the code is adapted from rest_Reslice in REST toolbox:
     % Written by YAN Chao-Gan 090302 for DPARSF. Referenced from spm_reslice.
@@ -4080,10 +4057,15 @@ if nargin < 3, wait4resp = 1; end
 if iscell(msg), msg = char(msg); end
 if iscell(titlestr), titlestr = char(titlestr); end
 global st
+ppos    = get(st.fig, 'pos');  
+cwh     = [ppos(3)/2 ppos(4)/4];
+clb     = [ppos(1) + (ppos(3)/2)-(cwh(1)/2) ppos(2) + (ppos(4)/2)-(cwh(2)/2)]
+cpos    = [clb cwh];
+% cpos    = [.425 .45 .15 .10]; 
 h(1) = figure(...
-    'Units', 'norm', ...
+    'Units', 'pix', ...
+    'Position',cpos,...
     'WindowStyle', 'modal', ...
-    'Position',[.425 .45 .15 .10],...
     'Resize','off',...
     'Color', [0.8941    0.1020    0.1098]*.60, ...
     'NumberTitle','off',...

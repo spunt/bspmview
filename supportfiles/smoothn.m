@@ -221,12 +221,12 @@ function [z,s,exitflag] = smoothn(varargin)
 %
 %   See also SMOOTH1Q, DCTN, IDCTN.
 %
-%   -- Damien Garcia -- 2009/03, revised 2014/10
+%   -- Damien Garcia -- 2009/03, last update 2016/07
 %   website: <a
 %   href="matlab:web('http://www.biomecardio.com')">www.BiomeCardio.com</a>
 
 %% Check input arguments
-error(nargchk(1,5,nargin));
+narginchk(1,5);
 OPTIONS = struct;
 NArgIn = nargin;
 if isstruct(varargin{end}) % SMOOTHN(...,OPTIONS)
@@ -505,11 +505,11 @@ if isauto
     if abs(log10(s)-log10(sMinBnd))<errp
         warning('MATLAB:smoothn:SLowerBound',...
             ['S = ' num2str(s,'%.3e') ': the lower bound for S ',...
-            'has been reached. Put S as an input variable if required.'])
+            'has been reached. Specify S as an input variable.'])
     elseif abs(log10(s)-log10(sMaxBnd))<errp
         warning('MATLAB:smoothn:SUpperBound',...
             ['S = ' num2str(s,'%.3e') ': the upper bound for S ',...
-            'has been reached. Put S as an input variable if required.'])
+            'has been reached. Specify S as an input variable.'])
     end
 end
 if nargout<3 && ~exitflag

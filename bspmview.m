@@ -125,7 +125,7 @@ st.guipath     = mfilepath;
 st.supportpath = supportdir;
 st.fonts       = default_fonts; 
 st.pos         = default_positions;
-preffile       = fullfile(supportdir, 'defpref.mat');
+preffile       = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
 if exist(preffile, 'file')
     st.preferences = load(preffile); 
 else
@@ -174,7 +174,7 @@ function prefs  = default_preferences(initial)
 
     if nargin < 1, initial = 0; end
     global st
-    deffile         = fullfile(st.supportpath, 'defpref.mat');
+    deffile         = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
     st.preferences  = catstruct(default_settings, st.preferences);
     def             = st.preferences; 
     if initial, save(deffile, '-struct', 'def'); return; end
@@ -950,7 +950,7 @@ function cb_setasdefault(varargin)
     else
         st.preferences.color = default_colors(1); 
     end
-    deffile = fullfile(st.supportpath, 'defpref.mat');
+    deffile = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
     st.preferences.dark = get(findobj(st.fig, 'label', 'Dark'), 'checked'); 
     st.preferences.light = get(findobj(st.fig, 'label', 'Light'), 'checked'); 
     def     = st.preferences; 

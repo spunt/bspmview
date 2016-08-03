@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160729
+%   Version:  20160803
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20160729';
+bspmview_version='20160803';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -644,10 +644,11 @@ function put_lowerpane(varargin)
     setthreshinfo;
 function put_figmenu
     global st
-    
+    global bspmview_version
     %% Main Menu
     S.menu1         = uimenu('Parent', st.fig, 'Label', 'bspmVIEW');
-    S.checkversion  = uimenu(S.menu1, 'Label', 'Check Version', 'Callback', @cb_checkversion);
+    S.version       = uimenu(S.menu1, 'Label', sprintf('v.%s', bspmview_version) , 'Enable', 'off');
+    S.checkversion  = uimenu(S.menu1, 'Label', 'Check for Updates', 'Callback', @cb_checkversion);  
     S.appear        = uimenu(S.menu1, 'Label','Appearance', 'Separator', 'on'); 
     S.skin          = uimenu(S.appear, 'Label', 'Skin');
 %     if isfield(st.preferences, 'light')
@@ -2447,7 +2448,7 @@ function blob                    = getcurrentblob
     blob.label          = char(getregionnames(blob.xyz));
     blob.thresh         = getthresh;
     di                  = strcmpi({'+' '-' '+/-'}, blob.thresh.direct);
-    blob.clidx          = st.ol.C0(di,:)==st.ol.C0(di, blob.xyzidx);
+    blob.clidx          = st.ol.C0IDX(di,:)==st.ol.C0IDX(di, blob.xyzidx);
     blob.clxyz          = st.ol.XYZmm0(:,blob.clidx); 
     blob.extent         = sum(blob.clidx);
     blob.values         = st.ol.Y(find(blob.clidx));
@@ -4059,7 +4060,7 @@ if iscell(titlestr), titlestr = char(titlestr); end
 global st
 ppos    = get(st.fig, 'pos');  
 cwh     = [ppos(3)/2 ppos(4)/4];
-clb     = [ppos(1) + (ppos(3)/2)-(cwh(1)/2) ppos(2) + (ppos(4)/2)-(cwh(2)/2)]
+clb     = [ppos(1) + (ppos(3)/2)-(cwh(1)/2) ppos(2) + (ppos(4)/2)-(cwh(2)/2)];
 cpos    = [clb cwh];
 % cpos    = [.425 .45 .15 .10]; 
 h(1) = figure(...
@@ -6463,7 +6464,10 @@ if ~isempty(get(hReg,'Tag')), error('Object already ''Tag''ed...'), end
 %-Check co-ordinates are in range
 %-----------------------------------------------------------------------
 [xyz,d] = bspm_XYZreg('RoundCoords',xyz,M,D);
-if d>0 & nargout<2, warning(sprintf('%s: Co-ords rounded to neatest voxel center: Discrepancy %.2f',mfilename,d)), end
+if d>0 & nargout<2
+    printmsg(sprintf('Co-ordinates rounded to nearest voxel center: Discrepancy %.2f', d), 'NOTE'); 
+    % warning(sprintf('%s: Co-ords rounded to nearest voxel center: Discrepancy %.2f',mfilename,d)); 
+end
 
 %-Set up registry
 %-----------------------------------------------------------------------

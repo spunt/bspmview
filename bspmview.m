@@ -412,7 +412,7 @@ function uicell = default_lowerpane
        11, 4, 2, 'DF'                  , 'uilabel'     , prop.text ;   ...
        11, 4, 5, 'Type'          , 'uilabel'     , prop.text ;   ...
        12, 4, 2, ''                    , 'DF'          , [prop.edit {'Callback', @cb_updateoverlay}] ;   ...
-       12, 4, 5, {'User-specified' 'Voxel FWE' 'Cluster FWE'}                    , 'Correction'  , [prop.popup {'Value', 1, 'Callback', @cb_correct}]     ...
+       12, 4, 5, {'User-specified' 'Voxel FWE' 'Cluster FWE' 'Cluster FDR'}                    , 'Correction'  , [prop.popup {'Value', 1, 'Callback', @cb_correct}]     ...
     };
 function uicell = default_upperpane
 
@@ -508,7 +508,8 @@ function S = put_figure(ol, ul)
     put_lowerpane;
     put_axesxyz; 
     put_axesmenu;
-    setthresh(st.ol.C0(3,:), find(strcmpi({'+', '-', '+/-'}, st.direct))); 
+    setthresh(st.ol.C0(3,:), find(strcmpi({'+', '-', '+/-'}, st.direct)));
+    if find(strcmpi({'+', '-', '+/-'}, st.direct))==3, disablefdr; end
     setmaxima;
     setcolormap;
     setfontunits('points'); 
@@ -809,6 +810,7 @@ function cb_updateoverlay(varargin)
 %         setthreshinfo; 
 %         return
 %     end
+
     htype       = findobj(st.fig, 'tag', 'Correction');
     htypestr    = get(htype, 'string');
     userstr     = 'User-specified'; 
@@ -821,7 +823,9 @@ function cb_updateoverlay(varargin)
             case {'Thresh'}
                 if T.df~=Inf, T.pval = bob_t2p(T.thresh, T.df); end
                 if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
-                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);;
+                elseif find(strcmpi(htypestr, 'Cluster FDR'))==get(htype, 'value')
+                    [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);;
                 else
                     set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
@@ -829,7 +833,9 @@ function cb_updateoverlay(varargin)
             case {'P-Value'}
                 if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
                 if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
-                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);;
+                elseif find(strcmpi(htypestr, 'Cluster FDR'))==get(htype, 'value')
+                    [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);;
                 else
                     set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
@@ -839,13 +845,17 @@ function cb_updateoverlay(varargin)
                     T.pval = bob_t2p(T.thresh, T.df);
                 end
                 if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
-                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect, max(st.ol.C));
+                    T.extent = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);;
+                elseif find(strcmpi(htypestr, 'Cluster FDR'))==get(htype, 'value')
+                    [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);;
                 else
                     set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
             case {'Extent'}
                 if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
-                    set(htype, 'value', find(strcmpi(htypestr, userstr))); 
+                    set(htype, 'value', find(strcmpi(htypestr, userstr)));
+                elseif find(strcmpi(htypestr, 'Cluster FDR'))==get(htype, 'value')
+                    set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
                 if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
                     headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');      
@@ -853,12 +863,11 @@ function cb_updateoverlay(varargin)
                 end
         end
     end
+    
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
     C = st.ol.C0(di,:); 
     if sum(C(C>=T.extent))==0
         setthreshinfo;
-%         T0.thresh = st.ol.U; 
-%         setthreshinfo(T0);
         headsup('No suprathreshold voxels. Reverting to previous threshold.'); 
         return
     end
@@ -873,7 +882,7 @@ function cb_correct(varargin)
     methodstr = str{get(varargin{1}, 'value')};
     T0 = getthresh;
     T = T0; 
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
+    di = strcmpi({'+' '-' '+/-'}, T.direct);
     switch methodstr
         case {'User-specified'}
             cb_resetol; 
@@ -883,9 +892,11 @@ function cb_correct(varargin)
             T.thresh    = voxel_correct(st.ol.fname, st.preferences.alphacorrect);
             T.pval      = bob_t2p(T.thresh, T.df);
         case {'Cluster FWE'}
-%             T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect, max(st.ol.C));
             T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect);
+        case {'Cluster FDR'}
+            [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);            
     end
+      
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
     C = st.ol.C0(di,:); 
     if sum(C(C>=T.extent))==0
@@ -906,10 +917,12 @@ function cb_directmenu(varargin)
     % | See If Colormap Update is in Order
     if ismember(str, {'+' '-'}) & strcmp(st.direct, '+/-')
         htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
-        set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'hot'))); 
+        set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'hot')));
+        enablefdr;
     elseif strcmp(str, '+/-')
         htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
-        set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'signed'))); 
+        set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'signed')));
+        disablefdr;
     end
     allh = findobj(st.fig, 'Tag', 'direct'); 
     allhstr = get(allh, 'String');
@@ -934,10 +947,15 @@ function cb_directmenu(varargin)
         T.pval = bob_t2p(T.thresh, T.df);
         T.extent = 1; 
         [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-        C = st.ol.C0(di,:);
-        setthreshinfo(T);
+        C = st.ol.C0(di,:);   
     end
-    setthreshinfo(T); 
+    opt = default_lowerpane;
+    opt = opt{strcmp(opt(:,5), 'Correction'), 4}; 
+    cmethod = opt{get(findobj(st.fig, 'Tag', 'Correction'), 'Value')}; 
+    if all([ismember(str, {'+' '-'}), ismember(st.direct, {'+' '-'}), strcmpi(cmethod, opt{4})])
+        [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);
+    end
+    setthreshinfo(T);
     setthresh(C, find(di));
     
 % | CALLBACKS - BSPMVIEW MENU
@@ -2224,6 +2242,20 @@ function setthreshinfo(T)
         set(findobj(st.fig, 'Tag', Tstr{i}), 'String', num2str(Tval(i))); 
         drawnow; 
     end
+function enablefdr
+    global st
+    opt = default_lowerpane;
+    opt = opt{strcmp(opt(:,5), 'Correction'), 4}; 
+    h = findobj(st.fig, 'Tag', 'Correction');
+    set(h, 'String', opt);
+function disablefdr
+    global st
+    opt = default_lowerpane; 
+    opt = opt{strcmp(opt(:,5), 'Correction'), 4}; 
+    h = findobj(st.fig, 'Tag', 'Correction');
+    v = get(h, 'Value');
+    if v==4, set(h, 'Value', 1); end
+    set(h, 'String', opt(1:3));
 function setthresh(C, di)
     global st
     if nargin==1, di = 3; end
@@ -2334,6 +2366,12 @@ function [cmap, cmapname]        = getcolormap
     val         = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
     list        = get(findobj(st.fig, 'Tag', 'colormaplist'), 'String');
     cmapname    = list{val};
+    if regexp(cmapname, '\w+\s\(\d+\)')
+        cmapname = 'brewermap'; 
+        mapstr = strtrim(regexprep(list{val}, '\s\(\d+\)', ''));
+    end
+    
+    
     N = min([st.ol.Nunique, 64]); 
     switch lower(cmapname)
         case {'signed'}
@@ -2348,6 +2386,8 @@ function [cmap, cmapname]        = getcolormap
             else
                 cmap = colormap_signed(64, zero_loc);
             end
+        case {'brewermap'}
+            cmap    = cmap_upsample(brewermap(N, mapstr), 64);
         case {'cubehelix'}
             cmap    = cmap_upsample(cubehelix(N), 64); 
         case {'linspecer'}
@@ -2763,6 +2803,7 @@ if strfind(matfile,'SPM.mat'), flexflag = 0; else flexflag = 1; end
 %% Load and Compute Params %%
 if flexflag % GLMFLEX
     load(matfile);
+    
     try
         mask.hdr = spm_vol([I.OutputDir filesep 'mask.nii']);
     catch
@@ -2800,7 +2841,7 @@ else % SPM
 end
 %% get threshold
 u = spm_uc(alpha,df,STAT,R,n,S); 
-function k  = cluster_correct(im,u,alpha,maxk)
+function [fwek, fdrk] = cluster_correct(im,u,alpha)
 % CLUSTER_CORRECT Computer extent for cluster-level correction
 %
 % USAGE: [k info] = cluster_correct(im,u,alpha,range)
@@ -2828,184 +2869,52 @@ function k  = cluster_correct(im,u,alpha,maxk)
 % $Id: CorrClusTh.m,v 1.12 2008/06/10 19:03:13 nichols Exp $ Thomas Nichols, Marko Wilke
 if nargin < 2, u = .001; end
 if nargin < 3, alpha = .05; end
-if nargin < 4, maxk = 1000; end
 if iscell(im), im = char(im); end
-range = 1:maxk;
-% range = 1:1000; 
-% range = NaN;
-
+global st
 
 %% Get Design Variable %%
-[impath, imname] = fileparts(im);
-if exist([impath filesep 'I.mat'],'file') 
-    matfile = [impath filesep 'I.mat']; 
-    maskfile = [impath filesep 'mask.nii'];
-elseif exist([impath filesep 'SPM.mat'],'file') 
-    matfile = [impath filesep 'SPM.mat'];
+if exist([fileparts(im) filesep 'I.mat'],'file') 
+    matfile = [fileparts(im) filesep 'I.mat'];
+    flexflag = 1;
+elseif exist([fileparts(im) filesep 'SPM.mat'],'file') 
+    matfile = [fileparts(im) filesep 'SPM.mat'];
+    flexflag = 0;
 else
     disp('Could not find an SPM.mat or I.mat variable, exiting.'); extent = []; info = []; return
 end
 
-%% Defaults %%
-epsP = 1e-6;   % Corrected P-value convergence criterion (fraction of alpha)
-du   = 1e-6;   % Step-size for Newton-Rhapson
-maxi = 100;    % Maximum interations for refined search
-STAT = 'T';    % Test statistic
-
-%% Determime SPM or GLMFLEX %%
-if strfind(matfile,'SPM.mat'), flexflag = 0; else flexflag = 1; end
-
 %% Load and Compute Params %%
 if flexflag % GLMFLEX
+    
     II = load(matfile);
     try
-        mask.hdr = spm_vol([II.I.OutputDir filesep 'mask.nii']);
+        maskhdr = spm_vol(fullfile(fileparts(im), 'mask.nii'));
     catch
-        [p mf] = fileparts(im);
-        mask.hdr = spm_vol([p filesep 'mask.nii']);
+        maskhdr = spm_vol(fullfile(fileparts(im), 'mask.nii.gz'));
     end
-    mask.data = spm_read_vols(mask.hdr);
-    img.hdr = spm_vol(im);
-    img.data = spm_read_vols(img.hdr);
-    tmp = img.hdr.descrip; i1 = find(tmp=='['); i2 = find(tmp==']');
-    df = str2num(tmp(i1(1)+1:i2(1)-1));
-    df = [1 df];    
-    n = 1;
-    FWHM = II.I.FWHM{1};
-    R = spm_resels_vol(mask.hdr,FWHM)';
-    SS = sum(mask.data(:)==1);
-    M = II.I.v.mat;
-    VOX  = sqrt(diag(M(1:3,1:3)'*M(1:3,1:3)))';
-    FWHMmm= FWHM.*VOX; % FWHM {mm}
-    v2r  = 1/prod(FWHM(~isinf(FWHM)));% voxels to resels
+       
+    FWHM    = II.I.FWHM{1};
+    R       = spm_resels_vol(maskhdr,FWHM)';
+    VOX2RES = 1/prod(FWHM(~isinf(FWHM)));% voxels to resels
 
 else % SPM
     
-    SPM = load(matfile);
-    SPM = SPM.SPM;
-    df   = [1 SPM.xX.erdf];
-    STAT = 'T';
-    n    = 1;
+    load(matfile);
     R    = SPM.xVol.R;
-    SS    = SPM.xVol.S;
-    M    = SPM.xVol.M;
-    VOX  = sqrt(diag(M(1:3,1:3)'*M(1:3,1:3)))';
-    FWHM = SPM.xVol.FWHM;
-    FWHMmm= FWHM.*VOX; 				% FWHM {mm}
-    
-    v2r  = 1/prod(FWHM(~isinf(FWHM))); %-voxels to resels
+    VOX2RES  = 1/prod(SPM.xVol.FWHM(~isinf(SPM.xVol.FWHM))); %-voxels to resels
     
 end
 
-% | SPM METHOD (spm12)
-% global st
-% [uc,Pc,k]  = spm_uc_clusterFDR(0.05, df, STAT, R, n, st.ol.Z, st.ol.XYZ, v2r, st.ol.U); 
-
-if ~nargout
-    sf_ShowVolInfo(R,SS,VOX,FWHM,FWHMmm)
-end
-epsP = alpha*epsP;
-Status = 'OK';
-if u <= 1; u = spm_u(u,df,STAT); end
-
-if length(range)==1 & ~isnan(range)
-  
-  %
-  % Dummy case... just report P-value
-  %
-
-  k  = range;
-  Pc = spm_P(1,k*v2r,u,df,STAT,R,n,SS);
-  
-  Status = 'JustPvalue';
-
-elseif (spm_P(1,1*v2r,u,df,STAT,R,n,SS)<alpha)
-
-  %
-  % Crazy setting, where 1 voxel cluster is significant
-  %
-
-  k = 1;
-  Pc = spm_P(1,1*v2r,u,df,STAT,R,n,SS);
-  Status = 'TooRough';
-
-elseif isnan(range)
-
-  %
-  % Automated search
-  % 
-
-  % Initial (lower bound) guess is the expected number of voxels per cluster
-  [P Pn Em En EN] = spm_P(1,0,u,df,STAT,R,n,SS);
-  kr = En; % Working in resel units
-  rad = (kr)^(1/3); % Parameterize proportional to cluster diameter
-
-  %
-  % Crude linear search bound answer
-  %
-  Pcl  = 1;   % Lower bound on P
-  radu = rad; % Upper bound on rad
-  Pcu  = 0;   % Upper bound on P
-  radl = Inf; % Lower bound on rad
-  while (Pcl > alpha)
-    Pcu  = Pcl;
-    radl = radu; % Save previous result
-    radu = radu*1.1;
-    Pcl  = spm_P(1,radu^3   ,u,df,STAT,R,n,SS);
-  end
-
-  %
-  % Newton-Rhapson refined search
-  %
-  d = 1;		    
-  os = NaN;     % Old sign
-  ms = (radu-radl)/10;  % Max step
-  du = ms/100;
-  % Linear interpolation for initial guess
-  rad = radl*(alpha-Pcl)/(Pcu-Pcl)+radu*(Pcu-alpha)/(Pcu-Pcl);
-  iter = 1;
-  while abs(d) > epsP
-    Pc  = spm_P(1,rad^3   ,u,df,STAT,R,n,SS);
-    Pc1 = spm_P(1,(rad+du)^3,u,df,STAT,R,n,SS);
-    d   = (alpha-Pc)/((Pc1-Pc)/du);
-    os = sign(d);  % save old sign
-    % Truncate search if step is too big
-    if abs(d)>ms, 
-      d = sign(d)*ms;
-    end
-    % Keep inside the given range
-    if (rad+d)>radu, d = (radu-rad)/2; end
-    if (rad+d)<radl, d = (rad-radl)/2; end
-    % update
-    rad = rad + d;
-    iter = iter+1;
-    if (iter>=maxi), 
-      Status = 'TooManyIter';
-      break; 
-    end
-  end
-  % Convert back
-  kr = rad^3;
-  k = ceil(kr/v2r);
-  Pc  = spm_P(1,k*v2r,u,df,STAT,R,n,SS);
-
-%
-% Brute force!
-%
-else
-  Pc = 1;
-  for k = range
-    Pc = spm_P(1,k*v2r,u,df,STAT,R,n,SS);
-    %fprintf('k=%d Pc=%g\n',k,Pc);
-    if Pc <= alpha, 
-      break; 
-    end
-  end;
-  if (Pc > alpha)
-    Status = 'OutOfRange';
-  end
-end
-
+%% SPM METHOD (spm_uc_clusterFDR)
+T              = getthresh;
+df             = [1 T.df];
+thresh         = spm_invTcdf(1-u, T.df);
+di             = find(strcmpi({'+' '-' '+/-'}, T.direct));
+idx            = st.ol.Y(:)~=0;
+Z              = st.ol.Y(idx)';
+if di==2, Z = Z*-1; end
+XYZ            = st.ol.XYZ0(:,idx);
+[fdrk,Pc,fwek] = spm_uc_clusterFDR(0.05, df, 'T', R, 1, Z, XYZ, VOX2RES, thresh);
 function [out, outmat] = reslice_image(in, ref, int)
     % Most of the code is adapted from rest_Reslice in REST toolbox:
     % Written by YAN Chao-Gan 090302 for DPARSF. Referenced from spm_reslice.

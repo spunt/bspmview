@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160803
+%   Version:  20160919
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,13 +72,13 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20160803';
+bspmview_version='20160919';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
 spmdir = fileparts(which('spm'));
 if isempty(spmdir)
-    printmsg('SPM is not on your path. This may not work...', 'WARNING');
+    printmsg('SPM could not be found on your path. Add it and try again.', 'ERROR'); return; 
 else
     addpath(fullfile(spmdir,'matlabbatch'));
     addpath(fullfile(spmdir,'config'));
@@ -177,7 +177,16 @@ function prefs  = default_preferences(initial)
     deffile         = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
     st.preferences  = catstruct(default_settings, st.preferences);
     def             = st.preferences; 
-    if initial, save(deffile, '-struct', 'def'); return; end
+    if initial
+        try
+            save(deffile, '-struct', 'def'); 
+            return;
+        catch err
+            printmsg('Error saving user preferences to disk. Using defaults...', 'WARNING');
+           	disp(err.message);
+            return            
+        end
+    end
     pos = get(st.fig, 'pos'); 
     w   = pos(3)*.65;
     opt             = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'};
@@ -229,7 +238,14 @@ function prefs  = default_preferences(initial)
     end
     st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow));
     def = st.preferences;
-    save(deffile, '-struct', 'def'); 
+    try
+        save(deffile, '-struct', 'def'); 
+        return;
+    catch err
+        printmsg('Error saving user preferences to disk. Using defaults...', 'WARNING');
+        disp(err.message);
+        return;            
+    end
 function pos    = default_positions 
     screensize      = get(0, 'ScreenSize');
     pos.ss          = screensize(3:4);
@@ -519,8 +535,8 @@ function S = put_figure(ol, ul)
     if nargout, S.handles = gethandles; end
 function put_startupmsg
     global st bspmview_version
+    st.version.bspmview = bspmview_version;
     [v,r] = spm('Ver','',1);
-    st.version.bspmview = bspmview_version; 
     st.version.spm = sprintf('%s_r%s', v, r);
     st.version.matlab = version;
     st.version.computer = computer; 

@@ -1191,13 +1191,7 @@ function cb_savergb(varargin)
     % st.vols{1}.ax{1}.lx   - crosshair (x)
     % st.vols{1}.ax{1}.ly   - crosshair (y)
     global st
-    setbackgcolor;
-    im = screencapture(st.fig);
-    setbackgcolor(st.color.bg)
-    [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf', 'Image'; '*.*', 'All Files (*.*)'}, 'Specify output directory and name', construct_filename);
-    if ~imname, disp('User cancelled.'); return; end
-    imwrite(im, fullfile(pname, imname));
-    fprintf('\nImage saved to %s\n', fullfile(pname, imname));
+    uisavefig(sprintf('bspmview_%s', construct_filename), st.fig);
 
 % | CALLBACKS - LOAD MENU
 % =========================================================================
@@ -1451,8 +1445,7 @@ function cb_render(varargin)
     drawnow;
     setstatus('Ready');
 function cb_saverender(varargin)
-    uisavefig('surfacerender', varargin{3});
-
+    uisavefig(sprintf('Render_%s', construct_filename), varargin{3});
 
 % | CALLBACKS - WEB MENU
 % =========================================================================
@@ -1815,7 +1808,7 @@ function cb_montage(varargin)
 %     setpapersize(obj.figure);
     drawnow;
 function cb_savemontage(varargin)
-    uisavefig('slicemontage', varargin{3});
+    uisavefig(sprintf('Slices_%s', construct_filename), varargin{3});
 function cb_editcbar(varargin)
     inspect(varargin{3});
 function cb_montagelabelposition(varargin)
@@ -3555,7 +3548,8 @@ function fn         = construct_filename
         n = strtrim(st.ol.descrip(idx+1:end));
         n = regexprep(n, ' ', '_');
     end
-    fn = sprintf('%s/%s_x=%d_y=%d_z=%d.png', p, n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));
+    %     fn = sprintf('%s/%s_x=%d_y=%d_z=%d', p, n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));
+    fn = sprintf('%s_x=%d_y=%d_z=%d', n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));
 function s          = easydefaults(varargin)
 % easydefaults  Set many default arguments quick and easy.
 %
@@ -3878,7 +3872,8 @@ function uisavefig(defname, hfig)
     fmt = strcat('-', regexprep(e, '\.', 'd'));
     setpapersize(hfig);
 %     print(hfig, fmt, strcat('-', renderer), strcat('-', 'noui'), fullfile(pname,n));
-    print(hfig, fmt, strcat('-', 'noui'), fullfile(pname,n));
+%     print(hfig, fmt, strcat('-', 'noui'), fullfile(pname,n));
+    print(hfig, fmt, fullfile(pname,n));
     fprintf('\nImage saved to %s\n', fullfile(pname, imname));
 function outmsg     = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
 % PRINTMSG Create and print a formatted message with title

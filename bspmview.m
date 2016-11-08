@@ -13,13 +13,13 @@ function varargout = bspmview(ol, ul)
 % Windows 8.1 and OS X Yosemite.
 %
 % ________________________________________________________________________________
-% COMMAND LINE USAGE 
+% COMMAND LINE USAGE
 % ________________________________________________________________________________
 %
 % INPUTS
 %   ol: filename for statistical image to overlay
 %	ul: filename for anatomical image to use as underlay
-% 
+%
 % EXAMPLES
 %   bspmview('spmT_0001.img', 'T1.nii')  % overlay on 'T1.nii'
 %   bspmview('spmT_0001.nii.gz')         % overlay on default underlay
@@ -27,7 +27,7 @@ function varargout = bspmview(ol, ul)
 %   S = bspmview;                        % returns struct 'S' w/graphics handles
 %
 % ________________________________________________________________________________
-% ACKNOWLEDGMENTS    
+% ACKNOWLEDGMENTS
 % ________________________________________________________________________________
 %
 % This software heavily relies on functionality contained within SPM and is in
@@ -35,7 +35,7 @@ function varargout = bspmview(ol, ul)
 % interface. Special thanks goes to Jared Torre for testing an early version
 % of the code, and to Guillaume Flandin for help with adding BSPMVIEW to the
 % SPM Extensions webpage. In addition, this software was initially inspired by
-% and in some cases adapts code from two other statistical image viewers:  
+% and in some cases adapts code from two other statistical image viewers:
 %   - XJVIEW by Xu Cui, Jian Li, & Xiaowei Song (alivelearn.net/xjview8)
 %   - FIVE by Aaron P. Schultz (mrtools.mgh.harvard.edu)
 %
@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20160919
+%   Version:  20161108
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,13 +72,13 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20160919';
+bspmview_version='20161108';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
 spmdir = fileparts(which('spm'));
 if isempty(spmdir)
-    printmsg('SPM could not be found on your path. Add it and try again.', 'ERROR'); return; 
+    printmsg('SPM could not be found on your path. Add it and try again.', 'ERROR'); return;
 else
     addpath(fullfile(spmdir,'matlabbatch'));
     addpath(fullfile(spmdir,'config'));
@@ -93,9 +93,9 @@ addpath(supportdir);
 
 % | CHECK INPUTS
 % | =======================================================================
-if nargin < 1 
+if nargin < 1
     % | CHECK FOR OPEN SPM
-    hcon = findobj(0, 'Name', 'SPM contrast manager'); 
+    hcon = findobj(0, 'Name', 'SPM contrast manager');
     if ~isempty(hcon)
         huserdata = get(hcon, 'UserData');
         selectdir = huserdata.swd;
@@ -123,13 +123,13 @@ global prevsect st
 prevsect       = ul;
 st.guipath     = mfilepath;
 st.supportpath = supportdir;
-st.fonts       = default_fonts; 
+st.fonts       = default_fonts;
 st.pos         = default_positions;
 preffile       = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
 if exist(preffile, 'file')
-    st.preferences = load(preffile); 
+    st.preferences = load(preffile);
 else
-    st.preferences = default_settings; 
+    st.preferences = default_settings;
 end
 put_startupmsg;
 
@@ -176,37 +176,37 @@ function prefs  = default_preferences(initial)
     global st
     deffile         = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
     st.preferences  = catstruct(default_settings, st.preferences);
-    def             = st.preferences; 
+    def             = st.preferences;
     if initial
         try
-            save(deffile, '-struct', 'def'); 
+            save(deffile, '-struct', 'def');
             return;
         catch err
             printmsg('Error saving user preferences to disk. Using defaults...', 'WARNING');
            	disp(err.message);
-            return            
+            return
         end
     end
-    pos = get(st.fig, 'pos'); 
+    pos = get(st.fig, 'pos');
     w   = pos(3)*.65;
     opt             = {'L/R Medial/Lateral' 'L/R Lateral' 'L Medial/Lateral' 'R Medial/Lateral' 'L Lateral' 'R Lateral'};
-    optmap          = [4 2 1.9 2.1 -1 1]; 
-    opt             = [opt(optmap==def.surfshow) opt(optmap~=def.surfshow)]; 
-    optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)]; 
-    surftypeopt     = {'Inflated' 'Pial' 'White' 'PI'}; 
-    surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))]; 
+    optmap          = [4 2 1.9 2.1 -1 1];
+    opt             = [opt(optmap==def.surfshow) opt(optmap~=def.surfshow)];
+    optmap          = [optmap(optmap==def.surfshow) optmap(optmap~=def.surfshow)];
+    surftypeopt     = {'Inflated' 'Pial' 'White' 'PI'};
+    surftypeopt     = [surftypeopt(strcmpi(surftypeopt, def.surface)) surftypeopt(~strcmpi(surftypeopt, def.surface))];
     surftypeshade   = {'Sulc' 'Curv' 'Thk' 'LogCurv' 'Mixed'};
-    surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))]; 
-    nvertopt        = [40962 642 2562 10242 163842]; 
-    nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)]; 
+    surftypeshade   = [surftypeshade(strcmpi(surftypeshade, def.shading)) surftypeshade(~strcmpi(surftypeshade, def.shading))];
+    nvertopt        = [40962 642 2562 10242 163842];
+    nvertopt        = [nvertopt(nvertopt==def.nverts) nvertopt(nvertopt~=def.nverts)];
     atlasopt        = {                                      ...
                         'AAL2'                              ,...
                         'HarvardOxford-maxprob-thr0'        ,...
                         'HarvardOxford-cort-maxprob-thr0'   ,...
                         'HarvardOxford-sub-maxprob-thr0'    ,...
                         'AnatomyToolbox'                     ...
-                      }; 
-    atlasopt        = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];          
+                      };
+    atlasopt        = [atlasopt(strcmpi(atlasopt, def.atlasname)) atlasopt(~strcmpi(atlasopt, def.atlasname))];
     [prefs, button] = settingsdlg('title', 'Settings', 'WindowWidth', w, 'ControlWidth', w/2, ...
         'separator'                                 ,       'Thresholding', ...
         {'Default P-Value (Uncorrected)'; 'alphauncorrect'}       ,       def.alphauncorrect, ...
@@ -226,44 +226,44 @@ function prefs  = default_preferences(initial)
         {'Add Color Bar?'; 'colorbar'}              ,       logical(def.colorbar), ...
         {'Dilate Inclusive Mask?'; 'dilate'}        ,       logical(def.dilate), ...
         {'Round Values? (binary images)'; 'round'}  ,       logical(def.round), ...
-        {'Nearest Neighbor? (binary/label images)'; 'neighbor'}, logical(def.neighbor)); 
+        {'Nearest Neighbor? (binary/label images)'; 'neighbor'}, logical(def.neighbor));
     if strcmpi(button, 'cancel')
         return
     else
         st.preferences = prefs;
     end
     if ~strcmpi(st.preferences.atlasname, def.atlasname)
-        setatlas; 
-        setregionname; 
+        setatlas;
+        setregionname;
     end
     st.preferences.surfshow = optmap(strcmpi(opt, st.preferences.surfshow));
     def = st.preferences;
     try
-        save(deffile, '-struct', 'def'); 
+        save(deffile, '-struct', 'def');
         return;
     catch err
         printmsg('Error saving user preferences to disk. Using defaults...', 'WARNING');
         disp(err.message);
-        return;            
+        return;
     end
-function pos    = default_positions 
+function pos    = default_positions
     screensize      = get(0, 'ScreenSize');
     pos.ss          = screensize(3:4);
     pos.gui         = [pos.ss(1)*.20 25 pos.ss(2)*.55 pos.ss(2)*.50];
-    pos.gui(3:4)    = pos.gui(3:4)*1.10; 
+    pos.gui(3:4)    = pos.gui(3:4)*1.10;
     pos.aspratio    = pos.gui(3)/pos.gui(4);
     if pos.gui(3) < 550
-        pos.gui(3) = 550; 
-        pos.gui(4) = pos.gui(3)*pos.aspratio; 
+        pos.gui(3) = 550;
+        pos.gui(4) = pos.gui(3)*pos.aspratio;
     end
     if sum(pos.gui([2 4])) > (pos.ss(2)*.95)
-        pos.gui(4)  = pos.ss(2)*.90 - 25; 
-        pos.gui(3)  = pos.gui(4)/pos.aspratio; 
+        pos.gui(4)  = pos.ss(2)*.90 - 25;
+        pos.gui(3)  = pos.gui(4)/pos.aspratio;
     end
-    guiss           = [pos.gui(3:4) pos.gui(3:4)]; 
+    guiss           = [pos.gui(3:4) pos.gui(3:4)];
     panepos         = getpositions(1, [17 1], .01, .01);
-    pos.pane.upper  = panepos(2,3:end); 
-    pos.pane.axes   = panepos(1,3:end).*guiss; 
+    pos.pane.upper  = panepos(2,3:end);
+    pos.pane.axes   = panepos(1,3:end).*guiss;
 function color  = default_colors(darktag)
     if nargin==0, darktag = 1; end
     if darktag
@@ -272,31 +272,31 @@ function color  = default_colors(darktag)
         color.border    = [023/255 024/255 020/255]*2;
         color.panel     = [.01 .22 .34];
         color.edit      = [.95 .95 .95];
-        color.font      = [0 0 0]; 
+        color.font      = [0 0 0];
     else
-        color.fg       = [20/255 23/255 24/255]; 
+        color.fg       = [20/255 23/255 24/255];
         color.bg       = [248/255 248/255 248/255] * .95;
         color.edit     = [.95 .95 .95];
         color.border   = 1 - ([023/255 024/255 020/255]*2);
         color.edit      = [.95 .95 .95];
-        color.font      = [0 0 0]; 
+        color.font      = [0 0 0];
     end
     color.xhair     = [0.7020    0.8039    0.8902];
-    color.blues     = brewermap(40, 'Blues'); 
+    color.blues     = brewermap(40, 'Blues');
 function fonts  = default_fonts
 
     % | Font Size
     if regexpi(computer, '^PCWIN')
         PROP = 1/150;
     else
-        PROP = 1/110; 
+        PROP = 1/110;
     end
     SS   = get(0, 'screensize');
-    sz1  = round(SS(3)*PROP); 
-    sz2  = round(sz1*(3/4)); 
-    sz3  = round(sz1*(2/3)); 
-    sz4  = round(sz1*(3/5)); 
-    sz5  = round(sz1*(5/9)); 
+    sz1  = round(SS(3)*PROP);
+    sz2  = round(sz1*(3/4));
+    sz3  = round(sz1*(2/3));
+    sz4  = round(sz1*(3/5));
+    sz5  = round(sz1*(5/9));
     sz6  = round(sz1*(1/2));
     sz   = [sz1 sz2 sz3 sz4 sz5 sz6];
     if sz6 < 10
@@ -304,31 +304,31 @@ function fonts  = default_fonts
         sz = ceil(scaledata(sz, [10 sz1]));
     elseif sz1 > 24
         sz = [sz1 sz2 sz3 sz4 sz5 sz6];
-        sz = ceil(scaledata(sz, [sz6 24])); 
+        sz = ceil(scaledata(sz, [sz6 24]));
     end
-    fonts.sz1  = sz(1); 
-    fonts.sz2  = sz(2); 
+    fonts.sz1  = sz(1);
+    fonts.sz2  = sz(2);
     fonts.sz3  = sz(3);
     fonts.sz4  = sz(4);
-    fonts.sz5  = sz(5); 
+    fonts.sz5  = sz(5);
     fonts.sz6  = sz(6);
-    
+
     % | Font Name
-    fonts.name = 'Helvetica';   
+    fonts.name = 'Helvetica';
 function prop   = default_properties(varargin)
     global st
     prop.darkbg     = {'backg', st.color.bg, 'foreg', st.color.fg};
     prop.lightbg    = {'backg', st.color.fg, 'foreg', [0 0 0]};
     if ~isempty(varargin), prop.darkbg = [varargin{:} prop.darkbg]; prop.lightbg = [varargin{:} prop.lightbg]; end
-    prop.panel      = [prop.darkbg {'bordertype', 'none', 'titlepos', 'centertop', 'fontw', 'bold'}]; 
+    prop.panel      = [prop.darkbg {'bordertype', 'none', 'titlepos', 'centertop', 'fontw', 'bold'}];
     prop.edit       = [prop.lightbg {'style', 'edit', 'horiz', 'center'}];
-    prop.text       = [prop.darkbg {'style', 'text', 'horiz', 'center'}]; 
-    prop.popup      = [prop.lightbg {'style', 'popup'}]; 
-    prop.push       = [prop.darkbg {'style', 'push', 'horiz', 'center'}]; 
+    prop.text       = [prop.darkbg {'style', 'text', 'horiz', 'center'}];
+    prop.popup      = [prop.lightbg {'style', 'popup'}];
+    prop.push       = [prop.darkbg {'style', 'push', 'horiz', 'center'}];
     prop.radio      = [prop.darkbg {'style', 'radio', 'horiz', 'center'}];
-    prop.toggle     = [prop.darkbg {'style', 'toggle'}]; 
-    prop.checkbox   = [prop.darkbg {'style', 'check'}]; 
-    prop.listbox    = [prop.darkbg {'style', 'list'}]; 
+    prop.toggle     = [prop.darkbg {'style', 'toggle'}];
+    prop.checkbox   = [prop.darkbg {'style', 'check'}];
+    prop.listbox    = [prop.darkbg {'style', 'list'}];
 function cmap   = default_colormaps(depth)
     if nargin==0, depth = 64; end
     cmap = [];
@@ -350,21 +350,21 @@ function cmap   = default_colormaps(depth)
     bmap1 = {'Blues' 'Greens' 'Greys' 'Oranges' 'Purples' 'Reds'};
     for i = 1:length(bmap1)
         tmp = brewermap(50, bmap1{i});
-        cmap{anchor+i,1} = cmap_upsample(tmp(11:end,:), depth); 
+        cmap{anchor+i,1} = cmap_upsample(tmp(11:end,:), depth);
         cmap{anchor+i,2} = sprintf('%s', bmap1{i});
     end
-    tmp1 = brewermap(36, '*Blues'); 
+    tmp1 = brewermap(36, '*Blues');
     tmp2 = brewermap(36, 'Reds');
-    tmp3 = brewermap(36, 'Greens'); 
-    cmap{end+1,1} = [tmp1(1:32,:); tmp2(5:36,:)]; 
+    tmp3 = brewermap(36, 'Greens');
+    cmap{end+1,1} = [tmp1(1:32,:); tmp2(5:36,:)];
     cmap{end,2} = 'Blues-Reds';
-    cmap{end+1,1} = [tmp1(1:32,:); tmp3(5:36,:)]; 
+    cmap{end+1,1} = [tmp1(1:32,:); tmp3(5:36,:)];
     cmap{end,2} = 'Blues-Greens';
     bmap2 = {'Accent' 'Dark2' 'Paired' 'Pastel1' 'Pastel2' 'Set1' 'Set2' 'Set3'};
     bnum2 = [8 8 12 9 8 9 8 12];
-    anchor = size(cmap,1); 
+    anchor = size(cmap,1);
     for i = 1:length(bmap2)
-        cmap{anchor+i,1} = cmap_upsample(brewermap(bnum2(i), bmap2{i}), depth); 
+        cmap{anchor+i,1} = cmap_upsample(brewermap(bnum2(i), bmap2{i}), depth);
         cmap{anchor+i,2} = sprintf('%s (%d)', bmap2{i}, bnum2(i));
     end
 function urls   = default_urls
@@ -382,8 +382,20 @@ urls = {
     'Aaron Schultz Software (MR Tools)' 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'
     'NeuroVault'                        'http://neurovault.org'
     'Human Connectome Project'          'http://www.humanconnectome.org/software/'
+    'Neuroimaging Data Model (NIDM)'    'http://nidm.nidash.org/'
 };
 urls = cell2struct(urls, {'label' 'url'}, 2);
+function fmt    = default_saveformats
+fmt = {
+'*.pdf', 'Portable Document Format (*.pdf)';
+'*.eps', 'Encapsulated Postscript (*.eps)';
+'*.svg', 'Scalable Vector Graphics (*.svg)';
+'*.jpg', 'JPEG (*.jpg) image';
+'*.png', 'Portable Network Graphics (*.png) image';
+'*.bmp', 'Bitmap (*.bmp) image';
+'*.ps', 'PostScript (*.ps)';
+'*.tif', 'TIFF (*.tif) image'
+};
 function labs   = default_labels
     labs  = struct( ...
             'atlasname'     ,   'AnatomyToolbox'      , ...
@@ -434,8 +446,8 @@ function uicell = default_upperpane
 
     global st
     prop = default_properties('units', 'norm', 'fontn', 'arial');
-        
-    uicell = { ...    
+
+    uicell = { ...
     1, 1, 1, ''                    , 'rowspacer'   , []        ;   ...
     2, 5, 4, 'Direction'          , 'uititle'     , prop.text ;   ...
     2, 5, 2, '+'                    , 'direct'  , [prop.radio {'fontunits', 'points', 'pos', [0 0 1 1], 'Callback', @cb_directmenu}] ;  ...
@@ -449,22 +461,22 @@ function uicell = default_upperpane
     3, 1, 1, ''                    , 'rowspacer'   , []        ;   ...
 
     };
-    
+
 % | GUI COMPONENTS
 % =========================================================================
 function S = put_figure(ol, ul)
 
     default_preferences(1);
-    
+
     % | Check for open GUI, close if one is found
     delete(findobj(0, 'tag', 'bspmview'));
-    
+
     global st
-    
+
     % | Setup new fig
     if isfield(st.preferences, 'fontname'), st.fonts.name   = st.preferences.fontname; end
     if isfield(st.preferences, 'color')
-        st.color   = st.preferences.color; 
+        st.color   = st.preferences.color;
     else
         st.color   = default_colors;
     end
@@ -511,24 +523,24 @@ function S = put_figure(ol, ul)
     set(S.hReg, 'units', 'norm');
     [st.fig, st.figax, st.direct] = deal(S.hFig, S.hReg, '+/-');
     bspm_orthviews('Reset');
-    st.cmap     = default_colormaps(64); 
+    st.cmap     = default_colormaps(64);
     load_overlay(ol, st.preferences.alphauncorrect, st.preferences.clusterextent);
     bspm_XYZreg('InitReg',S.hReg,st.ol.M,st.ol.DIM,[0;0;0]); % initialize registry object
     st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
     bspm_orthviews('Register', S.hReg);
     bspm_orthviews('MaxBB');
-    setposition_axes; 
+    setposition_axes;
     setxhaircolor;
-    put_figmenu; 
+    put_figmenu;
     put_upperpane;
     put_lowerpane;
-    put_axesxyz; 
+    put_axesxyz;
     put_axesmenu;
     setthresh(st.ol.C0(3,:), find(strcmpi({'+', '-', '+/-'}, st.direct)));
     if find(strcmpi({'+', '-', '+/-'}, st.direct))==3, disablefdr; end
     setmaxima;
     setcolormap;
-    setfontunits('points'); 
+    setfontunits('points');
     setunits;
     check4design;
     cb_minmax;
@@ -539,29 +551,29 @@ function put_startupmsg
     [v,r] = spm('Ver','',1);
     st.version.spm = sprintf('%s_r%s', v, r);
     st.version.matlab = version;
-    st.version.computer = computer; 
-    [mv, mstr] = version; 
+    st.version.computer = computer;
+    [mv, mstr] = version;
     matlabyear = str2double(regexp(mstr, '\d\d\d\d$', 'match'));
     if matlabyear < 2014
         fprintf(['\nWARNING: This software has only been tested on MATLAB R2014a and later.' ...
-                '\nYou are using MATLAB v%s. You may encounter errors.\n\n'], st.version.matlab); 
+                '\nYou are using MATLAB v%s. You may encounter errors.\n\n'], st.version.matlab);
     end
     if str2double(r) < 6313
         fprintf(['\nWARNING: This software has only been tested with SPM8 (r6313) and SPM12.' ...
-                '\nYou are currently using %s (%s). You may encounter errors.\n\n'], v, r); 
+                '\nYou are currently using %s (%s). You may encounter errors.\n\n'], v, r);
     end
-    printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', bspmview_version));   
+    printmsg(sprintf('Started %s', nicetime), sprintf('BSPMVIEW v.%s', bspmview_version));
 function put_upperpane(varargin)
 
     global st
-    cnamepos     = [.01 .15 .98 .85]; 
+    cnamepos     = [.01 .15 .98 .85];
     prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', st.fonts.sz3);
     panelh       = uipanel('parent',st.fig, prop.panel{:}, 'pos', st.pos.pane.upper, 'tag', 'upperpanel');
-    uicell = default_upperpane; 
+    uicell = default_upperpane;
     griddim         = cell2mat(uicell(:,1:3));
-    lowpanedim      = unique(griddim(:,1:2), 'rows'); 
-    nrow            = size(lowpanedim, 1); 
-    
+    lowpanedim      = unique(griddim(:,1:2), 'rows');
+    nrow            = size(lowpanedim, 1);
+
     [phandle, pidx] = pgrid(nrow, 1, ...
         'parent', panelh, ...
         'relheight', lowpanedim(:,2), ...
@@ -569,10 +581,10 @@ function put_upperpane(varargin)
         'marginsep', .01, ...
         'backg', st.color.bg, ...
         'foreg', st.color.fg);
-    uihandles       = []; 
+    uihandles       = [];
     for r = 1:nrow
         spec = uicell(griddim(:,1)==r, 3:end);
-        ncol = size(spec, 1); 
+        ncol = size(spec, 1);
         if ncol > 1
             chandle = pgrid(1, ncol, ...
                 'parent', phandle(r), ...
@@ -580,53 +592,53 @@ function put_upperpane(varargin)
                 'panelsep', .01, ...
                 'marginsep', 0, ...
                 'backg', st.color.bg, ...
-                'foreg', st.color.fg); 
+                'foreg', st.color.fg);
         else
-            chandle = phandle(r); 
+            chandle = phandle(r);
         end
-        uihandles = [uihandles; chandle]; 
-    end  
+        uihandles = [uihandles; chandle];
+    end
     spaceridx = cellfun('isempty', uicell(:,end));
-    uihandles(spaceridx) = []; 
-    uicell(spaceridx,:) = []; 
+    uihandles(spaceridx) = [];
+    uicell(spaceridx,:) = [];
     for i = 1:length(uihandles), ph(i) = uicontrol(uihandles(i), 'string', uicell{i, 4}, uicell{i, 6}{:}, 'pos', [0 0 1 1], 'tag', uicell{i, 5}); drawnow; end
-    set(findall(panelh, 'tag', 'uititle'), 'fontsize', st.fonts.sz2, 'fontweight', 'bold');  
-    
+    set(findall(panelh, 'tag', 'uititle'), 'fontsize', st.fonts.sz2, 'fontweight', 'bold');
+
      % | Check valid directions for contrast display
     allh    = findobj(st.fig, 'Tag', 'direct');
-    set(allh, 'FontSize', st.fonts.sz2*1.25); 
+    set(allh, 'FontSize', st.fonts.sz2*1.25);
     allhstr = get(allh, 'String');
     if any(st.ol.null)
-        opt = {'+' '-'}; 
+        opt = {'+' '-'};
         set(allh(strcmpi(allhstr, '+/-')), 'Value', 0, 'Enable', 'inactive', 'Visible', 'on');
         set(allh(strcmpi(allhstr, opt{st.ol.null})), 'Value', 0, 'Enable', 'inactive',  'Visible', 'on');
         set(allh(strcmpi(allhstr, opt{st.ol.null==0})), 'Value', 1, 'Enable', 'inactive');
     else
-        set(allh(strcmpi(allhstr, '+/-')), 'value', 1, 'enable', 'inactive'); 
+        set(allh(strcmpi(allhstr, '+/-')), 'value', 1, 'enable', 'inactive');
     end
     set(panelh, 'units', 'norm');
     drawnow;
 function put_lowerpane(varargin)
 
     global st
-    
+
     % | UNITS
     figpos  = get(st.fig, 'pos');
     axpos   = get(st.figax, 'pos');
     figw    = figpos(3);
-    axw     = axpos(3); 
+    axw     = axpos(3);
 
     % | PANEL
     [h,subaxpos] = gethandles_axes;
     lowpos = subaxpos(1,:);
-    lowpos(1) = subaxpos(3, 1) + .01; 
+    lowpos(1) = subaxpos(3, 1) + .01;
     lowpos(3) = 1 - lowpos(1);
     prop = default_properties('units', 'norm', 'fontn', 'arial', 'fonts', st.fonts.sz2);
     panelh = uipanel('parent', st.figax, prop.panel{:}, 'pos',lowpos, 'tag', 'lowerpanel');
     uicell = default_lowerpane;
     griddim         = cell2mat(uicell(:,1:3));
-    lowpanedim      = unique(griddim(:,1:2), 'rows'); 
-    nrow            = size(lowpanedim, 1); 
+    lowpanedim      = unique(griddim(:,1:2), 'rows');
+    nrow            = size(lowpanedim, 1);
     [phandle, pidx] = pgrid(nrow, 1, ...
         'parent', panelh, ...
         'relheight', lowpanedim(:,2), ...
@@ -634,10 +646,10 @@ function put_lowerpane(varargin)
         'marginsep', .025, ...
         'backg', st.color.bg, ...
         'foreg', st.color.fg);
-    uihandles       = []; 
+    uihandles       = [];
     for r = 1:nrow
         spec = uicell(griddim(:,1)==r, 3:end);
-        ncol = size(spec, 1); 
+        ncol = size(spec, 1);
         if ncol > 1
             chandle = pgrid(1, ncol, ...
                 'parent', phandle(r), ...
@@ -645,17 +657,17 @@ function put_lowerpane(varargin)
                 'panelsep', .025, ...
                 'marginsep', 0, ...
                 'backg', st.color.bg, ...
-                'foreg', st.color.fg); 
+                'foreg', st.color.fg);
         else
-            chandle = phandle(r); 
+            chandle = phandle(r);
         end
-        uihandles = [uihandles; chandle]; 
-    end 
-    spaceridx = cellfun('isempty', uicell(:,end)); 
-    uihandles(spaceridx) = []; 
-    uicell(spaceridx,:) = []; 
+        uihandles = [uihandles; chandle];
+    end
+    spaceridx = cellfun('isempty', uicell(:,end));
+    uihandles(spaceridx) = [];
+    uicell(spaceridx,:) = [];
     for i = 1:length(uihandles), ph(i) = uicontrol(uihandles(i), 'string', uicell{i, 4}, uicell{i, 6}{:}, 'pos', [0 0 1 1], 'tag', uicell{i, 5}); drawnow; end
-    set(findall(panelh, 'tag', 'uititle'), 'fontsize', st.fonts.sz1, 'fontweight', 'bold');  
+    set(findall(panelh, 'tag', 'uititle'), 'fontsize', st.fonts.sz1, 'fontweight', 'bold');
     set(findall(panelh, 'Enable', 'Inactive'), 'backg', st.color.fg*.80);
     set(panelh, 'units', 'norm');
     setthreshinfo;
@@ -665,8 +677,8 @@ function put_figmenu
     %% Main Menu
     S.menu1         = uimenu('Parent', st.fig, 'Label', 'bspmVIEW');
     S.version       = uimenu(S.menu1, 'Label', sprintf('v.%s', bspmview_version) , 'Enable', 'off');
-    S.checkversion  = uimenu(S.menu1, 'Label', 'Check for Updates', 'Callback', @cb_checkversion);  
-    S.appear        = uimenu(S.menu1, 'Label','Appearance', 'Separator', 'on'); 
+    S.checkversion  = uimenu(S.menu1, 'Label', 'Check for Updates', 'Callback', @cb_checkversion);
+    S.appear        = uimenu(S.menu1, 'Label','Appearance', 'Separator', 'on');
     S.skin          = uimenu(S.appear, 'Label', 'Skin');
 %     if isfield(st.preferences, 'light')
 %         S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', st.preferences.dark, 'Callback', @cb_changeskin);
@@ -675,10 +687,10 @@ function put_figmenu
     S.changeskin(1) = uimenu(S.skin, 'Label', 'Dark', 'Checked', 'on', 'Callback', @cb_changeskin);
     S.changeskin(2) = uimenu(S.skin, 'Label', 'Light', 'Separator', 'on', 'Callback',@cb_changeskin);
 %     end
-    S.guisize       = uimenu(S.appear, 'Label','GUI Size'); 
+    S.guisize       = uimenu(S.appear, 'Label','GUI Size');
     S.gui(1)        = uimenu(S.guisize, 'Label', 'Increase', 'Accelerator', 'i', 'Callback', @cb_changeguisize);
     S.gui(2)        = uimenu(S.guisize, 'Label', 'Decrease', 'Accelerator', 'd', 'Separator', 'on', 'Callback',@cb_changeguisize);
-    S.fontsize      = uimenu(S.appear, 'Label','Font Size'); 
+    S.fontsize      = uimenu(S.appear, 'Label','Font Size');
     S.font(1)       = uimenu(S.fontsize, 'Label', 'Increase', 'Accelerator', '=', 'Callback', @cb_changefontsize);
     S.font(2)       = uimenu(S.fontsize, 'Label', 'Decrease', 'Accelerator', '-', 'Callback',@cb_changefontsize);
 %     S.fontname      = uimenu(S.appear, 'Label','Font Name', 'Callback', @cb_changefontname);
@@ -689,21 +701,21 @@ function put_figmenu
     S.helpme1       = uimenu(S.helpme,'Label','Online Manual', 'CallBack', {@cb_web, 'http://spunt.github.io/bspmview/'});
     S.helpme2       = uimenu(S.helpme,'Label','Online Issues Forum', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues'});
     S.helpme3       = uimenu(S.helpme,'Label','Submit Issue or Feature Request', 'CallBack', {@cb_web, 'https://github.com/spunt/bspmview/issues/new'});
-    S.debug         = uimenu(S.helpme,'Label','Debug', 'Separator', 'on');     
+    S.debug         = uimenu(S.helpme,'Label','Debug', 'Separator', 'on');
     S.debug1        = uimenu(S.debug, 'Label','Open GUI M-File', 'Callback', @cb_opencode);
     S.debug2        = uimenu(S.debug, 'Label','Run UIINSPECT', 'Callback', @cb_uiinspect);
     S.exit          = uimenu(S.menu1, 'Label', 'Exit', 'Separator', 'on', 'Callback', {@cb_closegui, st.fig});
-    
+
     %% Make sure resize callbacks are registered one at a time
-    set(S.gui, 'BusyAction', 'cancel', 'Interruptible', 'off'); 
+    set(S.gui, 'BusyAction', 'cancel', 'Interruptible', 'off');
     set(S.font, 'BusyAction', 'cancel', 'Interruptible', 'off');
-    
+
     %% Load Menu
     S.load    = uimenu(st.fig,'Label','Load', 'Separator', 'on');
     S.loadol  = uimenu(S.load,'Label','New Overlay', 'Accelerator', 'o', 'CallBack', @cb_loadol);
     S.resetol = uimenu(S.load,'Label','Current Overlay (Reload)', 'CallBack', @cb_resetol);
     S.loadul  = uimenu(S.load,'Label','New Underlay', 'Accelerator', 'u', 'Separator', 'on', 'CallBack', @cb_loadul);
-    
+
     %% Save Menu
     S.save          = uimenu(st.fig,'Label','Save', 'Separator', 'on');
     S.saveintensity = uimenu(S.save,'Label','Save Suprathreshold (Intensity)','CallBack', @cb_saveimg);
@@ -713,10 +725,10 @@ function put_figmenu
     S.saveroi       = uimenu(S.save,'Label', 'Save ROI at Current Location', 'CallBack', @cb_saveroi);
     S.savetable     = uimenu(S.save,'Label','Save Results Table', 'Separator', 'on', 'CallBack', @cb_savetable, 'separator', 'on');
     S.savergb       = uimenu(S.save,'Label','Save Screen Capture', 'callback', @cb_savergb);
-    
+
     %% Options Menu
     S.options    = uimenu(st.fig,'Label','Display', 'Separator', 'on');
-    S.prefs      = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences); 
+    S.prefs      = uimenu(S.options, 'Label','Preferences', 'Accelerator', 'P', 'Callback', @cb_preferences);
     S.report     = uimenu(S.options,'Label','Show Results Table', 'Accelerator', 't', 'Separator', 'on', 'CallBack', @cb_report);
     S.render     = uimenu(S.options,'Label','Show Surface Rendering',  'Accelerator', 'r', 'CallBack', @cb_render);
     S.slice      = uimenu(S.options,'Label','Show Slice Montage', 'Accelerator', 's', 'CallBack', @cb_montage);
@@ -731,14 +743,14 @@ function put_figmenu
     urls   = default_urls;
     for i = 1:length(urls), S.web(i+1) = uimenu(S.web(1),'Label',urls(i).label, 'Callback', {@cb_web, urls(i).url}); end
     S.web(length(urls)+1) = uimenu(S.web(1),'Label','Search Location in Neurosynth', 'CallBack', @cb_neurosynth);
-    
-    %% Status 
+
+    %% Status
     S.status = uimenu(st.fig, 'Label', '|    Status: Ready', 'Enable', 'off', 'Tag', 'status');
 function put_axesmenu
     [h,axpos]  = gethandles_axes;
     cmenu      = uicontextmenu;
     ctmax      = uimenu(cmenu, 'Label', 'Go to Global Peak', 'callback', @cb_minmax, 'separator', 'off');
-    ctlocalmax = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax); 
+    ctlocalmax = uimenu(cmenu, 'Label', 'Go to Nearest Peak', 'callback', @cb_localmax);
     ctclustmax = uimenu(cmenu, 'Label', 'Go to Cluster Peak', 'callback', @cb_clustminmax);
     ctplot     = uimenu(cmenu, 'Label', 'Plot', 'separator', 'on');
     spaceopt   = {'Cluster' 'Voxel' 'Shape around Voxel'};
@@ -754,10 +766,10 @@ function put_axesmenu
     ctsavemask = uimenu(ctsave, 'Label', 'Save Current Cluster (Binary Mask)', 'callback', @cb_saveclust);
     ctsaveroi  = uimenu(ctsave, 'Label', 'Save ROI at Current Location', 'callback', @cb_saveroi);
     ctsavergb  = uimenu(ctsave, 'Label', 'Save Screen Capture', 'callback', @cb_savergb);
-    ctns       = uimenu(cmenu, 'Label', 'Search Location in Neurosynth',  'CallBack', @cb_neurosynth, 'separator', 'on');  
-    ctxhair    = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', {@cb_crosshair, 'toggle'}, 'separator', 'on'); 
+    ctns       = uimenu(cmenu, 'Label', 'Search Location in Neurosynth',  'CallBack', @cb_neurosynth, 'separator', 'on');
+    ctxhair    = uimenu(cmenu, 'Label', 'Toggle Crosshairs', 'checked', 'on', 'Accelerator', 'c', 'Tag', 'Crosshairs', 'callback', {@cb_crosshair, 'toggle'}, 'separator', 'on');
     for a = 1:3
-        set(h.ax(a), 'uicontextmenu', cmenu); 
+        set(h.ax(a), 'uicontextmenu', cmenu);
     end
     drawnow;
 function put_axesxyz
@@ -765,16 +777,16 @@ function put_axesxyz
     h = gethandles_axes;
     xyz = round(bspm_XYZreg('GetCoords',st.registry.hReg));
     xyzstr = num2str([-99; xyz]); xyzstr(1,:) = [];
-    set(h.ax, 'YAxislocation', 'right'); 
-    axidx = [3 2 1]; 
+    set(h.ax, 'YAxislocation', 'right');
+    axidx = [3 2 1];
     for a = 1:length(axidx)
-        yh = get(h.ax(axidx(a)), 'YLabel'); 
-        st.vols{1}.ax{axidx(a)}.xyz = yh; 
+        yh = get(h.ax(axidx(a)), 'YLabel');
+        st.vols{1}.ax{axidx(a)}.xyz = yh;
         if a==1
             set(yh, 'units', 'norm', 'fontunits', 'norm', 'fontsize', .075, ...
                 'pos', [0 1 0], 'horiz', 'left', 'fontname', 'arial', ...
                 'color', [1 1 1], 'string', xyzstr(a,:), 'rot', 0, 'tag', 'xyzlabel');
-            set(yh, 'fontunits', 'points'); 
+            set(yh, 'fontunits', 'points');
             fs = get(yh, 'fontsize');
         else
             set(yh, 'units', 'norm', 'fontsize', fs, ...
@@ -785,11 +797,11 @@ function put_axesxyz
     drawnow;
 function put_upperpaneinfo(parent)
     global st
-    
+
 
     data = struct2cell(st.ol.finfo);
-    data = data(2:3);  
-    
+    data = data(2:3);
+
     th = uitable('Parent', parent, ...
         'Data', data, ...
         'Units', 'norm', ...
@@ -801,19 +813,19 @@ function put_upperpaneinfo(parent)
         'FontName', 'Fixed-Width', ...
         'FontUnits', 'Points', ...
         'FontSize', st.fonts.sz4);
-    
+
     % | Column Width
     set(th, 'units', 'pix');
     set(parent, 'units', 'pix');
     textent = get(th, 'extent');
-    tpos    = get(th, 'Pos'); 
-    fpos    = get(parent, 'pos'); 
-    ht      = diff([tpos([2 4])]); 
+    tpos    = get(th, 'Pos');
+    fpos    = get(parent, 'pos');
+    ht      = diff([tpos([2 4])]);
     hw      = diff([fpos([1 3])])*.975;
-    tpos(2) = [tpos(4) - textent(4)]; 
-    tpos(4) = textent(4); 
-    set(th, 'ColumnWidth', {hw}, 'Position', tpos); 
-    set(parent, 'units', 'pix'); 
+    tpos(2) = [tpos(4) - textent(4)];
+    tpos(4) = textent(4);
+    set(th, 'ColumnWidth', {hw}, 'Position', tpos);
+    set(parent, 'units', 'pix');
     set(th, 'units', 'norm');
     drawnow;
 
@@ -823,13 +835,13 @@ function cb_updateoverlay(varargin)
     global st
     % | Check for Numeric Input
 %     if isempty(varargin) || isnan(str2double(get(varargin{1}, 'string')))
-%         setthreshinfo; 
+%         setthreshinfo;
 %         return
 %     end
 
     htype       = findobj(st.fig, 'tag', 'Correction');
     htypestr    = get(htype, 'string');
-    userstr     = 'User-specified'; 
+    userstr     = 'User-specified';
     T0  = getthresh;
     T   = T0;
     di  = strcmpi({'+' '-' '+/-'}, T.direct);
@@ -845,7 +857,7 @@ function cb_updateoverlay(varargin)
                 else
                     set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
-                
+
             case {'P-Value'}
                 if T.df~=Inf, T.thresh = spm_invTcdf(1-T.pval, T.df); end
                 if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
@@ -857,7 +869,7 @@ function cb_updateoverlay(varargin)
                 end
             case {'DF'}
                 if ~any([T.pval T.df]==Inf)
-                    T.thresh = spm_invTcdf(1-T.pval, T.df); 
+                    T.thresh = spm_invTcdf(1-T.pval, T.df);
                     T.pval = bob_t2p(T.thresh, T.df);
                 end
                 if find(strcmpi(htypestr, 'Cluster FWE'))==get(htype, 'value')
@@ -874,35 +886,35 @@ function cb_updateoverlay(varargin)
                     set(htype, 'value', find(strcmpi(htypestr, userstr)));
                 end
                 if sum(st.ol.C0(di,st.ol.C0(di,:)>=T.extent))==0
-                    headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');      
+                    headsup('No suprathreshold clusters. Setting extent to largest cluster size at current intensity threshold.');
                     T.extent = max(st.ol.C0(di,:));
                 end
         end
     end
-    
+
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-    C = st.ol.C0(di,:); 
+    C = st.ol.C0(di,:);
     if sum(C(C>=T.extent))==0
         setthreshinfo;
-        headsup('No suprathreshold voxels. Reverting to previous threshold.'); 
+        headsup('No suprathreshold voxels. Reverting to previous threshold.');
         return
     end
-    setthresh(C, find(di)); 
+    setthresh(C, find(di));
     setthreshinfo(T);
     setmaxima;
     drawnow;
 function cb_correct(varargin)
-    setstatus('Working, please wait...'); 
+    setstatus('Working, please wait...');
     global st
     str = get(varargin{1}, 'string');
     methodstr = str{get(varargin{1}, 'value')};
     T0 = getthresh;
-    T = T0; 
+    T = T0;
     di = strcmpi({'+' '-' '+/-'}, T.direct);
     switch methodstr
         case {'User-specified'}
-            cb_resetol; 
-            setstatus('Ready'); 
+            cb_resetol;
+            setstatus('Ready');
             return;
         case {'Voxel FWE'}
             T.thresh    = voxel_correct(st.ol.fname, st.preferences.alphacorrect);
@@ -910,70 +922,70 @@ function cb_correct(varargin)
         case {'Cluster FWE'}
             T.extent = cluster_correct(st.ol.fname, T0.pval, st.preferences.alphacorrect);
         case {'Cluster FDR'}
-            [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);            
+            [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);
     end
-      
+
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-    C = st.ol.C0(di,:); 
+    C = st.ol.C0(di,:);
     if sum(C(C>=T.extent))==0
-        T0.thresh = st.ol.U; 
+        T0.thresh = st.ol.U;
         setthreshinfo(T0);
         headsup('No suprathreshold voxels. Reverting to previous threshold.');
         set(varargin{1}, 'value', 1);
-        setstatus('Ready'); 
+        setstatus('Ready');
         return
     end
-    setthresh(C, find(di)); 
+    setthresh(C, find(di));
     setthreshinfo(T);
-    setstatus('Ready'); 
+    setstatus('Ready');
 function cb_directmenu(varargin)
     global st
-    if ischar(varargin{1}), str = varargin{1}; 
+    if ischar(varargin{1}), str = varargin{1};
     else str = get(varargin{1}, 'string'); end
     % | See If Colormap Update is in Order
     if ismember(str, {'+' '-'}) & strcmp(st.direct, '+/-')
-        htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
+        htmp        = findobj(st.fig, 'Tag', 'colormaplist');
         set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'hot')));
         enablefdr;
     elseif strcmp(str, '+/-')
-        htmp        = findobj(st.fig, 'Tag', 'colormaplist'); 
+        htmp        = findobj(st.fig, 'Tag', 'colormaplist');
         set(htmp, 'value', find(strcmpi(get(htmp, 'String'), 'signed')));
         disablefdr;
     end
-    allh = findobj(st.fig, 'Tag', 'direct'); 
+    allh = findobj(st.fig, 'Tag', 'direct');
     allhstr = get(allh, 'String');
-    set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive'); 
+    set(allh(strcmp(allhstr, str)), 'Value', 1, 'Enable', 'inactive');
     set(allh(~strcmp(allhstr, str)), 'Value', 0, 'Enable', 'on');
     drawnow;
     T       = getthresh;
     di      = strcmpi({'+' '-' '+/-'}, T.direct);
     [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
     C       = st.ol.C0(di,:);
-    y       = st.ol.Y(C>0); 
+    y       = st.ol.Y(C>0);
     ydi     = [any(y>0) any(y<0) (any(y>0) & any(y<0))];
     if ~ydi(di)
         lab = {'positive' 'negative'};
         if find(di)==3 && any(ydi)
-            
+
             headsup(sprintf('No %s suprathreshold voxels. Showing unthresholded image.', lab{ydi(1:2)==0}));
         else
             headsup('No suprathreshold voxels. Showing unthresholded image.');
         end
-        T.thresh = 0.0001; 
+        T.thresh = 0.0001;
         T.pval = bob_t2p(T.thresh, T.df);
-        T.extent = 1; 
+        T.extent = 1;
         [st.ol.C0, st.ol.C0IDX] = getclustidx(st.ol.Y, T.thresh, T.extent);
-        C = st.ol.C0(di,:);   
+        C = st.ol.C0(di,:);
     end
     opt = default_lowerpane;
-    opt = opt{strcmp(opt(:,5), 'Correction'), 4}; 
-    cmethod = opt{get(findobj(st.fig, 'Tag', 'Correction'), 'Value')}; 
+    opt = opt{strcmp(opt(:,5), 'Correction'), 4};
+    cmethod = opt{get(findobj(st.fig, 'Tag', 'Correction'), 'Value')};
     if all([ismember(str, {'+' '-'}), ismember(st.direct, {'+' '-'}), strcmpi(cmethod, opt{4})])
         [tmp, T.extent] = cluster_correct(st.ol.fname, T.pval, st.preferences.alphacorrect);
     end
     setthreshinfo(T);
     setthresh(C, find(di));
-    
+
 % | CALLBACKS - BSPMVIEW MENU
 % =========================================================================
 function cb_setasdefault(varargin)
@@ -983,22 +995,22 @@ function cb_setasdefault(varargin)
     if get(findobj(st.fig, 'Label', 'Light'), 'Checked')
         st.preferences.color = default_colors(0);
     else
-        st.preferences.color = default_colors(1); 
+        st.preferences.color = default_colors(1);
     end
     deffile = fullfile(getenv('HOME'), 'bspmview_preferences.mat');
-    st.preferences.dark = get(findobj(st.fig, 'label', 'Dark'), 'checked'); 
-    st.preferences.light = get(findobj(st.fig, 'label', 'Light'), 'checked'); 
-    def     = st.preferences; 
-    save(deffile, '-struct', 'def'); 
+    st.preferences.dark = get(findobj(st.fig, 'label', 'Dark'), 'checked');
+    st.preferences.light = get(findobj(st.fig, 'label', 'Light'), 'checked');
+    def     = st.preferences;
+    save(deffile, '-struct', 'def');
     h = headsup('Default Appearance Updated', 'Success', 0);
-    pause(.50); 
+    pause(.50);
     delete(h);
 function cb_changeguisize(varargin)
     global st
-    F = 0.9; 
+    F = 0.9;
     if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1.1; end
     guipos = get(st.fig, 'pos');
-    guipos(3:4) = guipos(3:4)*F; 
+    guipos(3:4) = guipos(3:4)*F;
     set(st.fig, 'pos', guipos);
     pause(.50);
     drawnow;
@@ -1014,54 +1026,54 @@ function cb_changefontname(varargin)
     drawnow;
 function cb_changefontsize(varargin)
     global st
-    minsize = 5; 
-    F = -1; 
+    minsize = 5;
+    F = -1;
     if strcmp(get(varargin{1}, 'Label'), 'Increase'), F = 1; end
-    setfontunits('points'); 
+    setfontunits('points');
     h   = findall(st.fig, '-property', 'FontSize');
     fs  = cell2mat(get(h, 'FontSize')) + F;
-    h(fs<minsize) = []; 
+    h(fs<minsize) = [];
     fs(fs<minsize)  = [];
     arrayfun(@set, h, repmat({'FontSize'}, length(h), 1), num2cell(fs))
     pause(.50);
     drawnow;
-    setfontunits('norm'); 
+    setfontunits('norm');
 function cb_changeskin(varargin)
     if strcmpi(get(varargin{1},'Checked'), 'on'), return; end
     global st
     skin = get(varargin{1}, 'Label');
-    h       = gethandles; 
-    col     = st.color; 
+    h       = gethandles;
+    col     = st.color;
     switch lower(skin)
         case {'dark'}
             st.color = default_colors(1);
-            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'on'); 
-            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'off'); 
+            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'on');
+            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'off');
         case {'light'}
             st.color = default_colors(0);
-            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'off'); 
-            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'on'); 
+            set(findobj(st.fig, 'Label', 'Dark'), 'Checked', 'off');
+            set(findobj(st.fig, 'Label', 'Light'), 'Checked', 'on');
     end
-    set(st.fig, 'color', st.color.bg); 
+    set(st.fig, 'color', st.color.bg);
     set(findall(st.fig, '-property', 'ycolor'), 'ycolor', st.color.bg);
     set(findall(st.fig, '-property', 'xcolor'), 'xcolor', st.color.bg);
-    al = findall(h.lowerpanel, 'type', 'axes'); 
-    ul = findall(h.upperpanel, 'type', 'axes'); 
-    set([al; ul], 'color', st.color.bg); 
-    al = findall(h.lowerpanel, 'type', 'text'); 
-    ul = findall(h.upperpanel, 'type', 'text'); 
-    set([al; ul], 'color', st.color.fg); 
+    al = findall(h.lowerpanel, 'type', 'axes');
+    ul = findall(h.upperpanel, 'type', 'axes');
+    set([al; ul], 'color', st.color.bg);
+    al = findall(h.lowerpanel, 'type', 'text');
+    ul = findall(h.upperpanel, 'type', 'text');
+    set([al; ul], 'color', st.color.fg);
     set(findall(st.fig, 'type', 'uipanel'), 'backg', st.color.bg, 'foreg', st.color.fg);
     set(findall(st.fig, 'type', 'uicontrol', 'style', 'text'), 'backg', st.color.bg, 'foreg', st.color.fg);
     set(findall(st.fig, 'style', 'radio'), 'backg', st.color.bg, 'foreg', st.color.fg);
-    set(h.colorbar, 'ycolor', st.color.fg); 
-    set(varargin{1}, 'Checked', 'on'); 
+    set(h.colorbar, 'ycolor', st.color.fg);
+    set(varargin{1}, 'Checked', 'on');
     drawnow;
 function cb_opencode(varargin)
     open(mfilename('fullpath'));
 function cb_uiinspect(varargin)
     global st
-    setstatus('Running UIINSPECT, please wait...'); 
+    setstatus('Running UIINSPECT, please wait...');
     uiinspect(st.fig);
     setstatus('Ready');
 function cb_checkversion(varargin)
@@ -1072,20 +1084,20 @@ function cb_checkversion(varargin)
         str = webread(url);
     catch
         set(h(2), 'String', 'Could not read web data. Are you connected to the internet?');
-        figure(h(1)); 
+        figure(h(1));
         return
     end
     [idx1, idx2] = regexp(str, 'Version:  ');
     gitversion = str(idx2+1:idx2+8);
     if strcmp(bspmview_version, gitversion)
-        delete(h(1)); 
+        delete(h(1));
         headsup('You have the latest version.', 'Checking Version', 1);
-        return; 
+        return;
     else
-        delete(h(1)); 
+        delete(h(1));
         answer = yesorno('An update is available. Would you like to download the latest version?', 'Update Available');
         if strcmpi(answer, 'Yes')
-            guidir      = fileparts(mfilename('fullpath')); 
+            guidir      = fileparts(mfilename('fullpath'));
             newguidir   = fullfile(fileparts(guidir), 'bspmview-master');
             url         = 'https://github.com/spunt/bspmview/archive/master.zip';
             h = headsup('Downloading...', 'Please Wait', 0);
@@ -1093,87 +1105,87 @@ function cb_checkversion(varargin)
             delete(h(1));
             h = headsup(sprintf('Latest version saved to: %s', newguidir), 'Update', 1);
         else
-            return; 
+            return;
         end
-    end     
+    end
 function cb_closegui(varargin)
    if length(varargin)==3, h = varargin{3};
    else h = varargin{1}; end
-   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles')); 
-   delete(h); % Bye-bye figure 
-   
+   rmpath(fullfile(fileparts(mfilename('fullpath')), 'supportfiles'));
+   delete(h); % Bye-bye figure
+
 % | CALLBACKS - SAVE MENU
 % =========================================================================
 function cb_saveimg(varargin)
     global st
     lab     = get(varargin{1}, 'label');
-    outimg  = getcurrentoverlay; 
+    outimg  = getcurrentoverlay;
     outhdr  = st.ol.hdr;
-    putmsg  = 'Save intensity image as'; 
-    outhdr.descrip = 'Thresholded Intensity Image'; 
-    [p,n] = fileparts(outhdr.fname); 
-    deffn = sprintf('%s%sThresh_%s.nii', p, filesep, n);  
+    putmsg  = 'Save intensity image as';
+    outhdr.descrip = 'Thresholded Intensity Image';
+    [p,n] = fileparts(outhdr.fname);
+    deffn = sprintf('%s%sThresh_%s.nii', p, filesep, n);
     if regexpi(lab, 'Binary Mask')
         outimg(outimg~=0)     = 1;
-        outhdr.descrip = 'Thresholded Mask Image'; 
-        putmsg = 'Save mask image as'; 
-        deffn = sprintf('%s%sMask_%s.nii', p, filesep, n);  
+        outhdr.descrip = 'Thresholded Mask Image';
+        putmsg = 'Save mask image as';
+        deffn = sprintf('%s%sMask_%s.nii', p, filesep, n);
     end
     fn = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
-    outhdr.fname = fn; 
+    outhdr.fname = fn;
     spm_write_vol(outhdr, outimg);
-    fprintf('\nImage saved to %s\n', fn);         
+    fprintf('\nImage saved to %s\n', fn);
 function cb_saveclust(varargin)
     global st
-    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string');
     if strcmp(str, 'n/a'), return; end
     lab            = get(varargin{1}, 'label');
-    blob           = getcurrentblob; 
+    blob           = getcurrentblob;
     rname          = sprintf('%s (x=%d, y=%d, z=%d)', blob.label, blob.xyz);
-    outimg         = st.ol.Y; 
-    outhdr         = st.ol.hdr; 
-    outimg(~blob.clidx) = 0; 
-    putmsg         = 'Save cluster'; 
-    outhdr.descrip = 'Intensity Thresholded Cluster Image'; 
-    [p,n]          = fileparts(outhdr.fname); 
-    deffn          = sprintf('%s%sCluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, filesep, n, blob.xyz, str);  
+    outimg         = st.ol.Y;
+    outhdr         = st.ol.hdr;
+    outimg(~blob.clidx) = 0;
+    putmsg         = 'Save cluster';
+    outhdr.descrip = 'Intensity Thresholded Cluster Image';
+    [p,n]          = fileparts(outhdr.fname);
+    deffn          = sprintf('%s%sCluster_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, filesep, n, blob.xyz, str);
     if regexp(lab, 'Binary Mask')
         outimg(outimg~=0)     = 1;
-        outhdr.descrip        = 'Binary Mask Cluster Image'; 
-        putmsg                = 'Save mask image as'; 
-        deffn                 = sprintf('%s%sClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, filesep, n, blob.xyz, str);   
+        outhdr.descrip        = 'Binary Mask Cluster Image';
+        putmsg                = 'Save mask image as';
+        deffn                 = sprintf('%s%sClusterMask_%s_x=%d_y=%d_z=%d_%svoxels.nii', p, filesep, n, blob.xyz, str);
     end
     fn           = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
-    outhdr.fname = fn; 
+    outhdr.fname = fn;
     spm_write_vol(outhdr, outimg);
-    fprintf('\nCluster image saved to %s\n', fn);     
+    fprintf('\nCluster image saved to %s\n', fn);
 function cb_saveroi(varargin)
     global st
-    [roi, button] = settingsdlg(...  
+    [roi, button] = settingsdlg(...
     'title'                     ,   'ROI Parameters', ...
     {'Intersect ROI with Overlay?'; 'intersectflag'}    ,  true, ...
     {'Shape'; 'shape'}          ,   {'Sphere' 'Box'}, ...
     {'Size (mm)'; 'size'}       ,   12);
     if strcmpi(button, 'cancel'), return; end
-    xyz             = getroundvoxel; 
+    xyz             = getroundvoxel;
     cROI            = growregion(roi, xyz);
     cHDR            = st.ol.hdr;
-    cHDR.descrip    = sprintf('ROI - x=%d, y=%d, z=%d - %s %d', xyz, roi.shape, roi.size); 
-    [p,n]           = fileparts(cHDR.fname); 
-    deffn           = sprintf('%s/ROI_x=%d_y=%d_z=%d_%dvoxels_%s%d.nii', p, xyz, sum(cROI(:)), roi.shape, roi.size);  
-    putmsg          = 'Save ROI as'; 
+    cHDR.descrip    = sprintf('ROI - x=%d, y=%d, z=%d - %s %d', xyz, roi.shape, roi.size);
+    [p,n]           = fileparts(cHDR.fname);
+    deffn           = sprintf('%s/ROI_x=%d_y=%d_z=%d_%dvoxels_%s%d.nii', p, xyz, sum(cROI(:)), roi.shape, roi.size);
+    putmsg          = 'Save ROI as';
     fn              = uiputvol(deffn, putmsg);
     if isempty(fn), disp('User cancelled.'); return; end
-    cHDR.fname      = fn; 
+    cHDR.fname      = fn;
     spm_write_vol(cHDR,cROI);
-    fprintf('\nROI image saved to %s\n', fn);     
+    fprintf('\nROI image saved to %s\n', fn);
 function cb_savergb(varargin)
     %% Handles for axes
     % 1 - transverse
     % 2 - coronal
-    % 3 - sagittal 
+    % 3 - sagittal
     % st.vols{1}.ax{1}.ax   - axes
     % st.vols{1}.ax{1}.d    - image
     % st.vols{1}.ax{1}.lx   - crosshair (x)
@@ -1184,44 +1196,44 @@ function cb_savergb(varargin)
     setbackgcolor(st.color.bg)
     [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf', 'Image'; '*.*', 'All Files (*.*)'}, 'Specify output directory and name', construct_filename);
     if ~imname, disp('User cancelled.'); return; end
-    imwrite(im, fullfile(pname, imname)); 
-    fprintf('\nImage saved to %s\n', fullfile(pname, imname));   
-   
+    imwrite(im, fullfile(pname, imname));
+    fprintf('\nImage saved to %s\n', fullfile(pname, imname));
+
 % | CALLBACKS - LOAD MENU
-% =========================================================================    
+% =========================================================================
 function cb_loadol(varargin)
     global st
     fname = uigetvol('Select an Image File for Overlay', 0);
     if isempty(fname), disp('An overlay image was not selected.'); return; end
     hcorrect = findobj(st.fig, 'tag', 'Correction');
-    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'User-specified'))); 
+    set(hcorrect, 'value', find(strcmpi(get(hcorrect, 'string'), 'User-specified')));
     T       = getthresh;
     if isinf(T.pval)
         load_overlay(fname);
     else
         load_overlay(fname, T.pval, T.extent);
     end
-    
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
+
+    di = strcmpi({'+' '-' '+/-'}, T.direct);
     setthresh(st.ol.C0(find(di),:), find(di));
     setthreshinfo;
-    check4design; 
+    check4design;
     drawnow;
 function cb_resetol(varargin)
     global st
-    set(findobj(st.fig, 'Tag', 'Correction'), 'Value', 1); 
+    set(findobj(st.fig, 'Tag', 'Correction'), 'Value', 1);
     load_overlay(st.ol.fname, st.preferences.alphauncorrect, st.preferences.clusterextent);
-    di = strcmpi({'+' '-' '+/-'}, st.direct); 
+    di = strcmpi({'+' '-' '+/-'}, st.direct);
     setthresh(st.ol.C0(find(di),:), find(di));
     setthreshinfo;
-    drawnow; 
+    drawnow;
 function cb_loadul(varargin)
-    
+
     ul = uigetvol('Select an Image File for Underlay', 0);
     if isempty(ul), disp('An underlay image was not selected.'); return; end
     global st prevsect
     prevsect    = ul;
-    h = gethandles_axes; 
+    h = gethandles_axes;
     delete(h.ax);
     bspm_orthviews('Delete', st.ho);
     st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
@@ -1232,16 +1244,16 @@ function cb_loadul(varargin)
     setxhaircolor;
     put_axesxyz;
     put_axesmenu;
-    h = findall(st.fig, 'Tag', 'Crosshairs'); 
+    h = findall(st.fig, 'Tag', 'Crosshairs');
     set(h,'Checked','on');
-    bspm_orthviews('Xhairs','on') 
+    bspm_orthviews('Xhairs','on')
     drawnow;
-    
+
 % | CALLBACKS - DISPLAY MENU
-% =========================================================================    
+% =========================================================================
 function cb_preferences(varargin)
     global st
-    default_preferences; 
+    default_preferences;
 function cb_crosshair(varargin)
     global st
     state   = get(varargin{1},'Checked');
@@ -1255,13 +1267,13 @@ function cb_crosshair(varargin)
                 bspm_orthviews('Xhairs','on'); set(h,'Checked','on');
             end
         case 'color'
-            st.color.xhair = uisetcolor(st.color.xhair, 'Select Crosshair Color'); 
+            st.color.xhair = uisetcolor(st.color.xhair, 'Select Crosshair Color');
             setxhaircolor;
     end
     drawnow;
 function cb_smooth(varargin)
 global st
-pos = get(st.fig, 'pos'); 
+pos = get(st.fig, 'pos');
 w   = pos(3)*.65;
 [prefs, button] = settingsdlg(...
     'title'                             ,   'Smoothing Options',    ...
@@ -1271,30 +1283,30 @@ w   = pos(3)*.65;
     {'Select Method'; 'method'}         ,   {'Gaussian (spm_smooth.m)' 'Robust (smoothn.m)'}, ...
     {'Rescale result to have same MIN/MAX'; 'dorescale'}, false, ...
     {'Restrict to suprathreshold voxels?'; 'supraonly'}, false ...
-    ); 
+    );
 if strcmpi(button, 'cancel'), return; end
-y       = st.ol.Y; 
+y       = st.ol.Y;
 if prefs.supraonly
-    T           = getthresh; 
-    di          = strcmpi({'+' '-' '+/-'}, T.direct); 
+    T           = getthresh;
+    di          = strcmpi({'+' '-' '+/-'}, T.direct);
     clustidx    = st.ol.C0(di,:);
-    opt         = [1 -1 1]; 
+    opt         = [1 -1 1];
     y           = y*opt(di);
     y(clustidx==0) = NaN;
 end
 minmaxy = [nanmin(y(:)) nanmax(y(:))];
-y(isnan(y)) = 0; 
+y(isnan(y)) = 0;
 switch prefs.method
     case {'Gaussian (spm_smooth.m)'}
         [OPTIONS, button] = settingsdlg(...
             'title'                             ,   'Smoothing Options',            ...
             'WindowWidth'                       ,   w*(2/3),                        ...
             'ControlWidth'                      ,   w*(1/3),                        ...
-            {'Kernel (FWHM in mm)'; 'fwhm'}     ,   5);  
+            {'Kernel (FWHM in mm)'; 'fwhm'}     ,   5);
         if strcmpi(button, 'cancel'), return; end
         kmm     = repmat(OPTIONS.fwhm, 1, 3);
         kvox    = kmm./st.ol.VOX';
-        spm_smooth(y, y, kvox); 
+        spm_smooth(y, y, kvox);
 %         y = gauss3filter(y, OPTIONS.fwhm, st.ol.VOX');
     case {'Robust (smoothn.m)'}
          [OPTIONS, button] = settingsdlg(...
@@ -1305,35 +1317,35 @@ switch prefs.method
             {'Maximum number of iterations allowed'; 'MaxIter'}, 100, ...
             {'Weight function for robust smoothing'; 'Weight'}, {'bisquare' 'talworth' 'cauchy'});
         if strcmpi(button, 'cancel'), return; end
-        OPTIONS = rmfield(OPTIONS, {'WindowWidth' 'ControlWidth'}); 
-        setstatus('Working, please wait...'); 
-        y = smoothn(y, 'robust', OPTIONS); 
+        OPTIONS = rmfield(OPTIONS, {'WindowWidth' 'ControlWidth'});
+        setstatus('Working, please wait...');
+        y = smoothn(y, 'robust', OPTIONS);
 end
 if prefs.dorescale
-    y(isnan(y)) = 0; 
-    y(y~=0) = scaledata(y(y~=0), minmaxy); 
+    y(isnan(y)) = 0;
+    y(y~=0) = scaledata(y(y~=0), minmaxy);
 end
-st.ol.Y = y; 
+st.ol.Y = y;
 cb_updateoverlay
-setstatus('Ready'); 
+setstatus('Ready');
 function cb_mask(varargin)
     global st
     mfname = uigetvol('Select an Image File for Overlay');
     if isempty(mfname), disp('User cancelled.'); return; end
-    setstatus('Working, please wait...'); 
+    setstatus('Working, please wait...');
     mask    = reslice_image(mfname, st.ol.fname);
     mask    = double(mask > 0);
-    y       = st.ol.Y .* mask; 
+    y       = st.ol.Y .* mask;
     % | Check surviving voxels
     ydi     = [any(y(:)>0) any(y(:)<0) (any(y(:)>0) & any(y(:)<0))];
     di      = strcmpi({'+' '-' '+/-'}, st.direct);
     if ~ydi(di)
         headsup('No suprathreshold voxels remain after intersecting with mask. Doing nothing...');
-        setstatus('Ready'); 
-        return; 
+        setstatus('Ready');
+        return;
     end
     st.ol.null 	= check4sign(y);
-    st.ol.Y     = y; 
+    st.ol.Y     = y;
     cb_updateoverlay
     setstatus('Ready');
 function cb_reversemap(varargin)
@@ -1345,24 +1357,24 @@ function cb_reversemap(varargin)
     end
 %     global st
 %     for i = 1:size(st.cmap, 1)
-%        st.cmap{i,1} = st.cmap{i,1}(end:-1:1,:); 
+%        st.cmap{i,1} = st.cmap{i,1}(end:-1:1,:);
 %     end
-    setcolormap;  
+    setcolormap;
 function cb_render(varargin)
     global st
-    setstatus('Working, please wait...'); 
-    T = getthresh; 
+    setstatus('Working, please wait...');
+    T = getthresh;
     direct = char(T.direct);
-    
+
     obj = [];
     obj.figno = 0;
     obj.newfig = 1;
     obj.nearestneighbor = st.preferences.neighbor; % if = 1, only the value from the closest voxel will be used, useful for maskings and label images
-    obj.cmapflag = st.preferences.colorbar;   
-    obj.round = st.preferences.round;          % if = 1, rounds all values on the surface to nearest whole number.  Useful for masks       
+    obj.cmapflag = st.preferences.colorbar;
+    obj.round = st.preferences.round;          % if = 1, rounds all values on the surface to nearest whole number.  Useful for masks
     obj.shadingrange = [st.preferences.shadingmin st.preferences.shadingmax];
     obj.Nsurfs = st.preferences.surfshow ;
-    
+
     % fsaverage map to use
     switch st.preferences.nverts
         case 642
@@ -1377,17 +1389,17 @@ function cb_render(varargin)
             obj.fsaverage = 'fsaverage.mat';
         otherwise
     end
-    
-    obj.fsaverage       = fullfile(st.supportpath, obj.fsaverage); 
+
+    obj.fsaverage       = fullfile(st.supportpath, obj.fsaverage);
     obj.background      = [0 0 0];
-    obj.figname         = st.ol.fname; 
-    obj.mappingfile     = [];         
-    obj.medialflag      = 1; 
-    obj.direction       = direct; 
-    obj.surface         = st.preferences.surface; 
+    obj.figname         = st.ol.fname;
+    obj.mappingfile     = [];
+    obj.medialflag      = 1;
+    obj.direction       = direct;
+    obj.surface         = st.preferences.surface;
     obj.shading         = st.preferences.shading;
     obj.colorlims       = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max];
-    
+
 %     switch obj.surface
 %         case 'white'
 %             obj.shading = 'curv';
@@ -1408,14 +1420,14 @@ function cb_render(varargin)
 
     % | Determine Input
     obj.input.m = getcurrentoverlay(st.preferences.dilate);
-    obj.input.he = st.ol.hdr; 
-    obj.input.m(obj.input.m==0) = NaN; 
+    obj.input.he = st.ol.hdr;
+    obj.input.m(obj.input.m==0) = NaN;
     obj.overlaythresh       = 0;
     obj.reverse             = 0;
     if strcmpi(direct, '+/-'), obj.overlaythresh   = [0 0]; end
-    obj.colormap    = getcolormap; 
+    obj.colormap    = getcolormap;
     ss = get(0, 'ScreenSize');
-    ts = floor(ss/2);     
+    ts = floor(ss/2);
     switch obj.Nsurfs
     case 4
        ts(4) = ts(4)*.90;
@@ -1429,11 +1441,19 @@ function cb_render(varargin)
        ts(4) = ts(4)*.60;
     otherwise
     end
-    obj.position = ts; 
-    [h1, hh1] = surfPlot6(obj);
+    obj.position = ts;
+    [obj, h1, hh1] = surfPlot6(obj);
+    % final cleanup
+    S.menu          = uimenu('Parent', obj.figno, 'Label', 'File');
+    S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_saverender, obj.figno});
+    set(obj.figno,  'visible', 'on');
+    tightfig(obj.figno);
     drawnow;
-    setstatus('Ready'); 
- 
+    setstatus('Ready');
+function cb_saverender(varargin)
+    uisavefig('surfacerender', varargin{3});
+
+
 % | CALLBACKS - WEB MENU
 % =========================================================================
 function cb_web(varargin)
@@ -1443,12 +1463,12 @@ function cb_neurosynth(varargin)
     baseurl = 'http://neurosynth.org/locations/?x=%d&y=%d&z=%d&r=6';
     stat = web(sprintf(baseurl, getroundvoxel), '-browser');
     if stat, headsup('Could not open a browser window..'); end
-       
+
 % | CALLBACKS - CROSSHAIR LOCATION
 % =========================================================================
 function cb_clustminmax(varargin)
     global st
-    str           = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    str           = get(findobj(st.fig, 'tag', 'clustersize'), 'string');
     if strcmp(str, 'n/a'), return; end
     blob    = getcurrentblob;
     if all(blob.values < 0), blob.values = abs(blob.values); end
@@ -1457,7 +1477,7 @@ function cb_clustminmax(varargin)
         printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the cluster maximum value', size(xyz, 2)), 'NOTE');
         xyz = xyz(:,randperm(size(xyz, 2)));
     end
-    bspm_orthviews('reposition', xyz(:,1)); 
+    bspm_orthviews('reposition', xyz(:,1));
     drawnow;
 function cb_localmax(varargin)
     global st
@@ -1466,7 +1486,7 @@ function cb_localmax(varargin)
         printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the local maximum value', size(xyz, 2)), 'NOTE');
         xyz = xyz(:,randperm(size(xyz, 2)));
     end
-    bspm_orthviews('reposition', xyz(:,1)); 
+    bspm_orthviews('reposition', xyz(:,1));
     drawnow;
 function cb_minmax(varargin)
     global st
@@ -1475,52 +1495,52 @@ function cb_minmax(varargin)
         printmsg(sprintf('Crosshair has been moved to 1 of %d voxels with the maximum value', size(xyz, 2)), 'NOTE');
         xyz = xyz(:,randperm(2));
     end
-    bspm_orthviews('reposition', xyz(:,1)); 
+    bspm_orthviews('reposition', xyz(:,1));
     drawnow;
 function cb_maxval(varargin)
     global st
-    
+
     % | Check for Numeric Input
     if isnan(str2double(get(varargin{1}, 'string')))
         warndlg('Input must be numerical');
         mm = getminmax;
-        set(varargin{1}, 'string', num2str(mm(2))); 
+        set(varargin{1}, 'string', num2str(mm(2)));
         return
     end
     val = str2double(get(varargin{1}, 'string'));
     bspm_orthviews('SetBlobsMax', 1, 1, val);
     redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
-    setcolormap; 
+    setcolormap;
 function cb_minval(varargin)
     global st
     % | Check for Numeric Input
     if isnan(str2double(get(varargin{1}, 'string')))
         warndlg('Input must be numerical');
         mm = getminmax;
-        set(varargin{1}, 'string', num2str(mm(1))); 
+        set(varargin{1}, 'string', num2str(mm(1)));
         return
     end
     val = str2double(get(varargin{1}, 'string'));
     bspm_orthviews('SetBlobsMin', 1, 1, val);
     redraw_colourbar(st.hld, 1, getminmax, (1:64)'+64);
-    setcolormap; 
+    setcolormap;
 function cb_changexyz(varargin)
-    xyz = str2num(get(varargin{1}, 'string')); 
+    xyz = str2num(get(varargin{1}, 'string'));
     bspm_orthviews('reposition', xyz');
     drawnow;
-    
+
 % | CALLBACKS - TABLE/REPORT
 % =========================================================================
 function cb_report(varargin)
     global st
-    setstatus('Working, please wait...');    
+    setstatus('Working, please wait...');
     LOCMAX = st.ol.tab;
     LABELS = getregionnames(LOCMAX(:,3:5)');
     voxels = [cell(size(LABELS)) LABELS num2cell(LOCMAX)];
-    voxels{1,1} = 'Positive'; 
+    voxels{1,1} = 'Positive';
     if any(LOCMAX(:,2)<0)
-        tmpidx = find(LOCMAX(:,2)<0); 
-        voxels{tmpidx(1),1} = 'Negative'; 
+        tmpidx = find(LOCMAX(:,2)<0);
+        voxels{tmpidx(1),1} = 'Negative';
     end
     % get table position
     ss = get(0, 'ScreenSize');
@@ -1534,9 +1554,9 @@ function cb_report(varargin)
     ts([2 4]) = fs([2 4]);
     % create table
     ts          = setposition_auxwindow;
-    tfig        = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off'); 
-    header      = {'Sign' 'Region Name' 'Extent' 'Stat' 'X' 'Y' 'Z'}; 
-    colwidth    = repmat({'auto'}, 1, length(header)); 
+    tfig        = figure('pos', ts, 'DockControls','off', 'MenuBar', 'none', 'Name', 'Report', 'Color', [1 1 1], 'NumberTitle', 'off', 'Visible', 'off');
+    header      = {'Sign' 'Region Name' 'Extent' 'Stat' 'X' 'Y' 'Z'};
+    colwidth    = repmat({'auto'}, 1, length(header));
     colwidth{2} = floor(ss(3)/10);
     th = uitable('Parent', tfig, ...
         'Data', voxels, ...
@@ -1553,19 +1573,19 @@ function cb_report(varargin)
     tfigmenu  = uimenu(tfig,'Label','Options');
     uimenu(tfigmenu,'Label','Save Report', 'CallBack', {@cb_savetable, th});
     uimenu(tfig, 'Label', '|  NOTE: "Sign" and "Region Name" columns are editable', 'Enable', 'off', 'Tag', 'status');
-    set(th, 'units', 'pix'); 
+    set(th, 'units', 'pix');
     tpos    = get(th, 'extent');
-    fpos    = get(tfig, 'pos'); 
+    fpos    = get(tfig, 'pos');
     set(tfig, 'pos', [fpos(1:2) tpos(3:4)]);
     set(th, 'units', 'norm');
-    set(th, 'pos', [0 0 1 1]); 
+    set(th, 'pos', [0 0 1 1]);
     set(tfig, 'vis', 'on');
-    setstatus('Ready'); 
+    setstatus('Ready');
     drawnow;
 function cb_tablexyz(varargin)
     tabrow  = varargin{2}.Indices(1);
-    tabdata = get(varargin{1}, 'data'); 
-    xyz     = cell2mat(tabdata(tabrow,5:7)); 
+    tabdata = get(varargin{1}, 'data');
+    xyz     = cell2mat(tabdata(tabrow,5:7));
     bspm_orthviews('reposition', xyz');
     drawnow;
 function cb_savetable(varargin)
@@ -1576,10 +1596,10 @@ function cb_savetable(varargin)
         LOCMAX = st.ol.tab;
         LABELS = getregionnames(LOCMAX(:,3:5)');
         voxels = [cell(size(LABELS)) LABELS num2cell(LOCMAX)];
-        voxels{1,1} = 'Positive'; 
+        voxels{1,1} = 'Positive';
         if any(LOCMAX(:,2)<0)
-            tmpidx = find(LOCMAX(:,2)<0); 
-            voxels{tmpidx(1),1} = 'Negative'; 
+            tmpidx = find(LOCMAX(:,2)<0);
+            voxels{tmpidx(1),1} = 'Negative';
         end
     else
         voxels = get(varargin{3}, 'Data');
@@ -1591,31 +1611,31 @@ function cb_savetable(varargin)
     h{2,2}        = sprintf('t > %2.4f; p < %2.4f; df = %d; minimum extent = %d', T.thresh, T.pval, T.df, T.extent);
     h{3,2}        = sprintf('Table shows all local maxima separated by more than %d mm. Regions were automatically labeled using the %s atlas. ', st.preferences.separation, st.preferences.atlasname);
     h{3,2}        = [h{3,2} 'x, y, and z =Montreal Neurological Institute (MNI) coordinates in the left-right, anterior-posterior, and inferior-superior dimensions, respectively.'];
-    headers0    = [h; sep]; 
+    headers0    = [h; sep];
     headers1    = {'Contrast Name' '' '' '' 'MNI Coordinates' '' ''};
     headers2    = {'' 'Region Label' 'Extent' 't-value' 'x' 'y' 'z'};
     allcell     = [headers0; headers1; headers2; sep; voxels];
     [p, imname] = fileparts(st.ol.fname);
-    diname      = {'Positive' 'Negative' 'PosNeg'}; 
+    diname      = {'Positive' 'Negative' 'PosNeg'};
     outname     = ['save_table_' imname '_' diname{di} '_I' num2str(T.thresh) '_C' num2str(T.extent) '_S' num2str(st.preferences.separation) '.xlsx'];
     [fname, pname] = uiputfile({'*.xlsx; *.csv', 'Spreadsheet Table'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
     if ~fname, disp('User cancelled.'); return; end
-    
+
     [tmp,fnameonly,ext] = fileparts(fname);
     if strcmpi(ext, '.csv'), writereport(allcell, fullfile(pname, fname)); return; end;
     try
-        sts = bspm_xlwrite(fullfile(pname, fname), allcell, [], fullfile(st.supportpath, 'TABLE_TEMPLATE.xlsx')); 
+        sts = bspm_xlwrite(fullfile(pname, fname), allcell, [], fullfile(st.supportpath, 'TABLE_TEMPLATE.xlsx'));
     catch
 
-        writereport(allcell, fullfile(pname, strcat(fnameonly, '.csv'))); 
-    end    
-    
+        writereport(allcell, fullfile(pname, strcat(fnameonly, '.csv')));
+    end
+
 % | CALLBACKS - SLICE MONTAGE
 % =========================================================================
 function cb_montage(varargin)
     global st
-    
-    pos = setposition_auxwindow; 
+
+    pos = setposition_auxwindow;
     % | View GUI
     viewopt     = {'sagittal','coronal', 'axial'};
     viewoptin   = strcat('|', viewopt);
@@ -1623,17 +1643,17 @@ function cb_montage(varargin)
                 {strcat('p', viewoptin{:}),'Select View'; ...
               'x|hide colorbar|hide labels','Display Options'; ...
               't|t-stat', 'Colorbar Title'; ...
-              't|auto', 'N Slices Per Row'}); 
+              't|auto', 'N Slices Per Row'});
     if strcmpi(pref, 'cancel'), return; end
     theview = viewopt{pref{1}};
     if any(pref{2}==1), cbar = []; else cbar = 2; end
     if any(pref{2}==2), labels = 'none'; else labels = []; end
-    cbartitle = pref{3}; 
+    cbartitle = pref{3};
     if strcmpi(pref{4}, 'auto'), xslices = []; else xslices = str2num(pref{4}); end
 
     % | Slices GUI
     defslices   = unique(st.ol.maxima(strcmpi(viewopt, theview), :));
-    goodset = 0; 
+    goodset = 0;
     while ~goodset
         idx = find(diff(defslices) <= st.ol.VOX(1)) + 1;
         if isempty(idx), goodset = 1; else defslices(idx(1)) = []; end
@@ -1643,45 +1663,45 @@ function cb_montage(varargin)
     if ischar(pref)
         slices2show = str2num(pref);
     else
-        slices2show = pref; 
+        slices2show = pref;
     end
 
     % | SLOVER
     % | ========================================================
-    o = slover; 
+    o = slover;
 
     % | Underlay
-    o.img(1).vol    = spm_vol(st.vols{1}.fname); 
+    o.img(1).vol    = spm_vol(st.vols{1}.fname);
     o.img(1).prop   = 1;
 
     % | Overlay
-    T = getthresh; 
-    di = strcmpi({'+' '-' '+/-'}, T.direct); 
+    T = getthresh;
+    di = strcmpi({'+' '-' '+/-'}, T.direct);
     clustidx = st.ol.C0(di,:);
-    opt = [1 -1 1]; 
+    opt = [1 -1 1];
     mat3d = st.ol.Y*opt(di);
     mat3d(clustidx==0) = NaN;
-    o.img(2).vol = slover('matrix2vol', mat3d, st.ol.hdr.mat); 
-    o.img(2).prop = 1; 
+    o.img(2).vol = slover('matrix2vol', mat3d, st.ol.hdr.mat);
+    o.img(2).prop = 1;
     o.img(2).type = 'split';
     o.img(2).range  = getminmax';
     o.img(2).cmap   = getcolormap;
-    o.cbar          = cbar; 
-    o.labels        = labels; 
+    o.cbar          = cbar;
+    o.labels        = labels;
 
     % | More Settings
     o.slices    = slices2show;
     o.transform = theview;
     o.refreshf  = 0;
-    o.clf = 0; 
+    o.clf = 0;
     o.resurrectf = 0;
     o.area.units = 'normalized';
     o.area.position = [0 0 1 1];
     o.area.halign = 'left';
     o.area.valign = 'bottom';
     if ~isempty(xslices), xslices = min([length(slices2show) xslices]) + ~isempty(cbar); end
-    o.xslices = xslices; 
-    o = fill_defaults(o); 
+    o.xslices = xslices;
+    o = fill_defaults(o);
 
     % | Setup Figure Window
     o.figure = figure( ...
@@ -1691,20 +1711,19 @@ function cb_montage(varargin)
             'NumberTitle', 'off',       ...
             'Position', setposition_auxwindow,   ...
             'Color', [0 0 0],    ...
-            'DockControls','off', ...
             'MenuBar', 'None', ...
             'Visible', 'off');
 
     % | Menu Bar
     S.menu          = uimenu('Parent', o.figure, 'Label', 'File');
-    S.guisize       = uimenu(S.menu, 'Label','GUI Size'); 
+    S.guisize       = uimenu(S.menu, 'Label','GUI Size');
     S.gui(1)        = uimenu(S.guisize, 'Label', 'Increase GUI Size', 'Accelerator', 'i', 'Callback', {@cb_changesliceguisize, 1.1});
     S.gui(2)        = uimenu(S.guisize, 'Label', 'Decrease GUI Size', 'Accelerator', 'd', 'Separator', 'on', 'Callback',{@cb_changesliceguisize, 0.9});
     S.save          = uimenu(S.menu, 'Label', 'Save as', 'Callback', {@cb_savemontage, o.figure});
-    S.settings      = uimenu(S.menu, 'Label', 'Create New', 'Callback', @cb_montage); 
+    S.settings      = uimenu(S.menu, 'Label', 'Create New', 'Callback', @cb_montage);
     if ~strcmpi(o.labels, 'none')
-        S.label         = uimenu('Parent', o.figure, 'Label', 'Labels'); 
-        S.labelpos      = uimenu(S.label, 'Label', 'Label Position'); 
+        S.label         = uimenu('Parent', o.figure, 'Label', 'Labels');
+        S.labelpos      = uimenu(S.label, 'Label', 'Label Position');
         S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Left', 'Tag', 'positionmenu', 'Checked', 'on', 'Callback', {@cb_montagelabelposition, o.figure});
         S.skin          = uimenu(S.labelpos, 'Label', 'Bottom Right', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
         S.skin          = uimenu(S.labelpos, 'Label', 'Top Left', 'Tag', 'positionmenu', 'Checked', 'off', 'Callback', {@cb_montagelabelposition, o.figure});
@@ -1715,18 +1734,16 @@ function cb_montage(varargin)
     end
     S.msg          = uimenu(o.figure, 'Label', '|  Right-Click to Delete Slices', 'Enable', 'off', 'Tag', 'status');
 
-    
-    
     % | Context Menu
     obj = paint(o);
     set(obj.figure, 'visible', 'off');
     set(findall(obj.figure, 'type', 'axes'), 'units', 'pixels');
     [hpan, hpos] = getpos_grid(findall(obj.figure, 'tag', 'slice overlay panel'));
     emptyidx = find(cellfun('isempty', get(hpan, 'children')));
-    delete(hpan(emptyidx)); 
-    hpan(emptyidx) = []; 
+    delete(hpan(emptyidx));
+    hpan(emptyidx) = [];
     hpos(emptyidx,:) = [];
-    nrow = length(unique(hpos(:,2))); 
+    nrow = length(unique(hpos(:,2)));
     if size(hpos, 1) > 1
         cmh = uicontextmenu;
         uimenu(cmh, 'Label', 'Delete Slice', 'callback', @cb_montagepaneldelete, 'separator', 'off');
@@ -1736,30 +1753,30 @@ function cb_montage(varargin)
         hpos(:,2) = hpos(:,2) - min(hpos(:,2));
 
         for i = 1:length(hpan)
-           set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh); 
+           set(hpan(i), 'pos', hpos(i,:), 'uicontextmenu', cmh);
            set(get(hpan(i), 'children'), 'uicontextmenu', cmh);
         end
     end
     if cbar
-        
+
         hc = findobj(obj.figure, 'tag', 'cbar');
-        
-    
+
+
         % Context Menu
         set(hc, 'units', 'pix', 'fontunits', 'points');
         hcm = uicontextmenu;
         uimenu(hcm, 'Label', 'Edit', 'callback', {@cb_editcbar, hc});
         set(hc, 'uicontextmenu', hcm);
         set(get(hc, 'children'), 'uicontextmenu', hcm);
-        
+
         % Position
         cpos = get(hc, 'position');
-        cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 20; 
+        cpos(1) = max(sum(hpos(:,[1 3]), 2)) + 20;
         gridheight = max(sum(hpos(:,[2 4]), 2));
         cpos(4) = max([cpos(4) gridheight*.33]);
         cpos(2) = gridheight - cpos(4);
-        cpos(3) = cpos(3)*.75; 
-        set(hc, 'pos', cpos); 
+        cpos(3) = cpos(3)*.75;
+        set(hc, 'pos', cpos);
         set(hc, 'units', 'norm');
         set(hc, 'yaxislocation', 'right', ...
             'ytick', get(hc, 'ylim'), ...
@@ -1768,134 +1785,126 @@ function cb_montage(varargin)
             'fontweight', 'normal', ...
             'XTickLabel',[], ...
             'XTick',[]);
-        tick = get(hc, 'ytick'); 
+        tick = get(hc, 'ytick');
         if any(tick(2:end-1)==0), tick = [tick(1) 0 tick(end)]; else tick = tick([1 end]); end
-        set(hc, 'ytick', tick); 
+        set(hc, 'ytick', tick);
         if ~isempty(cbartitle), ht = title(cbartitle, 'units', 'norm', 'fontunits', get(hc, 'fontunits'), 'parent', hc, 'tag', 'cbartitle', 'color', [1 1 1], 'fontsize', 1.1*get(hc,'fontsize')); end
         tightfig;
     else
-        tightfig; 
+        tightfig;
     end
     if length(hpan) > 1
         ext = sortrows(cell2mat(get(hpan, 'pos')), -2);
-        pht = sum([ext(1,[2 4])]);  
+        pht = sum([ext(1,[2 4])]);
     else
         ext = get(hpan, 'pos');
         pht = ext(4);
     end
     set(obj.figure, 'units', 'pixel');
     fpos = get(obj.figure, 'pos');
-    fpos(4) = ceil(pht); 
-    set(obj.figure, 'pos', fpos); 
+    fpos(4) = ceil(pht);
+    set(obj.figure, 'pos', fpos);
     if and(nrow==1, cbar)
        cpos = get(hc, 'pos');
        cpos([2 4]) = [.05 .85];
-       set(hc, 'pos', cpos); 
+       set(hc, 'pos', cpos);
     end
     set(obj.figure, 'units', 'norm', 'visible', 'on');
     arrayset(findall(obj.figure, '-property', 'units'), 'units', 'norm');
     arrayset(findall(obj.figure, '-property', 'fontunits'), 'fontunits', 'norm');
-    drawnow; 
+%     setpapersize(obj.figure);
+    drawnow;
 function cb_savemontage(varargin)
-    defname = 'SliceMontage.png'; 
-    [imname, pname] = uiputfile({'*.png; *.jpg; *.pdf; *.tiff; *.pdf; *.ps', 'Image'; '*.*', 'All Files (*.*)'}, 'Valid extensions: png, jpg, tiff, pdf, ps', defname);
-    if ~imname, disp('User cancelled.'); return; end
-    [p,n,e] = fileparts(imname);
-    if isempty(e), e = '.png'; end
-    if strcmpi(e, '.ps'), e = '.psc'; end
-    if strcmpi(e, '.jpg'), e = '.jpeg'; end
-    fmt = strcat('-', regexprep(e, '\.', 'd'));
-    print(varargin{3}, fmt, strcat('-', 'painters'), strcat('-', 'noui'), fullfile(pname,n)); 
-    fprintf('\nImage saved to %s\n', fullfile(pname, strcat(imname, e)));  
+    uisavefig('slicemontage', varargin{3});
 function cb_editcbar(varargin)
     inspect(varargin{3});
 function cb_montagelabelposition(varargin)
-    set(findall(varargin{3}, 'Tag', 'positionmenu'), 'Checked', 'off'); 
-    hstr = findall(varargin{3},  'tag', 'slicelabel'); 
+    set(findall(varargin{3}, 'Tag', 'positionmenu'), 'Checked', 'off');
+    hstr = findall(varargin{3},  'tag', 'slicelabel');
     set(hstr, 'units', 'norm');
     if length(hstr) > 1
         ext = cell2mat(get(hstr, 'extent'));
-        ext = max(ext(:,3:4)); 
+        ext = max(ext(:,3:4));
     else
         ext = get(hstr, 'extent');
-        ext = ext(3:4); 
+        ext = ext(3:4);
     end
-    height = 1 - ext(2); 
-    width = 1 - ext(1); 
-    chosen = get(varargin{1}, 'Label'); 
+    height = 1 - ext(2);
+    width = 1 - ext(1);
+    chosen = get(varargin{1}, 'Label');
     options = {'Bottom Left' 'Bottom Right' 'Top Left' 'Top Right'};
-    pos = [ 0 0 0; width 0 0; 0 height 0; width height 0 ]; 
+    pos = [ 0 0 0; width 0 0; 0 height 0; width height 0 ];
     set(hstr, 'Position', pos(strcmpi(options, chosen), :));
-    set(varargin{1}, 'Checked', 'on'); 
+    set(varargin{1}, 'Checked', 'on');
     drawnow;
 function cb_montagelabelsize(varargin)
     if strcmpi(get(varargin{1}, 'Label'), 'Increase'), F = 1; else F = -1; end
-    hstr = findall(varargin{3},  '-property', 'FontSize'); 
+    hstr = findall(varargin{3},  '-property', 'FontSize');
     set(hstr, 'FontUnits', 'points');
     fs = cell2mat(get(hstr, 'FontSize')) + F;
     arrayfun(@set, hstr, repmat({'FontSize'}, length(hstr), 1), num2cell(fs))
     pause(.25);
     drawnow;
     set(hstr, 'Units', 'norm');
-    tightfig; 
-function cb_montagepaneldelete(varargin) 
+    tightfig;
+function cb_montagepaneldelete(varargin)
     [hax, hpos] = getpos_grid(findall(gcf, 'tag', 'slice overlay panel'));
-    nrow1 = length(unique(hpos(:,2))); 
+    nrow1 = length(unique(hpos(:,2)));
     gcapos      = repmat(get(gca, 'pos'), length(hax), 1);
     gcaidx      = find(mean(hpos==gcapos, 2)==1);
-    delete(hax(gcaidx)); 
-    hax(gcaidx) = []; 
+    delete(hax(gcaidx));
+    hax(gcaidx) = [];
     for i = gcaidx:length(hax)
-        set(hax(i), 'pos', hpos(i,:)); 
+        set(hax(i), 'pos', hpos(i,:));
     end
     [hax, hpos] = getpos_grid(findall(gcf, 'tag', 'slice overlay panel'));
     nrow2 = length(unique(hpos(:,2)));
-    hc = findobj(gcf, 'tag', 'cbar');  
+    hc = findobj(gcf, 'tag', 'cbar');
     if all([nrow2<nrow1 ~isempty(hc) ])
         set(hc, 'units', 'norm');
         cpos = get(hc, 'position');
         if nrow2*hpos(1,4) < cpos(4)
             cpos(4) = hpos(1,4)*.95;
-            cpos(2) = 1 - hpos(1,4); 
-            set(hc, 'pos', cpos); 
+            cpos(2) = 1 - hpos(1,4);
+            set(hc, 'pos', cpos);
         end
     end
     tightfig;
-    drawnow; 
-function cb_changesliceguisize(varargin)    
-    [obj, f] = gcbo; 
+    drawnow;
+function cb_changesliceguisize(varargin)
+    [obj, f] = gcbo;
     guipos = get(f, 'pos');
-    guipos(3:4) = guipos(3:4)*varargin{3}; 
+    guipos(3:4) = guipos(3:4)*varargin{3};
     set(f, 'pos', guipos);
     pause(.25);
     drawnow;
-    
+
 % | CALLBACKS - PLOT
 % =========================================================================
 function cb_clustexplore(varargin)
 
     global st
-    
+
     str = get(findobj(st.fig, 'tag', 'clustersize'), 'string');
     if strcmp(str, 'n/a'), return; end
 
     %% Get Design Variable %%
     [impath, imname] = fileparts(st.ol.fname);
-    if exist([impath filesep 'I.mat'],'file') 
-        matfile     = [impath filesep 'I.mat']; 
+    if exist([impath filesep 'I.mat'],'file')
+        matfile     = [impath filesep 'I.mat'];
         maskfile    = [impath filesep 'mask.nii'];
-    elseif exist([impath filesep 'SPM.mat'],'file') 
+    elseif exist([impath filesep 'SPM.mat'],'file')
         matfile     = [impath filesep 'SPM.mat'];
     else
-        headsup('This feature requires that an SPM.mat or I.mat design in the same directory as the overlay image.'); 
-        return; 
+        headsup('This feature requires that an SPM.mat or I.mat design in the same directory as the overlay image.');
+        return;
     end
-    
+
     %% Load Design Variable %%
     load(matfile);
     if isfield(SPM, 'Sess')
-        headsup('Image appears to be based on single-subject data. This feature supports only group-level results.');   
-        return; 
+        headsup('Image appears to be based on single-subject data. This feature supports only group-level results.');
+        return;
     end
     xsDes       = SPM.xsDes;
     subhdr      = SPM.xY.VY;
@@ -1903,62 +1912,62 @@ function cb_clustexplore(varargin)
     subdescrip  = {subhdr.descrip}';
     nscan       = length(subcon);
     groupflag   = 0;
-    
+
     switch lower(xsDes.Design)
         case 'one sample t-test'
             ncond       = 1;
             nsub        = nscan/ncond;
             [studydir, subname] = parentpath(subcon(:,1));
             subname     = regexprep(subname, '_', ' ');
-            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '});
         case 'two-sample t-test'
             ncond       = 1;
             npergroup   = sum(SPM.xX.X);
-            conidx      = SPM.xX.X; 
+            conidx      = SPM.xX.X;
             [studydir, subname] = parentpath(subcon(:,1));
             subname     = regexprep(subname, '_', ' ');
             conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '});
-            groupflag   = 1; 
+            groupflag   = 1;
         case 'flexible factorial'
             ncond       = length(SPM.xX.iH);
             nsub        = nscan/ncond;
             subcon      = reshape(subcon, ncond, nsub)';
             [studydir, subname] = parentpath(subcon(:,1));
             subname     = regexprep(subname, '_', ' ');
-            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '}); 
+            conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '});
         otherwise
-            headsup('Unrecognized or unsupported design type! Click to return to the main window...'); 
-            return; 
+            headsup('Unrecognized or unsupported design type! Click to return to the main window...');
+            return;
     end
 
     %% Check that contrast images exist on filesystem %%
     existidx = cellfun(@exist, subcon(:));
     if any(existidx==0)
         headsup(sprintf('Single-subject images could not be found. Subject directories should be in: %s', studydir));
-        return; 
-    end 
+        return;
+    end
 
     %% Get Cluster Indices %%
-    blob           = getcurrentblob; 
+    blob           = getcurrentblob;
     rname          = sprintf('%s (x=%d, y=%d, z=%d)', blob.label, blob.xyz);
 
     %% Get Subject Data %%
     spacechoice = varargin{3};
-    datachoice = varargin{4}; 
+    datachoice = varargin{4};
     switch lower(varargin{3})
         case 'cluster'
-            dataidx = blob.clidx; 
+            dataidx = blob.clidx;
         case 'voxel'
-            dataidx = blob.xyzidx; 
+            dataidx = blob.xyzidx;
         otherwise
-            [roi, button] = settingsdlg(...  
+            [roi, button] = settingsdlg(...
             'title'                     ,   'ROI Parameters', ...
             {'Intersect ROI with Overlay?'; 'intersectflag'}    ,  true, ...
             {'Shape'; 'shape'}          ,   {'Sphere' 'Box'}, ...
             {'Size (mm)'; 'size'}       ,   12);
             if strcmpi(button, 'cancel'), return; end
             dataidx = growregion(roi, blob.xyz);
-            dataidx = dataidx(:) > 0; 
+            dataidx = dataidx(:) > 0;
     end
     data    = spm_get_data(SPM.xY.VY, st.ol.XYZ0(:, dataidx));
     data(data==0) = NaN;
@@ -1968,16 +1977,16 @@ function cb_clustexplore(varargin)
     end
     if groupflag
         Mraw = NaN(max(npergroup), length(npergroup));
-        M = Mraw; 
-        K = Mraw; 
-        for i = 1:size(conidx, 2) 
-            idx        = find(conidx(:,i)); 
+        M = Mraw;
+        K = Mraw;
+        for i = 1:size(conidx, 2)
+            idx        = find(conidx(:,i));
             Mraw(1:npergroup(i), i)    = nanmean(data(idx,:), 2);
             M(1:npergroup(i), i)       = nanmean(data(idx,:), 2);
             K(1:npergroup(i), i)       = sum(isnan(data(idx,:)), 2);
         end
         Z       = abs(oneoutzscore(M));
-        DAT     = [subname num2cell([Z(~isnan(Z)) M(~isnan(Z)) K(~isnan(Z))])]; 
+        DAT     = [subname num2cell([Z(~isnan(Z)) M(~isnan(Z)) K(~isnan(Z))])];
         DAT     = sortrows(DAT, -2);
         header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
     else
@@ -1988,20 +1997,20 @@ function cb_clustexplore(varargin)
             M       = reshape(M, ncond, nsub)';
             K       = reshape(K, ncond, nsub)';
             Mavg    = nanmean(M, 2);
-            Z       = abs(oneoutzscore(M)); 
+            Z       = abs(oneoutzscore(M));
             Zavg    = abs(oneoutzscore(Mavg));
-            DAT     = [subname num2cell([Zavg Mavg K(:,1)])]; 
+            DAT     = [subname num2cell([Zavg Mavg K(:,1)])];
             DAT     = sortrows(DAT, -2);
             header  = {'Subject Name' 'Mean Resp Z' 'Mean Resp' 'N Missing Voxels'};
         else
             Z       = abs(oneoutzscore(M));
-            DAT     = [subname num2cell([Z M K])]; 
+            DAT     = [subname num2cell([Z M K])];
             DAT     = sortrows(DAT, -2);
             header  = {'Subject Name' 'Resp Z' 'Resp' 'N Missing Voxels'};
         end
     end
     if groupflag
-        ncond   = 2; 
+        ncond   = 2;
         nsub    = nansum(npergroup);
         Mx      = [repmat(1, npergroup(1), 1); repmat(2, npergroup(2), 1)];
     else
@@ -2010,7 +2019,7 @@ function cb_clustexplore(varargin)
 
     % | CREATE FIGURE
     if length(varargin) < 5
-        figpos = setposition_auxwindow; 
+        figpos = setposition_auxwindow;
         hfig  =  figure( ...
            'Name'                     ,        'bspmview Plot'          ,...
            'Units'                    ,        'pix'                    ,...
@@ -2028,14 +2037,14 @@ function cb_clustexplore(varargin)
     else
         hfig = varargin{5};
     end
-    
+
     % | CREATE GRID LAYOUT
     hgrid = pgrid(2, 1, 'relheight', [1 6], 'backg', [0 0 0]);
 %     if ncond > 1, hgrid = pmerge(hgrid, 1:ncond); end
 
     % | PLOT
     set(hgrid(2:end), 'backg', st.color.fg);
-    
+
 %     for i = 1:ncond
         axhist = axes('parent', hgrid(2));
         axes(axhist);
@@ -2044,10 +2053,10 @@ function cb_clustexplore(varargin)
         for i = 1:ncond
             ln(i) = line([i-.125 i+.125], repmat(nanmean(M(:,i)), 1, 2), 'color', [0 0 0]);
             outidx = find(Z(:,i) > 2.5);
-            if groupflag 
+            if groupflag
                 csubname = subname(find(conidx(:,i)));
             else
-                csubname = subname; 
+                csubname = subname;
             end
             if outidx, text(repmat(i+.01, length(outidx), 1), M(outidx, i), csubname(outidx), 'fontsize', st.fonts.sz6); end
         end
@@ -2066,10 +2075,10 @@ function cb_clustexplore(varargin)
         'xtick', 1:ncond ...
         );
     yt  = get(axhist, 'ytick');
-    yts = cell(size(yt)); 
+    yts = cell(size(yt));
     for i = 1:length(yt), yts{i} = sprintf('%.2f', yt(i)); end
     if groupflag
-        set(axhist, 'yticklabel', yts, 'xticklabel', SPM.xX.name); 
+        set(axhist, 'yticklabel', yts, 'xticklabel', SPM.xX.name);
         title(sprintf('%s | %s', char(conname), rname), 'Fontname', st.fonts.name, 'Fontsize', st.fonts.sz4);
     else
         set(axhist, 'yticklabel', yts, 'xticklabel', conname);
@@ -2082,7 +2091,7 @@ function cb_clustexplore(varargin)
 %     tw = tw(3) - tw(1);
 %     set(hgrid(1), 'units', 'norm');
 % %     DAT(:,2:3) = cellnum2str(DAT(:,2:3));
-% %     DAT(:,4) = cellnum2str(DAT(:,4), 0); 
+% %     DAT(:,4) = cellnum2str(DAT(:,4), 0);
 %     th = uitable('Parent', hgrid(1), ...
 %         'Data', DAT, ...
 %         'Units', 'norm', ...
@@ -2095,29 +2104,29 @@ function cb_clustexplore(varargin)
 %         'FontSize', st.fonts.sz6);
 %     set(th, 'units', 'pixels');
 %     set(th, 'ColumnWidth', {tw/3 tw*(2/9) tw*(2/9) tw/5});
-    
+
     % | MENU PANEL
     uigrid = pgrid(1, 3, 'marginsep', 0, 'panelsep', 0, 'parent', hgrid(1));
     set(uigrid, 'units', 'pixel');
     uipos = cell2mat(get(uigrid, 'pos'));
-    
+
     % | IMAGE
     setunits('pixel');
     [h, relpos, abspos] = gethandles_axes;
-    sim = imresize(screencapture(h.ax(2)), [uipos(1,end) NaN]); 
-    cim = imresize(screencapture(h.ax(3)), [uipos(1,end) NaN]); 
+    sim = imresize(screencapture(h.ax(2)), [uipos(1,end) NaN]);
+    cim = imresize(screencapture(h.ax(3)), [uipos(1,end) NaN]);
     tim = [sim cim];
     axim = axes('parent', uigrid(end));
     axes(axim);
     imdisp(tim);
-    set(axim, 'Units', 'Norm', 'Pos', [0 0 1 1]);  axis off; 
+    set(axim, 'Units', 'Norm', 'Pos', [0 0 1 1]);  axis off;
     uicontrol('parent', uigrid(1), 'units', 'norm', 'pos', [.1 .25 .8 .5], 'fontsize', st.fonts.sz3, 'style', 'push', 'string', 'Reload for New Location', 'callback', {@cb_clustexplore, spacechoice, datachoice, hfig});
 %     h2 = pgrid(2, 1, 'parent', uigrid(2));
 %     m(1) = uicontrol('parent', h2(1), 'units', 'norm', 'pos', [0 0 1 .5], 'backg', [0 0 0], 'foreg', [1 1 1], 'fontname', st.fonts.name, 'style', 'text', 'string', 'Change Plotted Variable');
 %     dataopt = {'Mean across voxels - Raw' 'Mean across voxels - Whitened And Filtered' 'SD across voxels - Raw' 'SD across voxels - Whitened And Filtered'};
 %     m(2) = uicontrol('parent', h2(2), 'units', 'norm', 'HorizontalAlignment', 'center', ....
 %         'pos', [.1 .1 .8 .8], 'foreg', st.color.font, 'backg', st.color.edit, 'fontname', 'fixed-width', 'style', 'Popup', 'string', dataopt, 'value', 2, 'Callback', @cb_changevariable)
-%     set(m, 'fontsize', st.fonts.sz3); 
+%     set(m, 'fontsize', st.fonts.sz3);
     set(hfig, 'visible', 'on');
     setunits('norm');
     drawnow;
@@ -2129,11 +2138,11 @@ function setstatus(msg)
     global st
     basemsg = '|    Status: ';
     set(findobj(st.fig, 'Tag', 'status'), 'Label', sprintf('%s%s', basemsg, msg));
-    drawnow; 
+    drawnow;
 function setmaxima
     global st
-    Dis = st.preferences.separation; 
-    Num = st.preferences.numpeaks; 
+    Dis = st.preferences.separation;
+    Num = st.preferences.numpeaks;
     T   = getthresh;
     switch char(T.direct)
         case {'+', '-'}
@@ -2142,50 +2151,58 @@ function setmaxima
             POS         = getmaxima(st.ol.Z, st.ol.XYZ, st.ol.M, Dis, Num);
             NEG         = getmaxima(st.ol.Z*-1, st.ol.XYZ, st.ol.M, Dis, Num);
             if ~isempty(NEG), NEG(:,2) = NEG(:,2)*-1; end
-            LOCMAX      = [POS; NEG]; 
+            LOCMAX      = [POS; NEG];
     end
-    st.ol.tab       = LOCMAX; 
+    st.ol.tab       = LOCMAX;
     st.ol.maxima    = LOCMAX(:,3:5)';
+function setpapersize(hfig)
+    if nargin==0, hfig = gcf; end
+    unit0 = get(hfig, 'units');
+    unit = 'points';
+    set(hfig, 'Units', unit, 'PaperUnits', unit);
+    pos = get(hfig, 'Position');
+    set(hfig, 'PaperSize', pos(3:4), 'PaperPosition', [0 0 pos(3:4)]);
+    set(hfig, 'Units', unit0);
 function setcolormap(varargin)
     global st
     newmap = getcolormap;
-    cbh = st.vols{1}.blobs{1}.cbar; 
+    cbh = st.vols{1}.blobs{1}.cbar;
     cmap = [gray(64); newmap];
     set(findobj(cbh, 'type', 'image'), 'CData', (65:128)', 'CdataMapping', 'direct');
     set(st.fig, 'Colormap', cmap);
-    mnmx = getminmax; 
-    bspm_orthviews('SetBlobsMax', 1, 1, max(mnmx)); 
+    mnmx = getminmax;
+    bspm_orthviews('SetBlobsMax', 1, 1, max(mnmx));
     set(findobj(st.fig, 'tag', 'maxval'), 'str',  sprintf('%2.3f',max(mnmx)));
-    bspm_orthviews('SetBlobsMin', 1, 1, min(mnmx)); 
+    bspm_orthviews('SetBlobsMin', 1, 1, min(mnmx));
     set(findobj(st.fig, 'tag', 'minval'), 'str',  sprintf('%2.3f',min(mnmx)));
     drawnow;
 function setfontunits(unitstr)
     if nargin==0, unitstr = 'norm'; end
     global st
     arrayset(findall(st.fig, '-property', 'fontunits'), 'fontunits', unitstr);
-    drawnow; 
+    drawnow;
 function setunits(theunits)
     if nargin==0, theunits = 'norm'; end
     global st
     arrayset(findall(st.fig, '-property', 'units'), 'units', theunits);
-    set(st.fig, 'units', 'pixels'); 
-    drawnow; 
+    set(st.fig, 'units', 'pixels');
+    drawnow;
 function setposition_axes
     global st
-    CBPIXSIZE = 100; 
+    CBPIXSIZE = 100;
     %% Handles for axes
     % 1 - transverse
     % 2 - coronal
-    % 3 - sagittal 
+    % 3 - sagittal
     % st.vols{1}.ax{1}.ax   - axes
     % st.vols{1}.ax{1}.d    - image
     % st.vols{1}.ax{1}.lx   - crosshair (x)
     % st.vols{1}.ax{1}.ly   - crosshair (y)
     h = gethandles_axes;
     axpos = cell2mat(get(h.ax, 'pos'));
-    axpos(1:2, 1)   = 0; 
+    axpos(1:2, 1)   = 0;
     axpos(1, 2)     = 0;
-    axpos(3, 1)     = sum(axpos(2,[1 3]))+.005; 
+    axpos(3, 1)     = sum(axpos(2,[1 3]))+.005;
     axpos(2:3, 2)   = sum(axpos(1,[2 4]))+.005;
     pz  = axpos(1,:);
     py  = axpos(2,:);
@@ -2193,36 +2210,36 @@ function setposition_axes
     zrat = pz(3)/pz(4);
     yrat = py(3)/py(4);
     xrat = px(3)/px(4);
-    VL = sum(py([2 4])); 
+    VL = sum(py([2 4]));
     while VL < 1
-        px(4) = px(4) + .001; 
-        px(3) = px(4)*xrat; 
-        py(4) = px(4); 
-        py(3) = py(4)*yrat; 
-        pz(3) = py(3); 
-        pz(4) = pz(3)/zrat; 
+        px(4) = px(4) + .001;
+        px(3) = px(4)*xrat;
+        py(4) = px(4);
+        py(3) = py(4)*yrat;
+        pz(3) = py(3);
+        pz(4) = pz(3)/zrat;
         px(1) = sum(py([1 3]))+.005;
         py(2) = sum(pz([2 4]))+.005;
-        px(2) = py(2); 
+        px(2) = py(2);
         VL = sum(py([2 4]));
     end
-    axpos = [pz; py; px]; 
+    axpos = [pz; py; px];
     for a = 1:3, set(h.ax(a), 'position', axpos(a,:)); end
-    set(h.ax, 'units', 'pixels'); 
+    set(h.ax, 'units', 'pixels');
     axpos = cell2mat(get(h.ax, 'pos'));
-    HL = round(sum(axpos(3, [1 3])) + CBPIXSIZE); 
-    figsize = get(st.fig, 'pos'); 
-    figsize(3) = HL; 
+    HL = round(sum(axpos(3, [1 3])) + CBPIXSIZE);
+    figsize = get(st.fig, 'pos');
+    figsize(3) = HL;
     set(st.fig, 'pos', figsize);
     for a = 1:3, set(h.ax(a), 'position', axpos(a,:)); end
     set(h.ax, 'units', 'norm');
     % deal with lower panel
     p = findobj(st.fig, 'tag', 'lowerpanel');
     unit0 = get(p, 'units');
-    apos = get(h.ax(1), 'pos'); 
-    ppos = [sum(apos([1 3]))+.01 apos(2) 1-.02-sum(apos([1 3])) apos(4)]; 
-    set(p, 'units', 'norm', 'pos', ppos); 
-    set(p, 'units', unit0); 
+    apos = get(h.ax(1), 'pos');
+    ppos = [sum(apos([1 3]))+.01 apos(2) 1-.02-sum(apos([1 3])) apos(4)];
+    set(p, 'units', 'norm', 'pos', ppos);
+    set(p, 'units', unit0);
     bspm_orthviews('Redraw');
 function pos = setposition_auxwindow
 global st
@@ -2251,23 +2268,23 @@ function setthreshinfo(T)
     st.ol.U     = T.thresh;
     st.ol.P     = T.pval;
     st.ol.DF    = T.df;
-    Tval        = [T.extent T.thresh T.pval T.df]; 
+    Tval        = [T.extent T.thresh T.pval T.df];
     Tstr        = {'Extent' 'Thresh' 'P-Value' 'DF'};
     Tstrform    = {'%d' '%2.2f' '%2.3f' '%d'};
     for i = 1:length(Tstr)
-        set(findobj(st.fig, 'Tag', Tstr{i}), 'String', num2str(Tval(i))); 
-        drawnow; 
+        set(findobj(st.fig, 'Tag', Tstr{i}), 'String', num2str(Tval(i)));
+        drawnow;
     end
 function enablefdr
     global st
     opt = default_lowerpane;
-    opt = opt{strcmp(opt(:,5), 'Correction'), 4}; 
+    opt = opt{strcmp(opt(:,5), 'Correction'), 4};
     h = findobj(st.fig, 'Tag', 'Correction');
     set(h, 'String', opt);
 function disablefdr
     global st
-    opt = default_lowerpane; 
-    opt = opt{strcmp(opt(:,5), 'Correction'), 4}; 
+    opt = default_lowerpane;
+    opt = opt{strcmp(opt(:,5), 'Correction'), 4};
     h = findobj(st.fig, 'Tag', 'Correction');
     v = get(h, 'Value');
     if v==4, set(h, 'Value', 1); end
@@ -2281,10 +2298,10 @@ function setthresh(C, di)
     else
         st.ol.Z     = st.ol.Y(idx);
     end
-    st.ol.Nunique   = length(unique(st.ol.Z)); 
+    st.ol.Nunique   = length(unique(st.ol.Z));
     st.ol.XYZ       = st.ol.XYZ0(:,idx);
     st.ol.XYZmm     = st.ol.XYZmm0(:,idx);
-    st.ol.C         = C(idx); 
+    st.ol.C         = C(idx);
     st.ol.atlas     = st.ol.atlas0(idx);
     if ~isfield(st.vols{1}, 'blobs')
         bspm_orthviews('RemoveBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
@@ -2292,78 +2309,78 @@ function setthresh(C, di)
     else
         bspm_orthviews('ReplaceBlobs', st.ho, st.ol.XYZ, st.ol.Z, st.ol.M);
     end
-    setcolormap; 
+    setcolormap;
     bspm_orthviews('Register', st.registry.hReg);
     bspm_orthviews('Reposition');
-    setmaxima; 
-    drawnow; 
+    setmaxima;
+    drawnow;
 function [voxval, clsize] = setvoxelinfo
     global st
-    [nxyz,voxidx, d]    = getnearestvoxel; 
+    [nxyz,voxidx, d]    = getnearestvoxel;
     [xyz, xyzidx, dist] = getroundvoxel;
     regionidx = st.ol.atlas0(xyzidx);
     if regionidx
         regionname = st.ol.atlaslabels.label{st.ol.atlaslabels.id==regionidx};
     else
-        regionname = 'n/a'; 
+        regionname = 'n/a';
     end
     if d > min(st.ol.VOX)
-        voxval = 'n/a'; 
+        voxval = 'n/a';
         clsize = 'n/a';
     else
         voxval = sprintf('%2.3f', st.ol.Z(voxidx));
         clsize = sprintf('%d', st.ol.C(voxidx));
     end
-    set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
-    set(findobj(st.fig, 'tag', 'xyz'), 'string', sprintf('%d, %d, %d', xyz)); 
-    set(findobj(st.fig, 'tag', 'voxval'), 'string', voxval); 
+    set(findobj(st.fig, 'tag', 'Location'), 'string', regionname);
+    set(findobj(st.fig, 'tag', 'xyz'), 'string', sprintf('%d, %d, %d', xyz));
+    set(findobj(st.fig, 'tag', 'voxval'), 'string', voxval);
     set(findobj(st.fig, 'tag', 'clustersize'), 'string', clsize);
     axidx = [3 2 1];
     xyzstr = num2str([-99; xyz]); xyzstr(1,:) = [];
     for a = 1:length(axidx)
-        set(st.vols{1}.ax{axidx(a)}.xyz, 'string', xyzstr(a,:)); 
+        set(st.vols{1}.ax{axidx(a)}.xyz, 'string', xyzstr(a,:));
     end
     drawnow;    % older version called drawnow with "limitrate" option;
 function setbackgcolor(newcolor)
     global st
     if nargin==0, newcolor = st.color.bg; end
-    prop = {'backg' 'ycolor' 'xcolor' 'zcolor'}; 
+    prop = {'backg' 'ycolor' 'xcolor' 'zcolor'};
     for i = 1:length(prop)
-        set(findobj(st.fig, prop{i}, st.color.bg), prop{i}, newcolor); 
+        set(findobj(st.fig, prop{i}, st.color.bg), prop{i}, newcolor);
     end
     h = gethandles_axes;
-    set(h.ax, 'ycolor', newcolor, 'xcolor', newcolor); 
+    set(h.ax, 'ycolor', newcolor, 'xcolor', newcolor);
     drawnow;
 function setxhaircolor(varargin)
     global st
     h = gethandles_axes;
-    set(h.lx, 'color', st.color.xhair); 
+    set(h.lx, 'color', st.color.xhair);
     set(h.ly, 'color', st.color.xhair);
     drawnow;
 function setregionname(varargin)
     global st
-    [nxyz, voxidx, d]   = getnearestvoxel; 
+    [nxyz, voxidx, d]   = getnearestvoxel;
     [xyz, xyzidx, dist] = getroundvoxel;
     regionidx           = st.ol.atlas0(xyzidx);
     if regionidx
         regionname = st.ol.atlaslabels.label{st.ol.atlaslabels.id==regionidx};
     else
-        regionname = 'n/a'; 
+        regionname = 'n/a';
     end
-    set(findobj(st.fig, 'tag', 'Location'), 'string', regionname); 
+    set(findobj(st.fig, 'tag', 'Location'), 'string', regionname);
     drawnow;
 function setatlas(varargin)
     global st
     atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii', st.preferences.atlasname));
     if ~exist(atlas_vol, 'file')
-        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname)); 
+        atlas_vol = fullfile(st.supportpath, sprintf('%s_Atlas_Map.nii.gz', st.preferences.atlasname));
     end
-    atlas_labels    = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname)); 
+    atlas_labels    = fullfile(st.supportpath, sprintf('%s_Atlas_Labels.mat', st.preferences.atlasname));
     int             = 0; % 0=Nearest Neighbor, 1=Trilinear(default)
     atlasvol        = reslice_image(atlas_vol, st.ol.fname, int);
     atlasvol        = single(round(atlasvol(:)))';
     load(atlas_labels);
-    st.ol.atlaslabels   = atlas; 
+    st.ol.atlaslabels   = atlas;
     st.ol.atlas0        = atlasvol;
 
 % | GETTERS
@@ -2374,30 +2391,30 @@ function h                       = gethandles(varargin)
     h.coronal = st.vols{1}.ax{2}.ax;
     h.sagittal = st.vols{1}.ax{3}.ax;
     h.colorbar = st.vols{1}.blobs{1}.cbar;
-    h.upperpanel = findobj(st.fig, 'tag', 'upperpanel'); 
-    h.lowerpanel = findobj(st.fig, 'tag', 'lowerpanel'); 
+    h.upperpanel = findobj(st.fig, 'tag', 'upperpanel');
+    h.lowerpanel = findobj(st.fig, 'tag', 'lowerpanel');
 function [cmap, cmapname]        = getcolormap
     global st
-    
-    val         = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value'); 
+
+    val         = get(findobj(st.fig, 'Tag', 'colormaplist'), 'Value');
     list        = get(findobj(st.fig, 'Tag', 'colormaplist'), 'String');
     cmapname    = list{val};
     if regexp(cmapname, '\w+\s\(\d+\)')
-        cmapname = 'brewermap'; 
+        cmapname = 'brewermap';
         mapstr = strtrim(regexprep(list{val}, '\s\(\d+\)', ''));
     end
-    
-    
-    N = min([st.ol.Nunique, 64]); 
+
+
+    N = min([st.ol.Nunique, 64]);
     switch lower(cmapname)
         case {'signed'}
-            mnmx = getminmax; 
+            mnmx = getminmax;
             zero_loc = (0 - mnmx(1))/(mnmx(2) - mnmx(1));
 %             zero_loc = (0 - min(st.ol.Z))/(max(st.ol.Z) - min(st.ol.Z));
 %             if zero_loc <= .10, zero_loc = .5; end
             if any([zero_loc <= 0 zero_loc >= 1])
-                val = find(strcmpi(list, 'hot')); 
-                set(findobj(st.fig, 'Tag', 'colormaplist'), 'Value', val); 
+                val = find(strcmpi(list, 'hot'));
+                set(findobj(st.fig, 'Tag', 'colormaplist'), 'Value', val);
                 cmap = st.cmap{val, 1};
             else
                 cmap = colormap_signed(64, zero_loc);
@@ -2405,36 +2422,36 @@ function [cmap, cmapname]        = getcolormap
         case {'brewermap'}
             cmap    = cmap_upsample(brewermap(N, mapstr), 64);
         case {'cubehelix'}
-            cmap    = cmap_upsample(cubehelix(N), 64); 
+            cmap    = cmap_upsample(cubehelix(N), 64);
         case {'linspecer'}
             if N < 13
                 cmap    = cmap_upsample(linspecer(N,'qualitative'), 64);
             else
-                cmap    = linspecer(N,'sequential'); 
-            end      
+                cmap    = linspecer(N,'sequential');
+            end
         otherwise
             cmap = st.cmap{val, 1};
     end
     hrev = findobj(st.fig, 'tag', 'reversemap');
-    revflag = strcmpi(get(hrev, 'Checked'), 'on'); 
+    revflag = strcmpi(get(hrev, 'Checked'), 'on');
     if revflag, cmap = cmap(end:-1:1,:); end
 function mnmx                    = getminmax
 global st
 if isfield(st.vols{1}, 'blobs')
     mnmx = [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max];
 else
-    mnmx = [min(st.ol.Z) max(st.ol.Z)]; 
+    mnmx = [min(st.ol.Z) max(st.ol.Z)];
 end
 function [clustsize, clustidx]   = getclustidx(rawol, u, k)
 
     % raw data to XYZ
-    DIM         = size(rawol); 
+    DIM         = size(rawol);
     [X,Y,Z]     = ndgrid(1:DIM(1),1:DIM(2),1:DIM(3));
     XYZ         = [X(:)';Y(:)';Z(:)'];
-    pos         = zeros(1, size(XYZ, 2)); 
-    neg         = pos; 
+    pos         = zeros(1, size(XYZ, 2));
+    neg         = pos;
     clustidx    = zeros(3, size(XYZ, 2));
-    
+
     % positive
     supra = (rawol(:)>u)';
     if sum(supra)
@@ -2443,11 +2460,11 @@ function [clustsize, clustidx]   = getclustidx(rawol, u, k)
         pos(supra)  = sum(repmat(sum(clbin), size(tmp, 2), 1) .* clbin, 2)';
         clustidx(1,supra) = tmp;
     end
-    pos(pos < k)    = 0; 
-    
+    pos(pos < k)    = 0;
+
     % negative
     rawol = rawol*-1;
-    supra = (rawol(:)>u)';  
+    supra = (rawol(:)>u)';
     if sum(supra)
         tmp      = spm_clusters(XYZ(:, supra));
         clbin      = repmat(1:max(tmp), length(tmp), 1)==repmat(tmp', 1, max(tmp));
@@ -2457,68 +2474,68 @@ function [clustsize, clustidx]   = getclustidx(rawol, u, k)
     neg(neg < k) = 0;
 
     % both
-    clustsize       = [pos; neg]; 
+    clustsize       = [pos; neg];
     clustsize(3,:)  = sum(clustsize);
-    clustidx(3,:)   = sum(clustidx); 
+    clustidx(3,:)   = sum(clustidx);
 function [h, axpos, absaxpos]    = gethandles_axes(varargin)
     global st
     axpos = zeros(3,4);
     if isfield(st.vols{1}, 'blobs');
-        h.cb = st.vols{1}.blobs{1}.cbar; 
+        h.cb = st.vols{1}.blobs{1}.cbar;
     end
     ppanel = get(findobj(st.fig, 'Tag', 'hReg'), 'Position');
     for a = 1:3
         tmp = st.vols{1}.ax{a};
-        h.ax(a) = tmp.ax; 
+        h.ax(a) = tmp.ax;
         h.d(a)  = tmp.d;
-        h.lx(a) = tmp.lx; 
+        h.lx(a) = tmp.lx;
         h.ly(a) = tmp.ly;
         axpos(a,:) = get(h.ax(a), 'position');
     end
     if nargout==3
-       absaxpos = axpos; 
+       absaxpos = axpos;
        absaxpos(:,1:2) =  absaxpos(:,1:2) + repmat(ppanel(1:2), 3, 1);
     end
 function T                       = getthresh
     global st
-    T.extent    = str2double(get(findobj(st.fig, 'Tag', 'Extent'), 'String')); 
+    T.extent    = str2double(get(findobj(st.fig, 'Tag', 'Extent'), 'String'));
     T.thresh    = str2double(get(findobj(st.fig, 'Tag', 'Thresh'), 'String'));
     T.pval      = str2double(get(findobj(st.fig, 'Tag', 'P-Value'), 'String'));
     T.df        = str2double(get(findobj(st.fig, 'Tag', 'DF'), 'String'));
-    tmph = findobj(st.fig, 'Tag', 'direct'); 
+    tmph = findobj(st.fig, 'Tag', 'direct');
     opt = get(tmph, 'String');
     T.direct = opt(find(cell2mat(get(tmph, 'Value'))));
-    if strcmp(T.direct, 'pos/neg'), T.direct = '+/-'; end   
+    if strcmp(T.direct, 'pos/neg'), T.direct = '+/-'; end
 function [xyz, xyzidx, dist]     = getroundvoxel
     global st
-    [xyz, dist] = bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM); 
-    xyzidx      = bspm_XYZreg('FindXYZ', xyz, st.ol.XYZmm0); 
-function [xyz, voxidx, dist]     = getnearestvoxel 
+    [xyz, dist] = bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM);
+    xyzidx      = bspm_XYZreg('FindXYZ', xyz, st.ol.XYZmm0);
+function [xyz, voxidx, dist]     = getnearestvoxel
     global st
     [xyz, voxidx, dist] = bspm_XYZreg('NearestXYZ', bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM), st.ol.XYZmm);
 function blob                    = getcurrentblob
     global st
-    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string'); 
+    str = get(findobj(st.fig, 'tag', 'clustersize'), 'string');
     if strcmp(str, 'n/a'), blob = []; return; end
-    [blob.xyz, blob.xyzidx]   = getroundvoxel; 
+    [blob.xyz, blob.xyzidx]   = getroundvoxel;
     blob.label          = char(getregionnames(blob.xyz));
     blob.thresh         = getthresh;
     di                  = strcmpi({'+' '-' '+/-'}, blob.thresh.direct);
     blob.clidx          = st.ol.C0IDX(di,:)==st.ol.C0IDX(di, blob.xyzidx);
-    blob.clxyz          = st.ol.XYZmm0(:,blob.clidx); 
+    blob.clxyz          = st.ol.XYZmm0(:,blob.clidx);
     blob.extent         = sum(blob.clidx);
     blob.values         = st.ol.Y(find(blob.clidx));
     blob                = orderfields(blob);
 function y                       = getcurrentoverlay(dilateflag)
     if nargin==0, dilateflag = 0; end
     global st
-    T           = getthresh; 
-    di          = strcmpi({'+' '-' '+/-'}, T.direct); 
+    T           = getthresh;
+    di          = strcmpi({'+' '-' '+/-'}, T.direct);
     clustidx    = st.ol.C0(di,:);
     opt         = [1 -1 1];
     y           = st.ol.Y*opt(di);
     y(clustidx==0)  = 0;
-    y(isnan(y))     = 0; 
+    y(isnan(y))     = 0;
     if dilateflag, y = st.ol.Y.*dilate_image(double(y~=0)); end
 function PEAK                    = getmaxima(Z, XYZ, M, Dis, Num)
 [N,Z,XYZ,A,L]       = spm_max(Z,XYZ);
@@ -2531,7 +2548,7 @@ while numel(find(isfinite(Z)))
     [U,i]   = max(Z);            %-largest maxima
     j       = find(A == A(i));   %-maxima in cluster
     npeak   = npeak + 1;         %-number of peaks
-    extent  = N(i); 
+    extent  = N(i);
     PEAK(npeak,:) = [extent U XYZmm(:,i)']; %-assign peak
     %-Print Num secondary maxima (> Dis mm apart)
     %------------------------------------------------------------------
@@ -2552,8 +2569,8 @@ end
 function [regionname, regionidx] = getregionnames(xyz)
     global st
     if size(xyz,1)~=3, xyz = xyz'; end
-    regionname  = repmat({'Location not in atlas'}, size(xyz, 2), 1); 
-    regionidx   = zeros(size(xyz, 2), 1); 
+    regionname  = repmat({'Location not in atlas'}, size(xyz, 2), 1);
+    regionidx   = zeros(size(xyz, 2), 1);
     for i = 1:size(xyz,2)
         regionidx(i) = st.ol.atlas0(bspm_XYZreg('FindXYZ', xyz(:,i), st.ol.XYZmm0));
         if regionidx(i)
@@ -2574,7 +2591,7 @@ function h      = buipanel(parent, uilabels, uistyles, relwidth, varargin)
 %
 %  USAGE: h = buipanel(parent, uilabels, uistyles, uiwidths, varargin)
 % __________________________________________________________________________
-%  INPUTS 
+%  INPUTS
 %
 
 % ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
@@ -2583,12 +2600,12 @@ function h      = buipanel(parent, uilabels, uistyles, relwidth, varargin)
 % __________________________________________________________________________
 global st
 
-easyparse(varargin, ... 
+easyparse(varargin, ...
             { ...
             'panelposition', ...
             'paneltitleposition', ...
             'paneltitle', ...
-            'panelborder', ... 
+            'panelborder', ...
             'panelbackcolor',  ...
             'panelforecolor', ...
             'panelfontsize',  ...
@@ -2606,10 +2623,10 @@ easyparse(varargin, ...
             'relheight', ...
             'marginsep', ...
             'uicontrolsep', ...
-            'tag'}); 
+            'tag'});
 defaults = easydefaults(...
             'paneltitleposition', 'centertop', ...
-            'panelborder',      'none', ... 
+            'panelborder',      'none', ...
             'panelbackcolor',   st.color.bg, ...
             'editbackcolor',    st.color.edit, ...
             'labelbackcolor',   st.color.bg, ...
@@ -2630,50 +2647,50 @@ defaults = easydefaults(...
 if nargin==0, mfile_showhelp; disp(defaults); return; end
 
 % | UNITS
-unit0 = get(parent, 'units'); 
-        
+unit0 = get(parent, 'units');
+
 % | PANEL
 set(parent, 'units', 'pixels')
-pp          = get(parent, 'pos'); 
-pp          = [pp(3:4) pp(3:4)]; 
+pp          = get(parent, 'pos');
+pp          = [pp(3:4) pp(3:4)];
 P           = uipanel(parent, 'units', 'pix', 'pos', panelposition.*pp, 'title', paneltitle, ...
             'backg', panelbackcolor, 'foreg', panelforecolor, 'fontsize', panelfontsize, ...
             'fontname', panelfontname, 'bordertype', panelborder, 'fontweight', panelfontweight, 'titleposition', paneltitleposition);
-labelprop   = {'parent', P, 'style', 'text', 'units', 'norm', 'fontsize', labelfontsize, 'fontname', labelfontname, 'foreg', labelforecolor, 'backg', labelbackcolor, 'fontweight', labelfontweight, 'tag', 'uilabel'}; 
-editprop    = {'parent', P, 'units', 'norm', 'fontsize', editfontsize, 'fontname', editfontname, 'foreg', editforecolor, 'backg', editbackcolor}; 
+labelprop   = {'parent', P, 'style', 'text', 'units', 'norm', 'fontsize', labelfontsize, 'fontname', labelfontname, 'foreg', labelforecolor, 'backg', labelbackcolor, 'fontweight', labelfontweight, 'tag', 'uilabel'};
+editprop    = {'parent', P, 'units', 'norm', 'fontsize', editfontsize, 'fontname', editfontname, 'foreg', editforecolor, 'backg', editbackcolor};
 propadd     = {'tag'};
 
 % | UICONTROLS
 
 pos         = getpositions(relwidth, relheight, marginsep, uicontrolsep);
-editpos     = pos(pos(:,1)==1,3:6); 
-labelpos    = pos(pos(:,1)==2, 3:6); 
+editpos     = pos(pos(:,1)==1,3:6);
+labelpos    = pos(pos(:,1)==2, 3:6);
 hc          = zeros(length(uilabels), 1);
-he          = zeros(length(uilabels), 1); 
+he          = zeros(length(uilabels), 1);
 for i = 1:length(uilabels)
     ctag = ~cellfun('isempty', regexpi({'editbox', 'slider', 'listbox', 'popup'}, uistyles{i}));
     ttag = ~cellfun('isempty', regexpi({'text'}, uistyles{i}));
     if sum(ctag)==1
-        hc(i) = uibutton(labelprop{:}, 'pos', labelpos(i,:), 'str', uilabels{i}); 
+        hc(i) = uibutton(labelprop{:}, 'pos', labelpos(i,:), 'str', uilabels{i});
         he(i) = uicontrol(editprop{:}, 'style', uistyles{i}, 'pos', editpos(i,:));
     elseif ttag
-        editpos(i,4) = 1 - marginsep*2; 
-        he(i) = uibutton(labelprop{:}, 'style', uistyles{i}, 'pos', editpos(i,:), 'str', uilabels{i}); 
+        editpos(i,4) = 1 - marginsep*2;
+        he(i) = uibutton(labelprop{:}, 'style', uistyles{i}, 'pos', editpos(i,:), 'str', uilabels{i});
     else
-        editpos(i,4) = 1 - marginsep*2; 
-        he(i) = uicontrol(labelprop{:}, 'style', uistyles{i}, 'pos', editpos(i,:), 'str', uilabels{i});  
+        editpos(i,4) = 1 - marginsep*2;
+        he(i) = uicontrol(labelprop{:}, 'style', uistyles{i}, 'pos', editpos(i,:), 'str', uilabels{i});
     end
     for ii = 1:length(propadd)
            if ~isempty(propadd{ii})
-                tmp = eval(sprintf('%s', propadd{ii})); 
-                set(he(i), propadd{ii}, tmp{i}); 
+                tmp = eval(sprintf('%s', propadd{ii}));
+                set(he(i), propadd{ii}, tmp{i});
            end
     end
 end
 % | HANDLES
 h.panel = P;
-h.label = hc; 
-h.edit  = he;  
+h.label = hc;
+h.edit  = he;
 
 set(parent, 'units', unit0);
 function pos    = getpositions(relwidth, relheight, marginsep, uicontrolsep)
@@ -2681,13 +2698,13 @@ function pos    = getpositions(relwidth, relheight, marginsep, uicontrolsep)
     if nargin<3, marginsep = .025; end
     if nargin<4, uicontrolsep = .01; end
     ncol = length(relwidth);
-    nrow = length(relheight); 
+    nrow = length(relheight);
 
     % width
-    rowwidth    = 1-(marginsep*2)-(uicontrolsep*(ncol-1));  
+    rowwidth    = 1-(marginsep*2)-(uicontrolsep*(ncol-1));
     uiwidths    = (relwidth/sum(relwidth))*rowwidth;
     allsep      = [marginsep repmat(uicontrolsep, 1, ncol-1)];
-    uilefts     = ([0 cumsum(uiwidths(1:end-1))]) + cumsum(allsep); 
+    uilefts     = ([0 cumsum(uiwidths(1:end-1))]) + cumsum(allsep);
 
     % height
     colheight   = 1-(marginsep*2)-(uicontrolsep*(nrow-1));
@@ -2697,7 +2714,7 @@ function pos    = getpositions(relwidth, relheight, marginsep, uicontrolsep)
 
     % combine
     pos = zeros(ncol, 4, nrow);
-    pos(:,1,:)  = repmat(uilefts', 1, nrow); 
+    pos(:,1,:)  = repmat(uilefts', 1, nrow);
     pos(:,2,:)  = repmat(uibottoms, ncol, 1);
     pos(:,3,:)  = repmat(uiwidths', 1, nrow);
     pos(:,4,:)  = repmat(uiheights, ncol, 1);
@@ -2706,10 +2723,10 @@ function pos    = getpositions(relwidth, relheight, marginsep, uicontrolsep)
     pos = zeros(ncol*nrow, 6);
     pos(:,1) = reshape(repmat(1:nrow, ncol, 1), size(pos,1), 1);
     pos(:,2) = reshape(repmat(1:ncol, 1, nrow), size(pos,1), 1);
-    pos(:,3) = uilefts(pos(:,2)); 
-    pos(:,4) = uibottoms(pos(:,1)); 
-    pos(:,5) = uiwidths(pos(:,2)); 
-    pos(:,6) = uiheights(pos(:,1)); 
+    pos(:,3) = uilefts(pos(:,2));
+    pos(:,4) = uibottoms(pos(:,1));
+    pos(:,5) = uiwidths(pos(:,2));
+    pos(:,6) = uiheights(pos(:,1));
 
 % | IMAGE PROCESSING UTILITIES
 % =========================================================================
@@ -2718,9 +2735,9 @@ function load_overlay(fname, pval, k)
     global st
     if nargin<3, k = 5; end
     if nargin<2, pval = .001; end
-    badfn = 1; 
+    badfn = 1;
     while badfn
-        oh = spm_vol(fname); 
+        oh = spm_vol(fname);
         od = spm_read_vols(oh);
         od(isnan(od)) = 0;
         if sum(od(:))==0
@@ -2728,47 +2745,47 @@ function load_overlay(fname, pval, k)
             fname = uigetvol('Select an Image File for Overlay', 0);
             if isempty(fname), disp('Must select an overlay!'); return; end
         else
-            badfn = 0; 
+            badfn = 0;
         end
     end
 
     % | - IMAGE INFO
     [fpath, fn1, fn2]   = fileparts(fname);
-    [dpath, fd]         = fileparts(fpath); 
-    finfo.name          = fullfile(fd, strcat(fn1, fn2)); 
+    [dpath, fd]         = fileparts(fpath);
+    finfo.name          = fullfile(fd, strcat(fn1, fn2));
     finfo.descrip       = oh.descrip;
-    finfo.dimminmax     = sprintf('DIM: %d %d %d; MIN: %2.3f; MAX: %2.3f', size(od), min(od(:)), max(od(:))); 
-    
-    
+    finfo.dimminmax     = sprintf('DIM: %d %d %d; MIN: %2.3f; MAX: %2.3f', size(od), min(od(:)), max(od(:)));
+
+
     % | - CHECK IMAGE
-    posneg  = check4sign(od);  
+    posneg  = check4sign(od);
     df      = check4df(oh);
     if isempty(df)
         u       = .0001;
         k       = 0;
         df      = Inf;
-        pval    = Inf; 
+        pval    = Inf;
     else
         if regexp(oh.descrip, 'SPM\WF')
             u       = spm_invFcdf(1-pval, df);
         else
-            u       = spm_invTcdf(1-pval, df);  
+            u       = spm_invTcdf(1-pval, df);
         end
     end
     [C, I] = getclustidx(od, u, k);
     if ~any(C(:))
-        headsup('No suprathreshold voxels. Showing unthresholded image.'); 
-        u = 0.0001; 
+        headsup('No suprathreshold voxels. Showing unthresholded image.');
+        u = 0.0001;
         pval = bob_t2p(u, df);
-        k = 0; 
-        [C, I] = getclustidx(od, u, k); 
+        k = 0;
+        [C, I] = getclustidx(od, u, k);
     end
     M           = oh.mat;         %-voxels to mm matrix
     DIM         = oh.dim';
-    VOX         = abs(diag(M(:,1:3))); 
+    VOX         = abs(diag(M(:,1:3)));
     [X,Y,Z]     = ndgrid(1:DIM(1),1:DIM(2),1:DIM(3));
     XYZ         = [X(:)';Y(:)';Z(:)'];
-    RCP         = XYZ; 
+    RCP         = XYZ;
     RCP(4,:)    = 1;
     XYZmm       = M(1:3,:)*RCP;
     st.ol       = struct( ...
@@ -2790,9 +2807,9 @@ function load_overlay(fname, pval, k)
                 'C0IDX',    I, ...
                 'XYZmm0',   XYZmm,...
                 'XYZ0',     XYZ);
-            
+
     setatlas;
-    set(st.fig, 'Name', abridgepath(st.ol.fname)); 
+    set(st.fig, 'Name', abridgepath(st.ol.fname));
 function u  = voxel_correct(im,alpha)
 if nargin < 1, error('USAGE: u = voxel_correct(im,alpha)'); end
 if nargin < 2, alpha = .05; end
@@ -2800,10 +2817,10 @@ if iscell(im), im = char(im); end
 
 %% Get Design Variable %%
 [impath imname] = fileparts(im);
-if exist([impath filesep 'I.mat'],'file') 
-    matfile = [impath filesep 'I.mat']; 
+if exist([impath filesep 'I.mat'],'file')
+    matfile = [impath filesep 'I.mat'];
     maskfile = [impath filesep 'mask.nii'];
-elseif exist([impath filesep 'SPM.mat'],'file') 
+elseif exist([impath filesep 'SPM.mat'],'file')
     matfile = [impath filesep 'SPM.mat'];
 else
     disp('Could not find an SPM.mat or I.mat variable, exiting.'); return
@@ -2819,7 +2836,7 @@ if strfind(matfile,'SPM.mat'), flexflag = 0; else flexflag = 1; end
 %% Load and Compute Params %%
 if flexflag % GLMFLEX
     load(matfile);
-    
+
     try
         mask.hdr = spm_vol([I.OutputDir filesep 'mask.nii']);
     catch
@@ -2831,8 +2848,8 @@ if flexflag % GLMFLEX
     img.data = spm_read_vols(img.hdr);
     tmp = img.hdr.descrip; i1 = find(tmp=='['); i2 = find(tmp==']');
     df = str2num(tmp(i1(1)+1:i2(1)-1));
-    df = [1 df];    
-    
+    df = [1 df];
+
     FWHM = I.FWHM{1};
     R = spm_resels_vol(mask.hdr,FWHM)';
     S = sum(mask.data(:)==1);
@@ -2842,7 +2859,7 @@ if flexflag % GLMFLEX
     v2r  = 1/prod(FWHM(~isinf(FWHM)));% voxels to resels
 
 else % SPM
-    
+
     load(matfile)
     df   = [1 SPM.xX.erdf];
     n    = 1;
@@ -2853,10 +2870,10 @@ else % SPM
     FWHM = SPM.xVol.FWHM;
     FWHMmm= FWHM.*VOX; 				% FWHM {mm}
     v2r  = 1/prod(FWHM(~isinf(FWHM))); %-voxels to resels
-    
+
 end
 %% get threshold
-u = spm_uc(alpha,df,STAT,R,n,S); 
+u = spm_uc(alpha,df,STAT,R,n,S);
 function [fwek, fdrk] = cluster_correct(im,u,alpha)
 % CLUSTER_CORRECT Computer extent for cluster-level correction
 %
@@ -2876,10 +2893,10 @@ function [fwek, fdrk] = cluster_correct(im,u,alpha)
 %         Or provide a explicit list (e.g. 1:1000) of cluster sizes to
 %         search over.
 %         If guess is a (non-NaN) scalar nothing happens, except the the
-%         corrected P-value of guess is printed. 
+%         corrected P-value of guess is printed.
 %
 % Finds the corrected cluster size (spatial extent) threshold for a given
-% cluster defining threshold u and FWE-corrected level alpha. 
+% cluster defining threshold u and FWE-corrected level alpha.
 %
 %_________________________________________________________________________
 % $Id: CorrClusTh.m,v 1.12 2008/06/10 19:03:13 nichols Exp $ Thomas Nichols, Marko Wilke
@@ -2889,10 +2906,10 @@ if iscell(im), im = char(im); end
 global st
 
 %% Get Design Variable %%
-if exist([fileparts(im) filesep 'I.mat'],'file') 
+if exist([fileparts(im) filesep 'I.mat'],'file')
     matfile = [fileparts(im) filesep 'I.mat'];
     flexflag = 1;
-elseif exist([fileparts(im) filesep 'SPM.mat'],'file') 
+elseif exist([fileparts(im) filesep 'SPM.mat'],'file')
     matfile = [fileparts(im) filesep 'SPM.mat'];
     flexflag = 0;
 else
@@ -2901,24 +2918,24 @@ end
 
 %% Load and Compute Params %%
 if flexflag % GLMFLEX
-    
+
     II = load(matfile);
     try
         maskhdr = spm_vol(fullfile(fileparts(im), 'mask.nii'));
     catch
         maskhdr = spm_vol(fullfile(fileparts(im), 'mask.nii.gz'));
     end
-       
+
     FWHM    = II.I.FWHM{1};
     R       = spm_resels_vol(maskhdr,FWHM)';
     VOX2RES = 1/prod(FWHM(~isinf(FWHM)));% voxels to resels
 
 else % SPM
-    
+
     load(matfile);
     R    = SPM.xVol.R;
     VOX2RES  = 1/prod(SPM.xVol.FWHM(~isinf(SPM.xVol.FWHM))); %-voxels to resels
-    
+
 end
 
 %% SPM METHOD (spm_uc_clusterFDR)
@@ -2934,7 +2951,7 @@ XYZ            = st.ol.XYZ0(:,idx);
 function [out, outmat] = reslice_image(in, ref, int)
     % Most of the code is adapted from rest_Reslice in REST toolbox:
     % Written by YAN Chao-Gan 090302 for DPARSF. Referenced from spm_reslice.
-    % State Key Laboratory of Cognitive Neuroscience and Learning 
+    % State Key Laboratory of Cognitive Neuroscience and Learning
     % Beijing Normal University, China, 100875
     % int:        interpolation, 0=Nearest Neighbor, 1=Trilinear(default)
     if nargin<3, int = 1; end
@@ -2942,7 +2959,7 @@ function [out, outmat] = reslice_image(in, ref, int)
     if iscell(ref), ref = char(ref); end
     if iscell(in), in = char(in); end
     % read in reference image
-    RefHead = spm_vol(ref); 
+    RefHead = spm_vol(ref);
     mat=RefHead.mat;
     dim=RefHead.dim;
     SourceHead = spm_vol(in);
@@ -2972,14 +2989,14 @@ kernel  = cat(3,[0 0 0; 0 1 0; 0 0 0],[0 1 0; 1 1 1; 0 1 0],[0 0 0; 0 1 0; 0 0 0
 out     = spm_erode(in, kernel);
 function out = growregion(roi, xyz)
     global st
-    refhdr = st.ol.hdr; 
+    refhdr = st.ol.hdr;
     roihdr = refhdr;
     roihdr.pinfo = [1;0;0];
     [R,C,P]  = ndgrid(1:refhdr.dim(1),1:refhdr.dim(2),1:refhdr.dim(3));
     RCP      = [R(:)';C(:)';P(:)'];
     clear R C P
     RCP(4,:)    = 1;
-    XYZmm       = refhdr.mat(1:3,:)*RCP;   
+    XYZmm       = refhdr.mat(1:3,:)*RCP;
     Q           = ones(1,size(XYZmm,2));
     out         = zeros(roihdr.dim);
     switch roi.shape
@@ -2990,61 +3007,61 @@ function out = growregion(roi, xyz)
     end
     out(j) = 1;
     if roi.intersectflag
-        col = getcurrentoverlay; 
-        out(col==0) = 0; 
+        col = getcurrentoverlay;
+        out(col==0) = 0;
     end
 
 % | IMAGE TYPE CHECKS
 % =========================================================================
 function flag       = check4design
     global st
-    flag = 0; 
-    if ~exist(fullfile(fileparts(st.ol.fname), 'I.mat'),'file') & ~exist(fullfile(fileparts(st.ol.fname), 'SPM.mat'),'file') 
-        flag = 1; 
+    flag = 0;
+    if ~exist(fullfile(fileparts(st.ol.fname), 'I.mat'),'file') & ~exist(fullfile(fileparts(st.ol.fname), 'SPM.mat'),'file')
+        flag = 1;
         printmsg('No SPM.mat or I.mat - Disabling threshold correction', 'WARNING');
-        set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'off'); 
+        set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'off');
     else
-        set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'on'); 
+        set(findobj(st.fig, 'Tag', 'Correction'), 'Enable', 'on');
     end
 function flag       = check4mask(img)
-    flag = 1; 
+    flag = 1;
     if ~any(ismember(unique(img(:)), [0 1])), flag = 0; end
 function flag       = check4sign(img)
     global st
-    allh = findobj(st.fig, 'Tag', 'direct'); 
+    allh = findobj(st.fig, 'Tag', 'direct');
     if ~isempty(allh), cb_directmenu(st.direct); end
-    flag = [~any(img(:)>0) ~any(img(:)<0)]; 
+    flag = [~any(img(:)>0) ~any(img(:)<0)];
     if any(flag)
-        opt = {'+' '-'}; 
+        opt = {'+' '-'};
         st.direct = lower(opt{flag==0});
         if ~isempty(allh)
             allhstr = get(allh, 'String');
             set(allh(strcmp(allhstr, '+/-')), 'Value', 0, 'Enable', 'inactive');
             set(allh(strcmp(allhstr, opt{flag})), 'Value', 0, 'Enable', 'inactive');
-            set(allh(strcmp(allhstr, opt{~flag})), 'Value', 1, 'Enable', 'inactive'); 
+            set(allh(strcmp(allhstr, opt{~flag})), 'Value', 1, 'Enable', 'inactive');
         end
     end
 function df         = check4df(hdr)
     imdir = fileparts(hdr.fname);
     if exist(fullfile(imdir, 'dof'), 'file')
         df = load(fullfile(imdir, 'dof'));
-        return; 
+        return;
     end
     df = regexp(hdr.descrip, '\[\d+.*]', 'match');
     if isempty(df)
-        df = []; 
+        df = [];
         headsup('Degrees of freedom not found in image header or its parent directory. Showing unthresholded image.')
     else
         df = str2num(char(df));
     end
-    
+
 % | MISC UTILITIES
 % =========================================================================
 function h          = plotdata(v, subname)
     tmp       = sortrows([subname num2cell(v)], -2);
-    h.ax      = gca; 
-    h.data    = cell2mat(tmp(:,2)); 
-    h.subname = tmp(:,1);; 
+    h.ax      = gca;
+    h.data    = cell2mat(tmp(:,2));
+    h.subname = tmp(:,1);;
     h.bar     = barh(h.data);
     xlim      = [floor(2*min(v))/2 ceil(2*max(v))/2];
     set(h.ax, 'xlim', xlim, 'ytick', []);
@@ -3053,19 +3070,19 @@ function h          = plotdata(v, subname)
     y(y<0)    = 0;
     y         = y + range(y)*.005;
     for i = 1:length(x)
-        h.label(i) = text(y(i), x(i), h.subname{i}); 
+        h.label(i) = text(y(i), x(i), h.subname{i});
     end
 function zx         = oneoutzscore(x, returnas)
 % ONEOUTZSCORE Perform columnwise leave-one-out zscoring
-% 
+%
 % USAGE: zx = oneoutzscore(x, returnas)
-% 
+%
 %   returnas: 0, signed values (default); 1, absolute values
 %
 if nargin<1, disp('USAGE: zx = oneoutzscore(x, returnas)'); return; end
 if nargin<2, returnas = 0; end
 if size(x,1)==1, x=x'; end
-zx              = x; 
+zx              = x;
 [nrow, ncol]    = size(x);
 for c = 1:ncol
     cin         = repmat(x(:,c), 1, nrow);
@@ -3080,14 +3097,14 @@ function str        = nicetime
 function [strw, strh] = strsize(string, varargin)
 % STRSIZE Calculate size of string
 %
-%  USAGE: strsize(string, varargin) 
+%  USAGE: strsize(string, varargin)
 %
 
 % ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
 %	Created:  2015-07-14
 %	Email:     spunt@caltech.edu
 % __________________________________________________________________________
-def = { ... 
+def = { ...
 	'axhandle',         gca,	...
     'FontSize',         [],     ...
     'FontName',         [],     ...
@@ -3113,38 +3130,38 @@ strh = textExt(4);
 strw = textExt(3);
 
 % | If using a proportional font, shrink text width by a fudge factor to account for kerning.
-if ~strcmpi(axhandle.FontName,'FixedWidth'), strw = strw*0.9; end 
+if ~strcmpi(axhandle.FontName,'FixedWidth'), strw = strw*0.9; end
 function out        = abridgepath(str, maxchar)
     if nargin<2, maxchar =  85; end
     if iscell(str), str = char(str); end
     if length(str) <= maxchar, out = str; return; end
     s   = regexp(str, filesep, 'split');
     s(cellfun('isempty', s)) = [];
-    p1 = fullfile(s{1}, '...'); 
-    s(1) = []; 
+    p1 = fullfile(s{1}, '...');
+    s(1) = [];
     badpath = 1;
-    count = 0; 
+    count = 0;
     while badpath
-        count = count + 1; 
-        testpath = s; 
-        testpath(1:count) = []; 
-        testpath = fullfile(p1, testpath{:}); 
+        count = count + 1;
+        testpath = s;
+        testpath(1:count) = [];
+        testpath = fullfile(p1, testpath{:});
         if length(testpath)<=maxchar, badpath = 0; end
     end
-    out = testpath; 
+    out = testpath;
 function cmap       = colormap_signed(n, zero_loc)
 % Construct colormap for displaying signed data. The function outputs an n x 3
 % colormap designed for use with signed data. The user can specify the location
 % in the data range that corresponds to zero, and the colormap is then constructed
-% so that white maps to zero. 
+% so that white maps to zero.
 %
 % Input arguments:
 %   n: number of rows in colormap (default = 64)
 %   zero_loc: location of zero (fractional dist between neg and pos limits
 %             of data). If k is a signed function of 2 variables that spans
 %             a range from negative to positive, compute the location
-%             of the zero value: 
-%                   zero_loc = (0 - min(k(:)))/(max(k(:)) - min(k(:))) 
+%             of the zero value:
+%                   zero_loc = (0 - min(k(:)))/(max(k(:)) - min(k(:)))
 %
 % Usage:
 % cmap = colormap_signed returns a 64 x 3 colormap in which the middle
@@ -3153,19 +3170,19 @@ function cmap       = colormap_signed(n, zero_loc)
 % values of 64 and 0.5, respectively.
 %
 % cmap = colormap_signed(n) returns a n x 3 colormap, otherwise similar to
-% above. Variable zero_loc assumes default value of 0.5. 
+% above. Variable zero_loc assumes default value of 0.5.
 %
-% cmap = colormap_signed(n,zero_loc) returns a n x 3 colormap in which the 
+% cmap = colormap_signed(n,zero_loc) returns a n x 3 colormap in which the
 % location of the row corresponding to the 'zero color' is given by zero_loc.
 % See section above on input arguments for example of how to compute zero_loc.
 %
-% NOTE: As the value of zero_loc deviates from 0.5, the colormap created by 
-% this function becomes progressively warped so that the portion of the data 
-% range mapped to warm colors does not equal that mapped to cool colors. This 
+% NOTE: As the value of zero_loc deviates from 0.5, the colormap created by
+% this function becomes progressively warped so that the portion of the data
+% range mapped to warm colors does not equal that mapped to cool colors. This
 % is intentional and allows the full range of colors to be used for a given
 % signed data range. If you want a signed colormap in which the incremental
-% color change is constant across the entire data range, one option is to 
-% use this function to return a symmetrical signed colormap (i.e., zero_loc 
+% color change is constant across the entire data range, one option is to
+% use this function to return a symmetrical signed colormap (i.e., zero_loc
 % = 0.5) and then manually set the colorbar properties to crop the colorbar.
 % Written by Peter Hammer, April 2015 and posted on Matlab File Exchange
 
@@ -3202,7 +3219,7 @@ c = [0 0 0.5;...
 i_mid = 0.5*(1+size(c,1));
 cmap_neg=c(1:i_mid,:);
 cmap_pos=c(i_mid:end,:);
-i0 = 1+ round(n * zero_loc); % row of cmap (n rows) corresponding to zero 
+i0 = 1+ round(n * zero_loc); % row of cmap (n rows) corresponding to zero
 x=(1:i_mid)'/i_mid;
 cmap_neg_i=interp1(x,cmap_neg,linspace(x(1),1,i0));
 cmap_pos_i=interp1(x,cmap_pos,linspace(x(1),1,n-i0));
@@ -3231,7 +3248,7 @@ function RGBmap     = colorGray(numLevels,debugplot)
 % code.  Added the debug plotting options.
 %****************************************************
 
-if(nargin < 1), numLevels= size(colormap, 1); end	% Same number of  colors as the present color map. 
+if(nargin < 1), numLevels= size(colormap, 1); end	% Same number of  colors as the present color map.
 if(nargin < 2), debugplot=0; end	% turn off debug plotting by default
 
 %first make a Jet map and then scale it so that it will look good in gray
@@ -3321,7 +3338,7 @@ end
 function out        = cmap_upsample(in, N)
     num = size(in,1);
     ind = repmat(1:num, ceil(N/num), 1);
-    rem = numel(ind) - N; 
+    rem = numel(ind) - N;
     if rem, ind(end,end-rem+1:end) = NaN; end
     ind = ind(:); ind(isnan(ind)) = [];
     out = in(ind(:),:);
@@ -3342,8 +3359,8 @@ function out        = cellnum2str(in, ndec)
 if nargin < 2, ndec = 2; end
 if nargin < 1, disp('USAGE: out = num2pval(in)'); return; end
 if ~iscell(in), error('Input array must be cell!'); end
-n   = cell2mat(in); 
-out = cellfun(@sprintf, repmat({['%2.' num2str(ndec) 'f']}, size(in)), in, 'Unif', false); 
+n   = cell2mat(in);
+out = cellfun(@sprintf, repmat({['%2.' num2str(ndec) 'f']}, size(in)), in, 'Unif', false);
 out = regexprep(out, '0\.', '\.');
 out(mod(n,1)==0) = cellfun(@num2str, in(mod(n,1)==0), 'unif', false);
 function A          = catstruct(varargin)
@@ -3354,13 +3371,13 @@ function A          = catstruct(varargin)
 %
 %     A.name = 'Me' ;
 %     B.income = 99999 ;
-%     X = catstruct(A,B) 
+%     X = catstruct(A,B)
 %     % -> X.name = 'Me' ;
 %     %    X.income = 99999 ;
 %
 %   If a fieldname is not unique among structures (i.e., a fieldname is
 %   present in more than one structure), only the value from the last
-%   structure with this field is used. In this case, the fields are 
+%   structure with this field is used. In this case, the fields are
 %   alphabetically sorted. A warning is issued as well. An axample:
 %
 %     S1.name = 'Me' ;
@@ -3376,7 +3393,7 @@ function A          = catstruct(varargin)
 %     CD = catstruct(C,D) % CD is a 1x2 structure array with fields bb and aa
 %
 %   The last input can be the string 'sorted'. In this case,
-%   CATSTRUCT(S1,S2, ..., 'sorted') will sort the fieldnames alphabetically. 
+%   CATSTRUCT(S1,S2, ..., 'sorted') will sort the fieldnames alphabetically.
 %   To sort the fieldnames of a structure A, you could use
 %   CATSTRUCT(A,'sorted') but I recommend ORDERFIELDS for doing that.
 %
@@ -3384,7 +3401,7 @@ function A          = catstruct(varargin)
 %   struct (0x0 struct array with no fields).
 %
 %   NOTE: To concatenate similar arrays of structs, you can use simple
-%   concatenation: 
+%   concatenation:
 %     A = dir('*.mat') ; B = dir('*.m') ; C = [A ; B] ;
 
 %   NOTE: This function relies on unique. Matlab changed the behavior of
@@ -3432,7 +3449,7 @@ end
 sz0 = [] ; % used to check that all inputs have the same size
 
 % used to check for a few trivial cases
-NonEmptyInputs = false(N,1) ; 
+NonEmptyInputs = false(N,1) ;
 NonEmptyInputsN = 0 ;
 
 % used to collect the fieldnames and the inputs
@@ -3445,7 +3462,7 @@ for ii=1:N,
     if ~isstruct(X),
         error('catstruct:InvalidArgument',['Argument #' num2str(ii) ' is not a structure.']) ;
     end
-    
+
     if ~isempty(X),
         % empty structs are ignored
         if ii > 1 && ~isempty(sz0)
@@ -3473,39 +3490,39 @@ elseif NonEmptyInputsN == 1,
     end
 else
     % there is actually something to concatenate
-    FN = cat(1,FN{:}) ;    
-    VAL = cat(1,VAL{:}) ;    
+    FN = cat(1,FN{:}) ;
+    VAL = cat(1,VAL{:}) ;
     FN = squeeze(FN) ;
     VAL = squeeze(VAL) ;
-    
-    
+
+
     [UFN,ind] = unique(FN, 'last') ;
     % If this line errors, due to your matlab version not having UNIQUE
     % accept the 'last' input, use the following line instead
     % [UFN,ind] = unique(FN) ; % earlier ML versions, like 6.5
-    
+
     if numel(UFN) ~= numel(FN),
 %         warning('catstruct:DuplicatesFound','Fieldnames are not unique between structures.') ;
         sorted = 1 ;
     end
-    
+
     if sorted,
         VAL = VAL(ind,:) ;
         FN = FN(ind,:) ;
     end
-    
+
     A = cell2struct(VAL, FN);
     A = reshape(A, sz0) ; % reshape into original format
 end
 function out        = adjustbrightness(in)
     lim = .5;
-    dat.min = min(in(in>0)); 
+    dat.min = min(in(in>0));
     dat.max = max(in(in>0));
     dat.dim = size(in);
-    out = double(in)./255; 
-    out(out>0) = out(out>0) + (lim-nanmean(nanmean(out(out>0))))*(1 - out(out>0)); 
+    out = double(in)./255;
+    out(out>0) = out(out>0) + (lim-nanmean(nanmean(out(out>0))))*(1 - out(out>0));
     out(out>0) = scaledata(out(out>0), [dat.min dat.max]);
-function figpos = align_figure(uiW, uiH, valign, halign)
+function figpos     = align_figure(uiW, uiH, valign, halign)
 screenPos   = get(0, 'ScreenSize');
 screenW     = screenPos(3);
 screenH     = screenPos(4);
@@ -3514,9 +3531,9 @@ switch lower(valign)
     case 'middle'
       figpos(2) = (screenH/2)-(uiH/2);
     case {'top', 'upper'}
-      figpos(2) = screenH-uiH; 
+      figpos(2) = screenH-uiH;
     case {'bottom', 'lower'}
-      figpos(2) = 1; 
+      figpos(2) = 1;
     otherwise
       error('VALIGN options are: middle, top, upper, bottom, lower')
 end
@@ -3524,9 +3541,9 @@ switch lower(halign)
     case 'center'
       figpos(1) = (screenW/2) - (uiW/2);
     case 'right'
-      figpos(1) = screenW - uiW; 
+      figpos(1) = screenW - uiW;
     case 'left'
-      figpos(1) = 1; 
+      figpos(1) = 1;
     otherwise
       error('HALIGN options are: center, left, right')
 end
@@ -3536,54 +3553,54 @@ function fn         = construct_filename
     idx     = regexp(st.ol.descrip, ': ');
     if ~isempty(idx)
         n = strtrim(st.ol.descrip(idx+1:end));
-        n = regexprep(n, ' ', '_'); 
+        n = regexprep(n, ' ', '_');
     end
-    fn = sprintf('%s/%s_x=%d_y=%d_z=%d.png', p, n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));        
+    fn = sprintf('%s/%s_x=%d_y=%d_z=%d.png', p, n, bspm_XYZreg('RoundCoords',st.centre,st.ol.M,st.ol.DIM));
 function s          = easydefaults(varargin)
 % easydefaults  Set many default arguments quick and easy.
 %
 %   - For input arguments x1,x2,x3, set default values x1def,x2def,x3def
 %     using easydefaults as parameter-value pairs:
 %       easydefaults('x1',x1def,'x2',x2def,'x3',x3def);
-%   
-%   - Defaults can be set for any input argument, whether explicit or as 
+%
+%   - Defaults can be set for any input argument, whether explicit or as
 %     part of a parameter-value pair:
 %       function dummy_function(x,varargin)
 %           easydefaults('x',1,'y',2);
-%           ...   
+%           ...
 %       end
 %
-%   - easydefaults and easyparse can in principle be used in either order, 
+%   - easydefaults and easyparse can in principle be used in either order,
 %     but it is usually better to parse first and fill in defaults after:
 %       function dummy_function(x,varargin)
 %           easyparse(varargin,'y')
 %           easydefaults('x',1,'y',2);
-%           ...   
+%           ...
 %       end
 %
 %   CAVEAT UTILITOR: this function relies on evals and assignin statements.
-%   Input checking is performed to limit potential damage, but use at your 
+%   Input checking is performed to limit potential damage, but use at your
 %   own risk.
 %
-%   Author: Jared Schwede 
+%   Author: Jared Schwede
 %   Last update: Jan 14, 2013
 
     % Check that all inputs come in parameter-value pairs.
     if mod(length(varargin),2)
         error('Default arguments must be specified in pairs!');
     end
-    
+
     for i=1:2:length(varargin)
         if ~ischar(varargin{i})
             error('Variables to easydefaults must be written as strings!');
         end
-        
+
         % We'll check that the varargin is a valid variable name. This
         % should hopefully avoid any nasty code...
         if ~isvarname(varargin{i})
             error('Invalid variable name!');
         end
-        
+
         if exist(varargin{i},'builtin') || (exist(varargin{i},'file') == 2) || exist(varargin{i},'class')
             warning('MATLAB:defined_function',['''' varargin{i} ''' conflicts with the name of a function, m-file, or class along the MATLAB path and will be ignored by easydefaults.' ...
                                         ' Please rename the variable, or use a temporary variable with easydefaults and explicitly define ''' varargin{i} ...
@@ -3591,7 +3608,7 @@ function s          = easydefaults(varargin)
         else
             if ~evalin('caller',['exist(''' varargin{i} ''',''var'')'])
                 % We assign the arguments to a struct, s, which allows us to
-                % check that the evalin statement will not either throw an 
+                % check that the evalin statement will not either throw an
                 % error or execute some nasty code.
                 s.(varargin{i}) = varargin{i+1};
                 assignin('caller',varargin{i},varargin{i+1});
@@ -3615,28 +3632,28 @@ function s          = easyparse(caller_varargin,allowed_names)
 %   - To create a struct with fields specified by the names in varargin,
 %     (similar to the output of inputParser) ask for an output argument:
 %       s = easyparse(...);
-%  
+%
 %   CAVEAT UTILITOR: this function relies on assignin statements. Input
-%   checking is performed to limit potential damage, but use at your own 
+%   checking is performed to limit potential damage, but use at your own
 %   risk.
 %
 %   Author: Jared Schwede
 %   Last update: January 14, 2013
 
     % We assume all inputs come in parameter-value pairs. We'll also assume
-    % that there aren't enough of them to justify using a containers.Map. 
+    % that there aren't enough of them to justify using a containers.Map.
     for i=1:2:length(caller_varargin)
         if nargin == 2 && ~any(strcmp(caller_varargin{i},allowed_names))
             error(['Unknown input argument: ' caller_varargin{i}]);
         end
-        
+
         if ~isvarname(caller_varargin{i})
             error('Invalid variable name!');
         end
-        
-        
+
+
         % We assign the arguments to the struct, s, which allows us to
-        % check that the assignin statement will not either throw an error 
+        % check that the assignin statement will not either throw an error
         % or execute some nasty code.
         s.(caller_varargin{i}) = caller_varargin{i+1};
         % ... but if we ask for the struct, don't write all of the
@@ -3659,8 +3676,8 @@ function out        = scaledata(in, minmax)
 % Example:
 % a = [1 2 3 4 5];
 % a_out = scaledata(a,0,1);
-% 
-% Output obtained: 
+%
+% Output obtained:
 %            0    0.1111    0.2222    0.3333    0.4444
 %       0.5556    0.6667    0.7778    0.8889    1.0000
 %
@@ -3668,8 +3685,8 @@ function out        = scaledata(in, minmax)
 % Aniruddha Kembhavi, July 11, 2007
 if nargin<2, minmax = [0 1]; end
 if nargin<1, error('USAGE: out = scaledata(in, minmax)'); end
-out = in - repmat(min(in), size(in, 1), 1); 
-out = ((out./repmat(range(out), size(out,1), 1))*(minmax(2)-minmax(1))) + minmax(1); 
+out = in - repmat(min(in), size(in, 1), 1);
+out = ((out./repmat(range(out), size(out,1), 1))*(minmax(2)-minmax(1))) + minmax(1);
 function p          = bob_t2p(t, df)
 % BOB_T2P Get p-value from t-value + df
 %
@@ -3680,7 +3697,7 @@ function p          = bob_t2p(t, df)
     p = spm_Tcdf(t, df);
     p = 1 - p;
 function y          = range(x)
-y = nanmax(x) - nanmin(x); 
+y = nanmax(x) - nanmin(x);
 function out        = replace(in, exp1, exp2)
     out  = in;
     if ischar(exp1), exp1 = cellstr(exp1); end
@@ -3703,9 +3720,9 @@ function [parpath, branchpar] = parentpath(subpaths)
 if      nargin < 1, disp('USAGE: parpath = parentpath(subpaths)'); return; end
 if      iscell(subpaths), subpaths = char(subpaths); end
 if      size(subpaths, 1)==1
-    parpath = fileparts(subpaths); 
-    disp('Only one subpath!'); 
-    return; 
+    parpath = fileparts(subpaths);
+    disp('Only one subpath!');
+    return;
 end
 
 % | Get indices of noncommon characters
@@ -3717,7 +3734,7 @@ parpath = fileparts(subpaths(1, 1:diffidx(1)));
 
 if nargout==2
    tmp = regexp(regexprep(cellstr(subpaths), parpath, ''), filesep, 'split');
-   branchpar = cellfun(@(x) x(2), tmp); 
+   branchpar = cellfun(@(x) x(2), tmp);
 end
 function writereport(incell, outname)
 % WRITEREPORT Write cell array to CSV file
@@ -3726,7 +3743,7 @@ function writereport(incell, outname)
 % __________________________________________________________________________
 %  INPUTS
 %	incell:     cell array of character arrays
-%	outname:   base name for output csv file 
+%	outname:   base name for output csv file
 %
 
 % ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
@@ -3736,8 +3753,8 @@ function writereport(incell, outname)
 if nargin < 2, disp('USAGE: outname = writereport(incell, outname)'); return; end
 
 
-[p,n,e] = fileparts(outname); 
-outname = fullfile(p, strcat(n, '.csv')); 
+[p,n,e] = fileparts(outname);
+outname = fullfile(p, strcat(n, '.csv'));
 
 % | Convert all cell contents to character arrays
 % | ========================================================================
@@ -3761,7 +3778,7 @@ function mfile_showhelp(varargin)
 % ------------------------------------------------------------------------
 ST = dbstack('-completenames');
 if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
-eval(sprintf('help %s', ST(2).file));    
+eval(sprintf('help %s', ST(2).file));
 function error_handler(err, write)
 if nargin<2, write = 0; end
 info1 = cellstr(sprintf('UNDEFINED ERROR => %s', err.message));
@@ -3774,40 +3791,40 @@ if write
     eid        = fopen(fullfile(data.defaultdir,errlogname),'w');
     fwrite(eid, errdata);
     fclose(eid);
-end   
+end
 function save_error(err)
     global st
     answer = yesorno('An unknown error has occured. Would you like to save some files with information about the error?', 'Fatal Error');
     if strcmpi(answer, 'yes')
-        outdir      = uigetdir('', 'Select an output folder'); 
+        outdir      = uigetdir('', 'Select an output folder');
         if ~outdir, return; end
         errdata     = getReport(err);
-        errlogname  = fullfile(outdir, 'ErrorMsg.txt'); 
-        errmatname  = fullfile(outdir, 'ErrorDat.mat'); 
+        errlogname  = fullfile(outdir, 'ErrorMsg.txt');
+        errmatname  = fullfile(outdir, 'ErrorDat.mat');
         errfigname  = fullfile(outdir, 'ErrorFig.fig');
-        hgsave(errfigname); 
+        hgsave(errfigname);
         eid         = fopen(errlogname, 'w');
         fwrite(eid, errdata);
         fclose(eid);
         save(errmatname, 'st');
         fprintf('\nERROR INFORMATION WRITTEN TO:\n\t%s\n\t%s\n\t%s\n\n', errlogname, errmatname, errfigname);
     else
-       return 
+       return
     end
-function arrayset(harray, propname, propvalue) 
+function arrayset(harray, propname, propvalue)
 % ARRAYGET Set property values for array of handles
 %
-% USAGE: arrayset(harray, propname, propvalue) 
+% USAGE: arrayset(harray, propname, propvalue)
 %
 % ==============================================
 if nargin<2, error('USAGE: arrayset(harray, propname, propvalue) '); end
 if size(harray, 1)==1, harray = harray'; end
 if ~iscell(propvalue)
     arrayfun(@set, harray, repmat({propname}, length(harray), 1), ...
-            repmat({propvalue}, length(harray), 1)); 
+            repmat({propvalue}, length(harray), 1));
 else
     if size(propvalue, 1)==1, propvalue = propvalue'; end
-    arrayfun(@set, harray, repmat({propname}, length(harray), 1), propvalue); 
+    arrayfun(@set, harray, repmat({propname}, length(harray), 1), propvalue);
 end
 
 % | TALKING TO THE HUMAN
@@ -3816,16 +3833,16 @@ function vol        = uigetvol(message, multitag, defaultdir)
     % UIGETVOL Dialogue for selecting image volume file
     %
     %   USAGE: vol = uigetvol(message, multitag)
-    %       
+    %
     %       message = to display to user
     %       multitag = (default = 0) tag to allow selecting multiple images
     %
-    % EX: img = uigetvol('Select Image to Process'); 
+    % EX: img = uigetvol('Select Image to Process');
     %
     if nargin < 3, defaultdir = pwd; end
     if nargin < 2, multitag = 0; end
     if nargin < 1, message = 'Select Image File'; end
-    
+
     if ~multitag
         [imname, pname] = uigetfile({'*.img;*.nii;*.nii.gz', 'Image File (*.img, *.nii, *.nii.gz)'; '*.*', 'All Files (*.*)'}, message);
     else
@@ -3843,8 +3860,26 @@ function vol        = uiputvol(defname, prompt)
     if isequal(imname,0) || isequal(pname,0)
         vol = [];
     else
-        vol = fullfile(pname, imname); 
+        vol = fullfile(pname, imname);
     end
+function uisavefig(defname, hfig)
+    if nargin==0, defname = 'myfig'; end
+    if nargin==1, hfig = gcf; end
+    [imname, pname] = uiputfile(default_saveformats, 'Save figure as...', defname);
+    if ~imname, disp('User cancelled.'); return; end
+    [p,n,e] = fileparts(imname);
+    if isempty(e), e = '.png'; end
+    if strcmpi(e, '.eps'), e = '.epsc'; end
+    if strcmpi(e, '.ps'), e = '.psc'; end
+    if strcmpi(e, '.tiff'), e = '.tif'; end
+    if strcmpi(e, '.jpg'), e = '.jpeg'; end
+    renderer = 'opengl';
+%     if ismember(e, {'.jpeg', '.tif', '.png', '.bmp'}), renderer = 'opengl'; end
+    fmt = strcat('-', regexprep(e, '\.', 'd'));
+    setpapersize(hfig);
+%     print(hfig, fmt, strcat('-', renderer), strcat('-', 'noui'), fullfile(pname,n));
+    print(hfig, fmt, strcat('-', 'noui'), fullfile(pname,n));
+    fprintf('\nImage saved to %s\n', fullfile(pname, imname));
 function outmsg     = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
 % PRINTMSG Create and print a formatted message with title
 %
@@ -3855,7 +3890,7 @@ function outmsg     = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
 % --------------------------- Copyright (C) 2014 ---------------------------
 %	Author: Bob Spunt
 %	Email: bobspunt@gmail.com
-% 
+%
 %	$Created: 2014_09_27
 % _________________________________________________________________________
 if nargin<5, hideoutput = 0; end
@@ -3874,7 +3909,7 @@ msgtop          = repmat(msgborder{1},1,msgwidth);
 msgbottom       = repmat(msgborder{2},1,msgwidth);
 if ~isempty(msgtitle), msgtitle = sprintf('%s %s %s', msgborder{1}, strtrim(msgtitle), msgborder{1}); end
 titleln         = length(msgtitle);
-msgln           = length(msg); 
+msgln           = length(msg);
 msgtop(floor(.5*msgwidth-.5*titleln):floor(.5*msgwidth-.5*titleln) + titleln-1) = msgtitle;
 outmsg      = repmat(' ', 1, msgwidth);
 outmsg(floor(.5*msgwidth-.5*msgln):floor(.5*msgwidth-.5*msgln) + msgln-1) = msg;
@@ -3886,7 +3921,7 @@ function answer     = yesorno(question, titlestr)
 %  USAGE: h = yesorno(question, *titlestr)    *optional input
 % __________________________________________________________________________
 %  INPUTS
-%   question: character array to present to user 
+%   question: character array to present to user
 %
 
 % ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
@@ -3898,7 +3933,7 @@ if nargin < 2, titlestr = 'Yes or No?'; end
 if iscell(titlestr), titlestr = char(titlestr); end
 if iscell(question), question = char(question); end
 global answer st
-answer = []; 
+answer = [];
 h(1) = figure(...
     'Units', 'norm', ...
     'WindowStyle', 'modal', ...
@@ -3913,12 +3948,12 @@ h(1) = figure(...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', question, 'visible', 'on'); 
+    'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', question, 'visible', 'on');
 h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
 'pos', [.25 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'Yes', 'visible', 'on', 'callback', {@cb_answer, h});
 h(4) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
 'pos', [.55 .10 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'No', 'visible', 'on', 'callback', {@cb_answer, h});
-uiwait(h(1)); 
+uiwait(h(1));
 function cb_answer(varargin)
     global answer
     answer = get(varargin{1}, 'string');
@@ -3929,7 +3964,7 @@ function [flag, h]  = waitup(msg, titlestr)
 %  USAGE: h = yesorno(question, *titlestr)    *optional input
 % __________________________________________________________________________
 %  INPUTS
-%   question: character array to present to user 
+%   question: character array to present to user
 %
 
 % ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
@@ -3941,7 +3976,7 @@ if nargin < 2, titlestr = 'Please Wait'; end
 if iscell(titlestr), titlestr = char(titlestr); end
 if iscell(msg), msg = char(msg); end
 global flag st
-flag = []; 
+flag = [];
 h(1) = figure(...
     'Units', 'norm', ...
     'WindowStyle', 'modal', ...
@@ -3956,10 +3991,10 @@ h(1) = figure(...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos',[.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', msg, 'visible', 'on'); 
+    'pos',[.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', msg, 'visible', 'on');
 h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
 'pos', [.4 .075 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'Cancel', 'visible', 'on', 'callback', {@cb_cancel, h});
-uiwait(h(1)); 
+uiwait(h(1));
 function cb_cancel(varargin)
     global flag
     flag = get(varargin{1}, 'string');
@@ -3970,7 +4005,7 @@ function h          = headsup(msg, titlestr, wait4resp)
 %  USAGE: h = headsup(msg, *titlestr, *wait4resp)    *optional input
 % __________________________________________________________________________
 %  INPUTS
-%   msg: character array to present to user 
+%   msg: character array to present to user
 %
 
 % ---------------------- Copyright (C) 2014 Bob Spunt ----------------------
@@ -3983,11 +4018,11 @@ if nargin < 3, wait4resp = 1; end
 if iscell(msg), msg = char(msg); end
 if iscell(titlestr), titlestr = char(titlestr); end
 global st
-ppos    = get(st.fig, 'pos');  
+ppos    = get(st.fig, 'pos');
 cwh     = [ppos(3)/2 ppos(4)/4];
 clb     = [ppos(1) + (ppos(3)/2)-(cwh(1)/2) ppos(2) + (ppos(4)/2)-(cwh(2)/2)];
 cpos    = [clb cwh];
-% cpos    = [.425 .45 .15 .10]; 
+% cpos    = [.425 .45 .15 .10];
 h(1) = figure(...
     'Units', 'pix', ...
     'Position',cpos,...
@@ -4002,16 +4037,16 @@ h(1) = figure(...
     'Visible','on',...
     'Toolbar','none');
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
-    'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', msg, 'visible', 'on'); 
+    'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', msg, 'visible', 'on');
 if wait4resp
     h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...
     'pos', [.4 .075 .2 .30], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz3, 'string', 'OK', 'visible', 'on', 'callback', {@cb_ok, h});
-    uiwait(h(1)); 
+    uiwait(h(1));
 end
-drawnow; 
+drawnow;
 function cb_ok(varargin)
     delete(findobj(0, 'Tag', 'headsup'));
-    drawnow; 
+    drawnow;
 
 % | BSPM_OPTHVIEWS (MODIFIED FROM SPM8 SPM_OPTHVIEWS)
 % =========================================================================
@@ -4112,10 +4147,10 @@ switch lower(action)
             varargout{1} = xlh;
             return;
         end
-        
+
         vh = valid_handles(varargin{1});
         nh = numel(vh);
-        
+
         xlh = nan(nh, 1);
         for i = 1:nh
             xlh(i) = get(st.vols{vh(i)}.ax{3}.ax, 'XLabel');
@@ -4133,14 +4168,14 @@ switch lower(action)
             end
         end
         varargout{1} = xlh;
-        
+
     case 'bb'
         if ~isempty(varargin) && all(size(varargin{1})==[2 3]), st.bb = varargin{1}; end
         bbox;
         redraw_all;
-        
+
     case 'redraw'
-        
+
         redraw_all;
         if isfield(st.vols{1}, 'blobs')
             redraw_colourbar(st.hld, 1, [st.vols{1}.blobs{1}.min st.vols{1}.blobs{1}.max], (1:64)'+64);
@@ -4149,7 +4184,7 @@ switch lower(action)
         if isfield(st,'registry')
             bspm_XYZreg('SetCoords',st.centre,st.registry.hReg,st.registry.hMe);
         end
-        
+
     case 'reload_mats'
         if nargin > 1
             handles = valid_handles(varargin{1});
@@ -4160,7 +4195,7 @@ switch lower(action)
             fnm = spm_file(st.vols{i}.fname, 'number', st.vols{i}.n);
             st.vols{i}.mat = spm_get_space(fnm);
         end
-        
+
     case 'reposition'
 
         if isempty(varargin), tmp = findcent;
@@ -4173,7 +4208,7 @@ switch lower(action)
             end
 %             if isequal(round(tmp),round(st.centre)), return; end
             st.centre = tmp(1:3);
-        end        
+        end
         redraw_all;
         callback;
         if isfield(st,'registry'), bspm_XYZreg('SetCoords',st.centre,st.registry.hReg,st.registry.hMe); end
@@ -4186,7 +4221,7 @@ switch lower(action)
         redraw_all;
         callback;
         cm_pos;
-        
+
     case 'space'
         if numel(varargin) < 1
             st.Space = eye(4);
@@ -4200,17 +4235,17 @@ switch lower(action)
             bbox;
             redraw_all;
         end
-        
+
     case 'maxbb'
         st.bb = maxbb;
         bbox;
         redraw_all;
-        
+
     case 'resolution'
         resolution(varargin{:});
         bbox;
         redraw_all;
-        
+
     case 'window'
         if numel(varargin)<2
             win = 'auto';
@@ -4221,17 +4256,17 @@ switch lower(action)
             st.vols{i}.window = win;
         end
         redraw(varargin{1});
-        
+
     case 'delete'
         my_delete(varargin{1});
-        
+
     case 'move'
         move(varargin{1},varargin{2});
         % redraw_all;
-        
+
     case 'reset'
         my_reset;
-        
+
     case 'pos'
         if isempty(varargin)
             H = st.centre(:);
@@ -4239,41 +4274,41 @@ switch lower(action)
             H = pos(varargin{1});
         end
         varargout{1} = H;
-        
+
     case 'interp'
         st.hld = varargin{1};
         redraw_all;
-        
+
     case 'xhairs'
         xhairs(varargin{:});
-        
+
     case 'register'
         register(varargin{1});
-        
+
     case 'addblobs'
         addblobs(varargin{:});
         % redraw(varargin{1});
-        
+
     case 'setblobsmax'
         st.vols{varargin{1}}.blobs{varargin{2}}.max = varargin{3};
         bspm_orthviews('redraw')
-    
+
     case 'setblobsmin'
         st.vols{varargin{1}}.blobs{varargin{2}}.min = varargin{3};
         bspm_orthviews('redraw')
-        
+
     case 'addcolouredblobs'
         addcolouredblobs(varargin{:});
         % redraw(varargin{1});
-        
+
     case 'addimage'
         addimage(varargin{1}, varargin{2});
         % redraw(varargin{1});
-        
+
     case 'addcolouredimage'
         addcolouredimage(varargin{1}, varargin{2},varargin{3});
         % redraw(varargin{1});
-        
+
     case 'addtruecolourimage'
         if nargin < 2
             varargin(1) = {1};
@@ -4298,18 +4333,18 @@ switch lower(action)
         if nargin < 7
             varargin(6) = {min([0 minval(actv)])};
         end
-        
+
         addtruecolourimage(varargin{1}, varargin{2},varargin{3}, varargin{4}, ...
             varargin{5}, varargin{6});
         % redraw(varargin{1});
-        
+
     case 'addcolourbar'
         addcolourbar(varargin{1}, varargin{2});
-        
+
     case {'removeblobs','rmblobs'}
         rmblobs(varargin{1});
         redraw(varargin{1});
-        
+
     case 'replaceblobs'
         replaceblobs(varargin{:});
         redraw(varargin{1});
@@ -4321,7 +4356,7 @@ switch lower(action)
             handles = varargin{1};
         end
         addcontexts(handles);
-        
+
     case {'removecontext','rmcontext'}
         if nargin == 1
             handles = 1:max_img;
@@ -4329,10 +4364,10 @@ switch lower(action)
             handles = varargin{1};
         end
         rmcontexts(handles);
-        
+
     case 'context_menu'
         c_menu(varargin{:});
-        
+
     case 'valid_handles'
         if nargin == 1
             handles = 1:max_img;
@@ -4343,7 +4378,7 @@ switch lower(action)
 
     case 'zoom'
         zoom_op(varargin{:});
-        
+
     case 'zoommenu'
         if isempty(zoomlist)
             zoomlist = [NaN 0 5    10  20 40 80 Inf];
@@ -4365,7 +4400,7 @@ switch lower(action)
         if nargout > 1
             varargout{2} = reslist;
         end
-        
+
     otherwise
         addonaction = strcmpi(st.plugins,action);
         if any(addonaction)
@@ -4393,7 +4428,7 @@ DeleteFcn = ['spm_orthviews(''Delete'',' num2str(ii) ');'];
 V.ax = cell(3,1);
 for i=1:3
     ax = axes('Visible','off', 'Parent', st.figax, ...
-        'YDir','normal', 'DeleteFcn', DeleteFcn); 
+        'YDir','normal', 'DeleteFcn', DeleteFcn);
     d  = image(0, 'Tag','Transverse', 'Parent',ax, 'DeleteFcn',DeleteFcn);
     set(ax, 'Ydir','normal', 'ButtonDownFcn', @repos_start);
     lx = line(0,0, 'Parent',ax, 'DeleteFcn',DeleteFcn, 'Color',[0 0 1]);
@@ -4492,7 +4527,7 @@ function handles            = valid_handles(handles)
     if isempty(st) || ~isfield(st,'vols')
         handles = [];
     elseif ~ishandle(st.fig)
-        handles = []; 
+        handles = [];
     else
         handles = handles(:)';
         handles = handles(handles<=max_img & handles>=1 & ~rem(handles,1));
@@ -4653,7 +4688,7 @@ for k = 1:numel(st.plugins)
     feval(['spm_ov_', st.plugins{k}],'context_menu',volhandle,item_parent);
     if k==1
         h = get(item_parent,'Children');
-        set(h(1),'Separator','on'); 
+        set(h(1),'Separator','on');
     end
 end
 function cm_handles         = get_cm_handles
@@ -5002,7 +5037,7 @@ for i=valid_handles
     end
     sy     = area(4)/(Dims(2)+Dims(3))/1.02;
     s      = min([sx sy]);
-    
+
     offy   = (area(4)-(Dims(2)+Dims(3))*1.02*s)/2 + area(2);
     sky    = s*(Dims(2)+Dims(3))*0.02;
     if st.mode == 0
@@ -5012,19 +5047,19 @@ for i=valid_handles
         offx = (area(3)-(Dims(1)+Dims(2))*1.02*s)/2 + area(1);
         skx  = s*(Dims(1)+Dims(2))*0.02;
     end
-    
+
     % Transverse
     set(st.vols{i}.ax{1}.ax,'Units','pixels', ...
         'Position',[offx offy s*Dims(1) s*Dims(2)],...
         'Units','normalized','Xlim',[0 TD(1)]+0.5,'Ylim',[0 TD(2)]+0.5,...
         'Visible','on','XTick',[],'YTick',[]);
-    
+
     % Coronal
     set(st.vols{i}.ax{2}.ax,'Units','Pixels',...
         'Position',[offx offy+s*Dims(2)+sky s*Dims(1) s*Dims(3)],...
         'Units','normalized','Xlim',[0 CD(1)]+0.5,'Ylim',[0 CD(2)]+0.5,...
         'Visible','on','XTick',[],'YTick',[]);
-    
+
     % Sagittal
     if st.mode == 0
         set(st.vols{i}.ax{3}.ax,'Units','Pixels', 'Box','on',...
@@ -5064,7 +5099,7 @@ function redraw(arg1)
                     0 1 0 -bb(1,2)+1
                     1 0 0 -cent(1)
                     0 0 0 1];
-            SM = inv(SM0*M); 
+            SM = inv(SM0*M);
             SD = Dims([3 2]);
         else
             SM0 = [ 0 -1 0 +bb(2,2)+1
@@ -5078,9 +5113,9 @@ function redraw(arg1)
             imgt = spm_slice_vol(st.vols{i},TM,TD,st.hld)';
             imgc = spm_slice_vol(st.vols{i},CM,CD,st.hld)';
             imgs = spm_slice_vol(st.vols{i},SM,SD,st.hld)';
-%             imgc2 = adjustbrightness(imgc); 
-%             imgs2 = adjustbrightness(imgs); 
-%             imgt2 = adjustbrightness(imgt); 
+%             imgc2 = adjustbrightness(imgc);
+%             imgs2 = adjustbrightness(imgs);
+%             imgt2 = adjustbrightness(imgt);
             ok   = true;
         catch
 %             fprintf('Cannot access file "%s".\n', st.vols{i}.fname);
@@ -5213,7 +5248,7 @@ function redraw(arg1)
     %                     spm_figure('Colormap','gray-hot')
                     end
                     figure(st.fig)
-                    
+
 %                     redraw_colourbar(i,1,[mn mx],(1:64)'+64);
                 elseif isstruct(st.vols{i}.blobs{1}.colour)
                     % Add blobs for display using a defined colourmap
@@ -5357,7 +5392,7 @@ function redraw(arg1)
                         wc = wc + tmpc;
                         ws = ws + tmps;
                         cdata=permute(shiftdim((1/64:1/64:1)'* ...
-                            colour(j,:),-1),[2 1 3]);   
+                            colour(j,:),-1),[2 1 3]);
                         redraw_colourbar(i,j,[mn mx],cdata);
                     end
 
@@ -5417,7 +5452,7 @@ function reset_st
     stdef   = struct('n', 0, 'vols',{cell(max_img,1)}, 'bb',bb, 'Space',eye(4), ...
                  'centre',[0 0 0], 'callback',';', 'xhairs',1, 'hld',1, ...
                  'fig',fig, 'mode',1, 'plugins',{{}}, 'snap',[]);
-    st      = catstruct(stdef, st); 
+    st      = catstruct(stdef, st);
     xTB = spm('TBs');
     if ~isempty(xTB)
         pluginbase = {spm('Dir') xTB.dir};
@@ -5426,7 +5461,7 @@ function reset_st
     end
     for k = 1:numel(pluginbase)
         pluginpath = fullfile(pluginbase{k},'spm_orthviews');
-        pluginpath = fileparts(mfilename); 
+        pluginpath = fileparts(mfilename);
         if isdir(pluginpath)
             pluginfiles = dir(fullfile(pluginpath,'spm_ov_*.m'));
             if ~isempty(pluginfiles)
@@ -5478,15 +5513,15 @@ switch lower(varargin{1})
         item5  = uimenu(varargin{2}, 'Label', 'Image dimensions', 'Separator','on');
         item51 = uimenu(varargin{2}, 'Label',...
             sprintf('%dx%dx%d', st.vols{current_handle}.dim(1:3)));
-        
+
         prms   = spm_imatrix(st.vols{current_handle}.mat);
         item6  = uimenu(varargin{2}, 'Label', 'Voxel size', 'Separator','on');
         item61 = uimenu(varargin{2}, 'Label', sprintf('%.2f %.2f %.2f', prms(7:9)));
-        
+
         O      = st.vols{current_handle}.mat\[0 0 0 1]'; O=O(1:3)';
         item7  = uimenu(varargin{2}, 'Label', 'Origin', 'Separator','on');
         item71 = uimenu(varargin{2}, 'Label', sprintf('%.2f %.2f %.2f', O));
-        
+
         R      = spm_matrix([0 0 0 prms(4:6)]);
         item8  = uimenu(varargin{2}, 'Label', 'Rotations', 'Separator','on');
         item81 = uimenu(varargin{2}, 'Label', sprintf('%.2f %.2f %.2f', R(1,1:3)));
@@ -5496,24 +5531,24 @@ switch lower(varargin{1})
             'Label','Specify other image...',...
             'Callback','bspm_orthviews(''context_menu'',''swap_img'');',...
             'Separator','on');
-        
+
     case 'repos_mm'
         oldpos_mm = bspm_orthviews('pos');
         newpos_mm = spm_input('New Position (mm)','+1','r',sprintf('%.2f %.2f %.2f',oldpos_mm),3);
         bspm_orthviews('reposition',newpos_mm);
-        
+
     case 'repos_vx'
         current_handle = get_current_handle;
         oldpos_vx = bspm_orthviews('pos', current_handle);
         newpos_vx = spm_input('New Position (voxels)','+1','r',sprintf('%.2f %.2f %.2f',oldpos_vx),3);
         newpos_mm = st.vols{current_handle}.mat*[newpos_vx;1];
         bspm_orthviews('reposition',newpos_mm(1:3));
-        
+
     case 'zoom'
         zoom_all(varargin{2:end});
         bbox;
         redraw_all;
-        
+
     case 'xhair'
         bspm_orthviews('Xhairs',varargin{2:end});
         cm_handles = get_cm_handles;
@@ -5525,7 +5560,7 @@ switch lower(varargin{1})
                 set(z_handle,'Checked','off');
             end
         end
-        
+
     case 'orientation'
         cm_handles = get_cm_handles;
         for i = 1:numel(cm_handles)
@@ -5552,7 +5587,7 @@ switch lower(varargin{1})
             set(z_handle,'Checked','on');
             return;
         end
-        
+
     case 'snap'
         cm_handles = get_cm_handles;
         for i = 1:numel(cm_handles)
@@ -5573,7 +5608,7 @@ switch lower(varargin{1})
             z_handle = get(findobj(cm_handles(i),'label','Snap to Grid'),'Children');
             set(z_handle(varargin{2}),'Checked','on');
         end
-        
+
     case 'interpolation'
         tmp        = [-4 1 0];
         st.hld     = tmp(varargin{2});
@@ -5584,7 +5619,7 @@ switch lower(varargin{1})
             set(z_handle(varargin{2}),'Checked','on');
         end
         redraw_all;
-        
+
     case 'window'
         current_handle = get_current_handle;
         if varargin{2} == 2
@@ -5610,7 +5645,7 @@ switch lower(varargin{1})
             end
             bspm_orthviews('window',current_handle,w);
         end
-        
+
     case 'window_gl'
         if varargin{2} == 2
             for i = 1:numel(get_cm_handles)
@@ -5636,7 +5671,7 @@ switch lower(varargin{1})
             end
         end
         redraw_all;
-        
+
     case 'mapping'
         checked = strcmp(varargin{2}, ...
             {'linear', 'histeq', 'loghisteq', 'quadhisteq'});
@@ -5652,7 +5687,7 @@ switch lower(varargin{1})
             set(c_handle(checked), 'checked', 'on');
         end
         redraw_all;
-        
+
     case 'mapping_gl'
         checked = strcmp(varargin{2}, ...
             {'linear', 'histeq', 'loghisteq', 'quadhisteq'});
@@ -5669,7 +5704,7 @@ switch lower(varargin{1})
             end
         end
         redraw_all;
-        
+
     case 'swap_img'
         current_handle = get_current_handle;
         newimg = spm_select(1,'image','select new image');
@@ -5682,7 +5717,7 @@ switch lower(varargin{1})
             bspm_orthviews('context_menu','image_info',get(gcbo, 'parent'));
             redraw_all;
         end
-        
+
     case 'add_blobs'
         % Add blobs to the image - in split colortable
         cm_handles = valid_handles;
@@ -5711,7 +5746,7 @@ switch lower(varargin{1})
             end
             redraw_all;
         end
-        
+
     case 'remove_blobs'
         cm_handles = valid_handles;
         if varargin{2} == 2, cm_handles = get_current_handle; end
@@ -5726,7 +5761,7 @@ switch lower(varargin{1})
             set(c_handle,'Visible','off');
         end
         redraw_all;
-        
+
     case 'add_image'
         % Add blobs to the image - in split colortable
         cm_handles = valid_handles;
@@ -5755,7 +5790,7 @@ switch lower(varargin{1})
             end
             redraw_all;
         end
-        
+
     case 'add_c_blobs'
         % Add blobs to the image - in full colour
         cm_handles = valid_handles;
@@ -5786,7 +5821,7 @@ switch lower(varargin{1})
             end
             redraw_all;
         end
-        
+
     case 'remove_c_blobs'
         cm_handles = valid_handles;
         if varargin{2} == 2, cm_handles = get_current_handle; end
@@ -5811,7 +5846,7 @@ switch lower(varargin{1})
             end
         end
         redraw_all;
-        
+
     case 'add_c_image'
         % Add truecolored image
         cm_handles = valid_handles;
@@ -5841,7 +5876,7 @@ switch lower(varargin{1})
             end
             redraw_all;
         end
-        
+
     case 'setblobsmax'
         if varargin{2} == 1
             % global
@@ -5892,28 +5927,28 @@ function addcolourbar(vh,bh)
     global st
     axpos = zeros(3, 4);
     for a = 1:3, axpos(a,:) = get(st.vols{vh}.ax{a}.ax, 'position'); end
-    cbpos = axpos(3,:); 
-    cbpos(4) = cbpos(4)*.9; 
-    cbpos(2) = cbpos(2) + (axpos(3,4)-cbpos(4))/2; 
-    cbpos(1) = sum(cbpos([1 3])); 
-    cbpos(3) = (1 - cbpos(1))/2; 
-    cbpos(3) = min([cbpos(3) .30]); 
-    cbpos(1) = cbpos(1) + (cbpos(3)/4); 
+    cbpos = axpos(3,:);
+    cbpos(4) = cbpos(4)*.9;
+    cbpos(2) = cbpos(2) + (axpos(3,4)-cbpos(4))/2;
+    cbpos(1) = sum(cbpos([1 3]));
+    cbpos(3) = (1 - cbpos(1))/2;
+    cbpos(3) = min([cbpos(3) .30]);
+    cbpos(1) = cbpos(1) + (cbpos(3)/4);
     yl      = [st.vols{vh}.blobs{bh}.min st.vols{vh}.blobs{bh}.max];
     yltick  = [ceil(min(yl)) floor(max(yl))];
-    yltick(abs(yl) < 1) = yl(abs(yl) < 1); 
+    yltick(abs(yl) < 1) = yl(abs(yl) < 1);
     if strcmpi(st.direct, '+/-') & min(yltick)<0
-        yltick = [yltick(1) 0 yltick(2)]; 
+        yltick = [yltick(1) 0 yltick(2)];
     end
-    ylab = cellnum2str(num2cell(yltick), 2); 
+    ylab = cellnum2str(num2cell(yltick), 2);
     st.vols{vh}.blobs{bh}.cbar = axes('Parent', st.figax, 'ycolor', st.color.fg, ...
         'position', cbpos, 'YAxisLocation', 'right', 'fontsize', st.fonts.sz3, ...
         'ytick', yltick, 'tag', 'colorbar', ...
-        'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]); 
-    set(st.vols{vh}.blobs{bh}.cbar, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
+        'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]);
+    set(st.vols{vh}.blobs{bh}.cbar, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name);
     if isfield(st.vols{vh}.blobs{bh},'name')
         ylabel(st.vols{vh}.blobs{bh}.name,'parent',st.vols{vh}.blobs{bh}.cbar);
-    end    
+    end
 function redraw_colourbar(vh,bh,interval,cdata)
     global st
     setunits('norm');
@@ -5921,11 +5956,11 @@ function redraw_colourbar(vh,bh,interval,cdata)
     for a = 1:3
         axpos(a,:) = get(st.vols{vh}.ax{a}.ax, 'position');
     end
-    cbpos = axpos(3,:); 
-    cbpos(4) = cbpos(4)*.9; 
-    cbpos(2) = cbpos(2) + (axpos(3,4)-cbpos(4))/2; 
-    cbpos(1) = sum(cbpos([1 3])); 
-    cbpos(3) = (1 - cbpos(1))/2; 
+    cbpos = axpos(3,:);
+    cbpos(4) = cbpos(4)*.9;
+    cbpos(2) = cbpos(2) + (axpos(3,4)-cbpos(4))/2;
+    cbpos(1) = sum(cbpos([1 3]));
+    cbpos(3) = (1 - cbpos(1))/2;
     cbpos(1) = cbpos(1) + (cbpos(3)/4);
     % only scale cdata if we have out-of-range truecolour values
     if ndims(cdata)==3 && max(cdata(:))>1
@@ -5933,25 +5968,25 @@ function redraw_colourbar(vh,bh,interval,cdata)
     end
     yl = interval;
     yltick  = [ceil(min(yl)) floor(max(yl))];
-    yltick(abs(yl) < 1) = yl(abs(yl) < 1); 
+    yltick(abs(yl) < 1) = yl(abs(yl) < 1);
     if strcmpi(st.direct, '+/-') & min(yltick)<0
-        yltick = [yltick(1) 0 yltick(2)]; 
+        yltick = [yltick(1) 0 yltick(2)];
     end
-    ylab = cellnum2str(num2cell(yltick), 2); 
-    h = st.vols{vh}.blobs{bh}.cbar; 
+    ylab = cellnum2str(num2cell(yltick), 2);
+    h = st.vols{vh}.blobs{bh}.cbar;
     image([0 1],interval,cdata,'Parent',h);
     set(h, 'ycolor', st.color.fg, ...
         'position', cbpos, 'YAxisLocation', 'right', ...
         'ytick', yltick, ...
-        'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]); 
-    set(h, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name); 
+        'Box','on', 'YDir','normal', 'XTickLabel',[], 'XTick',[]);
+    set(h, 'YTickLabel', ylab, 'fontweight', 'bold', 'fontsize', st.fonts.sz3, 'fontname', st.fonts.name);
     if isfield(st.vols{vh}.blobs{bh},'name')
         ylabel(st.vols{vh}.blobs{bh}.name,'parent',st.vols{vh}.blobs{bh}.cbar);
     end
 function repos_start(varargin)
     if ~strcmpi(get(gcbf,'SelectionType'),'alt')
-        set(gcbf, 'Pointer', 'crosshair'); 
-        xylim = [get(gca, 'xlim'); get(gca, 'ylim')]; 
+        set(gcbf, 'Pointer', 'crosshair');
+        xylim = [get(gca, 'xlim'); get(gca, 'ylim')];
         set(gcbf, 'windowbuttonmotionfcn', {@repos_move, xylim}, ...
                   'windowbuttonupfcn', @repos_end);
         bspm_orthviews('reposition');
@@ -5959,14 +5994,14 @@ function repos_start(varargin)
 function repos_move(varargin)
     p = get(gca, 'currentpoint');
     if any([p(1,1:2)' < varargin{3}(:,1); p(1,1:2)' > varargin{3}(:,2)])
-        drawnow; 
-        repos_end; 
+        drawnow;
+        repos_end;
     end
     bspm_orthviews('reposition');
 function repos_end(varargin)
-    set(gcbf, 'Pointer', 'arrow'); 
+    set(gcbf, 'Pointer', 'arrow');
     set(gcbf, 'windowbuttonmotionfcn','', 'windowbuttonupfcn','');
-    
+
 % | BSPM_XYZREG (MODIFIED FROM SPM8 SPM_XYXREG)
 % =========================================================================
 function varargout = bspm_XYZreg(varargin)
@@ -6035,7 +6070,7 @@ function varargout = bspm_XYZreg(varargin)
 % FORMAT xyz = bspm_XYZreg('GetCoords',hReg)
 % Get current registry co-ordinates
 % hReg - Handle of 'hReg' 'Tag'ged registry HandleGraphics object
-% 
+%
 % FORMAT [xyz,d] = bspm_XYZreg('SetCoords',xyz,hReg,hC,Reg)
 % Set co-ordinates in registry & update registered HGobjects/functions
 % xyz  - (Input) desired co-ordinates
@@ -6093,7 +6128,7 @@ function varargout = bspm_XYZreg(varargin)
 % hD?  - Handles of HandleGraphics object to be unregistered
 %        The 'UserData' of hD must be a structure with a 'Reg' field, which
 %        is set to empty (back un-registration)
-% nReg - New registry cell array: Registry entries with handle entry hD are 
+% nReg - New registry cell array: Registry entries with handle entry hD are
 %        removed from the registry (forward un-registration)
 %        Handles not in the registry generate a warning
 %
@@ -6101,7 +6136,7 @@ function varargout = bspm_XYZreg(varargin)
 % Delete HandleGraphics object hD from registry (forward un-registration)
 % hReg - Handle of 'hReg' 'Tag'ged registry HandleGraphics object
 % hD?  - Handles of HandleGraphics object to be unregistered
-% nReg - New registry cell array: Registry entries with handle entry hD are 
+% nReg - New registry cell array: Registry entries with handle entry hD are
 %        removed from the registry. Handles not in registry generate a warning
 %
 % FORMAT bspm_XYZreg('UnSetReg',h)
@@ -6309,7 +6344,7 @@ else
     M = varargin{3};
     D = varargin{4};
 end
-    
+
 %-Round xyz to coordinates of actual voxel centre
 %-Do rounding in voxel coordinates & ensure within image size
 %-Watch out for infinities!
@@ -6334,7 +6369,7 @@ case 'findxyz'
 if nargin<3, error('Insufficient arguments'), end
 XYZ = varargin{3};
 xyz = varargin{2};
-    
+
 %-Find XYZ = xyz
 %-----------------------------------------------------------------------
 i = find(all([XYZ(1,:)==xyz(1);XYZ(2,:)==xyz(2);XYZ(3,:)==xyz(3)],1));
@@ -6348,8 +6383,8 @@ case 'nearestxyz'
 %=======================================================================
 % [xyz,i,d] = bspm_XYZreg('NearestXYZ',xyz,XYZ)
 if nargin<3, error('Insufficient arguments'), end
-    
-%-Find in XYZ nearest point to coordinates xyz (Euclidean distance) 
+
+%-Find in XYZ nearest point to coordinates xyz (Euclidean distance)
 %-----------------------------------------------------------------------
 [d,i] = min(bspm_XYZreg('Edist',varargin{2},varargin{3}));
 varargout = {varargin{3}(:,i),i,d};
@@ -6361,7 +6396,7 @@ case 'edist'
 %=======================================================================
 % d = bspm_XYZreg('Edist',xyz,XYZ)
 if nargin<3, error('Insufficient arguments'), end
-    
+
 %-Calculate (Euclidean) distances from pointlist co-ords to xyz
 %-----------------------------------------------------------------------
 varargout = {sqrt(sum([ (varargin{3}(1,:) - varargin{2}(1));...
@@ -6390,8 +6425,8 @@ if ~isempty(get(hReg,'Tag')), error('Object already ''Tag''ed...'), end
 %-----------------------------------------------------------------------
 [xyz,d] = bspm_XYZreg('RoundCoords',xyz,M,D);
 if d>0 & nargout<2
-    printmsg(sprintf('Co-ordinates rounded to nearest voxel center: Discrepancy %.2f', d), 'NOTE'); 
-    % warning(sprintf('%s: Co-ords rounded to nearest voxel center: Discrepancy %.2f',mfilename,d)); 
+    printmsg(sprintf('Co-ordinates rounded to nearest voxel center: Discrepancy %.2f', d), 'NOTE');
+    % warning(sprintf('%s: Co-ords rounded to nearest voxel center: Discrepancy %.2f',mfilename,d));
 end
 
 %-Set up registry
@@ -6716,12 +6751,12 @@ end
 % =========================================================================
 function y       = nanmean(x,dim)
 % FORMAT: Y = NANMEAN(X,DIM)
-% 
+%
 %    Average or mean value ignoring NaNs
 %
 %    This function enhances the functionality of NANMEAN as distributed in
 %    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
-%    identical name).  
+%    identical name).
 %
 %    NANMEAN(X,DIM) calculates the mean along any dimension of the N-D
 %    array X ignoring NaNs.  If DIM is omitted NANMEAN averages along the
@@ -6736,7 +6771,7 @@ function y       = nanmean(x,dim)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.1 $ $Date: 2004/07/15 22:42:13 $
 
 if isempty(x)
@@ -6753,7 +6788,7 @@ end
 
 % Replace NaNs with zeros.
 nans = isnan(x);
-x(isnan(x)) = 0; 
+x(isnan(x)) = 0;
 
 % denominator
 count = size(x,dim) - sum(nans,dim);
@@ -6766,12 +6801,12 @@ y = sum(x,dim)./count;
 y(i) = i + NaN;
 function y       = nanmedian(x,dim)
 % FORMAT: Y = NANMEDIAN(X,DIM)
-% 
+%
 %    Median ignoring NaNs
 %
 %    This function enhances the functionality of NANMEDIAN as distributed
 %    in the MATLAB Statistics Toolbox and is meant as a replacement (hence
-%    the identical name).  
+%    the identical name).
 %
 %    NANMEDIAN(X,DIM) calculates the mean along any dimension of the N-D
 %    array X ignoring NaNs.  If DIM is omitted NANMEDIAN averages along the
@@ -6786,7 +6821,7 @@ function y       = nanmedian(x,dim)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.2 $ $Date: 2007/07/30 17:19:19 $
 
 if isempty(x)
@@ -6842,20 +6877,20 @@ siz(dim) = 1;
 y = ipermute(reshape(y,siz(perm)),perm);
 function y       = nanstd(x,flag,dim)
 % FORMAT: Y = NANSTD(X,FLAG,DIM)
-% 
+%
 %    Standard deviation ignoring NaNs
 %
 %    This function enhances the functionality of NANSTD as distributed in
 %    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
-%    identical name).  
+%    identical name).
 %
 %    NANSTD(X,DIM) calculates the standard deviation along any dimension of
-%    the N-D array X ignoring NaNs.  
+%    the N-D array X ignoring NaNs.
 %
 %    NANSTD(X,DIM,0) normalizes by (N-1) where N is SIZE(X,DIM).  This make
 %    NANSTD(X,DIM).^2 the best unbiased estimate of the variance if X is
 %    a sample of a normal distribution. If omitted FLAG is set to zero.
-%    
+%
 %    NANSTD(X,DIM,1) normalizes by N and produces the square root of the
 %    second moment of the sample about the mean.
 %
@@ -6871,7 +6906,7 @@ function y       = nanstd(x,flag,dim)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.1 $ $Date: 2004/07/15 22:42:15 $
 
 if isempty(x)
@@ -6881,8 +6916,8 @@ end
 if nargin < 3
 	dim = min(find(size(x)~=1));
 	if isempty(dim)
-		dim = 1; 
-	end	  
+		dim = 1;
+	end
 end
 if nargin < 2
 	flag = 0;
@@ -6895,7 +6930,7 @@ end
 nans = isnan(x);
 avg = nanmean(x,dim);
 
-% create array indicating number of element 
+% create array indicating number of element
 % of x in dimension DIM (needed for subtraction of mean)
 tile = ones(1,max(ndims(x),dim));
 tile(dim) = size(x,dim);
@@ -6906,7 +6941,7 @@ x = x - repmat(avg,tile);
 count = size(x,dim) - sum(nans,dim);
 
 % Replace NaNs with zeros.
-x(isnan(x)) = 0; 
+x(isnan(x)) = 0;
 
 
 % Protect against a  all NaNs in one dimension
@@ -6920,27 +6955,27 @@ end
 y(i) = i + NaN;
 function y       = nanvar(x,dim,flag)
 % FORMAT: Y = NANVAR(X,DIM,FLAG)
-% 
+%
 %    Variance ignoring NaNs
 %
 %    This function enhances the functionality of NANVAR as distributed in
 %    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
-%    identical name).  
+%    identical name).
 %
 %    NANVAR(X,DIM) calculates the standard deviation along any dimension of
-%    the N-D array X ignoring NaNs.  
+%    the N-D array X ignoring NaNs.
 %
 %    NANVAR(X,DIM,0) normalizes by (N-1) where N is SIZE(X,DIM).  This make
 %    NANVAR(X,DIM).^2 the best unbiased estimate of the variance if X is
 %    a sample of a normal distribution. If omitted FLAG is set to zero.
-%    
-%    NANVAR(X,DIM,1) normalizes by N and produces second moment of the 
+%
+%    NANVAR(X,DIM,1) normalizes by N and produces second moment of the
 %    sample about the mean.
 %
 %    If DIM is omitted NANVAR calculates the standard deviation along first
 %    non-singleton dimension of X.
 %
-%    Similar replacements exist for NANMEAN, NANMEDIAN, NANMIN, NANMAX, 
+%    Similar replacements exist for NANMEAN, NANMEDIAN, NANMIN, NANMAX,
 %    NANSTD, and NANSUM which are all part of the NaN-suite.
 %
 %    See also STD
@@ -6949,7 +6984,7 @@ function y       = nanvar(x,dim,flag)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.1 $ $Date: 2008/05/02 21:46:17 $
 
 if isempty(x)
@@ -6964,8 +6999,8 @@ end
 if nargin < 2
 	dim = min(find(size(x)~=1));
 	if isempty(dim)
-		dim = 1; 
-	end	  
+		dim = 1;
+	end
 end
 
 
@@ -6973,7 +7008,7 @@ end
 nans = isnan(x);
 avg = nanmean(x,dim);
 
-% create array indicating number of element 
+% create array indicating number of element
 % of x in dimension DIM (needed for subtraction of mean)
 tile = ones(1,max(ndims(x),dim));
 tile(dim) = size(x,dim);
@@ -6984,7 +7019,7 @@ x = x - repmat(avg,tile);
 count = size(x,dim) - sum(nans,dim);
 
 % Replace NaNs with zeros.
-x(isnan(x)) = 0; 
+x(isnan(x)) = 0;
 
 
 % Protect against a  all NaNs in one dimension
@@ -6998,11 +7033,11 @@ end
 y(i) = i + NaN;
 function y       = nansem(x,dim)
 % FORMAT: Y = NANSEM(X,DIM)
-% 
+%
 %    Standard error of the mean ignoring NaNs
 %
 %    NANSTD(X,DIM) calculates the standard error of the mean along any
-%    dimension of the N-D array X ignoring NaNs.  
+%    dimension of the N-D array X ignoring NaNs.
 %
 %    If DIM is omitted NANSTD calculates the standard deviation along first
 %    non-singleton dimension of X.
@@ -7014,7 +7049,7 @@ function y       = nansem(x,dim)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.1 $ $Date: 2004/07/22 09:02:27 $
 
 if isempty(x)
@@ -7025,8 +7060,8 @@ end
 if nargin < 2
 	dim = min(find(size(x)~=1));
 	if isempty(dim)
-		dim = 1; 
-	end	  
+		dim = 1;
+	end
 end
 
 
@@ -7045,12 +7080,12 @@ y = nanstd(x,dim)./sqrt(count);
 y(i) = i + NaN;
 function y       = nansum(x,dim)
 % FORMAT: Y = NANSUM(X,DIM)
-% 
+%
 %    Sum of values ignoring NaNs
 %
 %    This function enhances the functionality of NANSUM as distributed in
 %    the MATLAB Statistics Toolbox and is meant as a replacement (hence the
-%    identical name).  
+%    identical name).
 %
 %    NANSUM(X,DIM) calculates the mean along any dimension of the N-D array
 %    X ignoring NaNs.  If DIM is omitted NANSUM averages along the first
@@ -7065,7 +7100,7 @@ function y       = nansum(x,dim)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.2 $ $Date: 2005/06/13 12:14:38 $
 
 if isempty(x)
@@ -7082,7 +7117,7 @@ end
 
 % Replace NaNs with zeros.
 nans = isnan(x);
-x(isnan(x)) = 0; 
+x(isnan(x)) = 0;
 
 % Protect against all NaNs in one dimension
 count = size(x,dim) - sum(nans,dim);
@@ -7092,7 +7127,7 @@ y = sum(x,dim);
 y(i) = NaN;
 function [y,idx] = nanmin(a,dim,b)
 % FORMAT: [Y,IDX] = NANMIN(A,DIM,[B])
-% 
+%
 %    Minimum ignoring NaNs
 %
 %    This function enhances the functionality of NANMIN as distributed in
@@ -7111,9 +7146,9 @@ function [y,idx] = nanmin(a,dim,b)
 %
 %    Comparing two matrices in a particular dimension is not supported,
 %    e.g. NANMIN(A,2,B) is invalid.
-%    
+%
 %    [Y,IDX] = NANMIN(X,DIM) returns the index to the minimum in IDX.
-%    
+%
 %    Similar replacements exist for NANMAX, NANMEAN, NANSTD, NANMEDIAN and
 %    NANSUM which are all part of the NaN-suite.
 %
@@ -7123,7 +7158,7 @@ function [y,idx] = nanmin(a,dim,b)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.1 $ $Date: 2004/07/15 22:42:14 $
 
 if nargin < 1
@@ -7157,7 +7192,7 @@ elseif nargin > 3
 end
 function [y,idx] = nanmax(a,dim,b)
 % FORMAT: [Y,IDX] = NANMAX(A,DIM,[B])
-% 
+%
 %    Maximum ignoring NaNs
 %
 %    This function enhances the functionality of NANMAX as distributed in
@@ -7176,9 +7211,9 @@ function [y,idx] = nanmax(a,dim,b)
 %
 %    Comparing two matrices in a particular dimension is not supported,
 %    e.g. NANMAX(A,2,B) is invalid.
-%    
+%
 %    [Y,IDX] = NANMAX(X,DIM) returns the index to the maximum in IDX.
-%    
+%
 %    Similar replacements exist for NANMIN, NANMEAN, NANSTD, NANMEDIAN and
 %    NANSUM which are all part of the NaN-suite.
 %
@@ -7188,7 +7223,7 @@ function [y,idx] = nanmax(a,dim,b)
 %    author:      Jan Gl?scher
 %    affiliation: Neuroimage Nord, University of Hamburg, Germany
 %    email:       glaescher@uke.uni-hamburg.de
-%    
+%
 %    $Revision: 1.1 $ $Date: 2004/07/15 22:42:11 $
 
 if nargin < 1
@@ -7251,7 +7286,7 @@ function status = bspm_xlwrite(filename, A, sheet, templatefile, range)
 %   FILE    String that specifies the file to write. If the file does not
 %           exist, XLWRITE creates a file, determining the format based on
 %           the specified extension. To create a file compatible with Excel
-%           97-2003 software, specify an extension of '.xls'. If you do not 
+%           97-2003 software, specify an extension of '.xls'. If you do not
 %           specify an extension, XLWRITE applies '.xls'.
 %   ARRAY   Two-dimensional logical, numeric or character array or, if each
 %           cell contains a single element, a cell array.
@@ -7260,12 +7295,12 @@ function status = bspm_xlwrite(filename, A, sheet, templatefile, range)
 %           * Positive, integer-valued scalar indicating the worksheet
 %             index.
 %           If SHEET does not exist, XLWRITE adds a new sheet at the end
-%           of the worksheet collection. 
+%           of the worksheet collection.
 %   RANGE   String that specifies a rectangular portion of the worksheet to
 %           read. Not case sensitive. Use Excel A1 reference style.
 %           * If you specify a SHEET, RANGE can either fit the size of
 %             ARRAY or specify only the first cell (such as 'D2').
-%           * If you do not specify a SHEET, RANGE must include both 
+%           * If you do not specify a SHEET, RANGE must include both
 %             corners and a colon character (:), even for a single cell
 %             (such as 'D2:D2').
 %           * If RANGE is larger than the size of ARRAY, Excel fills the
@@ -7275,7 +7310,7 @@ function status = bspm_xlwrite(filename, A, sheet, templatefile, range)
 %
 %   Note
 %   * This function requires the POI library to be in your javapath.
-%     To add the Apache POI Library execute commands: 
+%     To add the Apache POI Library execute commands:
 %     (This assumes the POI lib files are in folder 'poi_library')
 %       javaaddpath('poi_library/poi-3.8-20120326.jar');
 %       javaaddpath('poi_library/poi-ooxml-3.8-20120326.jar');
@@ -7299,7 +7334,7 @@ function status = bspm_xlwrite(filename, A, sheet, templatefile, range)
 %   20121004 - First version using JExcelApi
 %   20121101 - Modified to use POI library instead of JExcelApi (allows to
 %           generate XLSX)
-%   20121127 - Fixed bug: use existing rows if present, instead of 
+%   20121127 - Fixed bug: use existing rows if present, instead of
 %           overwrite rows by default. Thanks to Dan & Jason.
 %   20121204 - Fixed bug: if a numeric sheet is given & didn't exist,
 %           an error was returned instead of creating the sheet. Thanks to Marianna
@@ -7319,9 +7354,9 @@ if nargin < 4, templatefile = []; end
 if nargin < 5; range = []; end
 if regexpi(computer, '^PCWIN')
     if all([~isempty(templatefile) ~exist(filename, 'file')]), copyfile(templatefile, filename); end
-    xlswrite(filename, A); 
+    xlswrite(filename, A);
     status = 1;
-    return; 
+    return;
 end
 
 if exist('org.apache.poi.ss.usermodel.WorkbookFactory', 'class')~=8 ...
@@ -7351,7 +7386,7 @@ if nargin < 5; range = []; end
 
 % Template file
 if all([~isempty(templatefile) ~exist(filename, 'file')])
-    copyfile(templatefile, filename); 
+    copyfile(templatefile, filename);
 end
 
 % Check if sheetvariable contains range data
@@ -7382,9 +7417,9 @@ if xlsFile.isFile()
     fileIn = java.io.FileInputStream(xlsFile);
     xlsWorkbook = WorkbookFactory.create(fileIn);
 else
-    % Create a new workbook based on the extension. 
+    % Create a new workbook based on the extension.
     [~,~,fileExt] = fileparts(filename);
-    
+
     % Check based on extension which type to create. If no (valid)
     % extension is given, create XLSX file
     switch lower(fileExt)
@@ -7394,7 +7429,7 @@ else
             xlsWorkbook = XSSFWorkbook();
         otherwise
             xlsWorkbook = XSSFWorkbook();
-            
+
             % Also update filename with added extension
             filename = [filename '.xlsx'];
     end
@@ -7404,7 +7439,7 @@ end
 if ~isempty(sheet)
     if isnumeric(sheet)
         % Java uses 0-indexing, so take sheetnumer-1
-        % Check if the sheet can exist 
+        % Check if the sheet can exist
         if xlsWorkbook.getNumberOfSheets() >= sheet && sheet >= 1
             xlsSheet = xlsWorkbook.getSheetAt(sheet-1);
         else
@@ -7415,11 +7450,11 @@ if ~isempty(sheet)
     else
         xlsSheet = xlsWorkbook.getSheet(sheet);
     end
-    
+
     % Create a new sheet if it is empty
     if isempty(xlsSheet)
         warning('cs_xlwrite:AddSheet', 'Added specified worksheet.');
-        
+
         % Add the sheet
         if isnumeric(sheet)
             xlsSheet = xlsWorkbook.createSheet(['Sheet ' num2str(sheet)]);
@@ -7429,11 +7464,11 @@ if ~isempty(sheet)
             xlsSheet = xlsWorkbook.createSheet(sheet);
         end
     end
-    
+
 else
     % check number of sheets
     nSheets = xlsWorkbook.getNumberOfSheets();
-    
+
     % If no sheets, create one
     if nSheets < 1
         xlsSheet = xlsWorkbook.createSheet('Sheet 1');
@@ -7466,11 +7501,11 @@ else
         % Define start & end cell
         cellStart = range(1:iSeperator-1);
         cellEnd = range(iSeperator+1:end);
-        
+
         % Create a helper to get the row and column
         cellStart = CellReference(cellStart);
         cellEnd = CellReference(cellEnd);
-        
+
         % Get start & end locations
         iRowStart = cellStart.getRow();
         iColStart = cellStart.getCol();
@@ -7491,12 +7526,12 @@ end
 % Iterate over all data
 for iRow = iRowStart:iRowEnd
     % Fetch the row (if it exists)
-    currentRow = xlsSheet.getRow(iRow); 
+    currentRow = xlsSheet.getRow(iRow);
     if isempty(currentRow)
         % Create a new row, as it does not exist yet
         currentRow = xlsSheet.createRow(iRow);
     end
-    
+
     % enter data for all cols
     for iCol = iColStart:iColEnd
         % Check if cell exists
@@ -7505,18 +7540,18 @@ for iRow = iRowStart:iRowEnd
             % Create a new cell, as it does not exist yet
             currentCell = currentRow.createCell(iCol);
         end
-        
+
         % Check if we are still in array A
         if (iRow-iRowStart)<=nRowA && (iCol-iColStart)<=nColA
             % Fetch the data
             data = A{iRow-iRowStart+1, iCol-iColStart+1};
-            
-            if ~isempty(data)          
+
+            if ~isempty(data)
                 % if it is a NaN value, convert it to an empty string
                 if isnumeric(data) && isnan(data)
                     data = '';
                 end
-                
+
                 % Write data to cell
                 currentCell.setCellValue(data);
             end
@@ -7536,4 +7571,4 @@ fileOut.close();
 status = 1;
 
 
-    
+

@@ -1,4 +1,4 @@
-function [h, hh] = surfPlot6(obj)
+function [obj, h, hh] = surfPlot6(obj)
 %%% Written by Aaron P. Schultz - aschultz@martinos.org
 %%%
 %%% Copyright (C) 2014,  Aaron P. Schultz
@@ -92,6 +92,7 @@ if obj.newfig
         obj.figno = figure( ...
         'Renderer', 'zbuffer',      ...
         'Inverthardcopy', 'off',    ...
+        'MenuBar', 'None',          ...
         'Name', obj.figname,        ...
         'NumberTitle', 'off',       ...
         'Position', obj.position,   ...
@@ -414,13 +415,6 @@ if obj.cmapflag
     shading interp
 
 end
-
-% final cleanup
-set(obj.figno, 'units', 'points', 'paperunits', 'points');
-figpos = get(obj.figno, 'pos');
-set(obj.figno, 'papersize', figpos(3:4), 'paperposition', [0 0 figpos(3:4)], 'visible', 'on');
-tightfig(obj.figno);
-
 function y = spm_range(x,dim)
 % Computes the difference between the min and max of a vector. If you need
 % to use it on a matrix, then you need to specify which dimension to
@@ -430,7 +424,6 @@ if nargin < 2
 else
     y = max(x,[],dim) - min(x,[],dim);
 end
-
 function [cols, cm ,cc] = cmap(X, lims, cm)
     %%% Written by Aaron P. Schultz - aschultz@martinos.org
     %%%
@@ -466,7 +459,6 @@ function [cols, cm ,cc] = cmap(X, lims, cm)
     cc(cc<1)=1;
     cols = nan(numel(cc),3);
     cols(~isnan(cc),:) = cm(cc(~isnan(cc)),:);
-
 function X = demean(x)
 %%% Written by Aaron Schultz (aschultz@martinos.org)
 %%% Copyright (C) 2014,  Aaron P. Schultz
@@ -490,7 +482,6 @@ function out = cmap_upsample(in, N)
     if rem, ind(end,end-rem+1:end) = NaN; end
     ind = ind(:); ind(isnan(ind)) = [];
     out = in(ind(:),:);
-    
 function y = nansum(x,dim)
 % FORMAT: Y = NANSUM(X,DIM)
 % 

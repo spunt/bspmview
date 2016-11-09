@@ -390,11 +390,11 @@ fmt = {
 '*.pdf', 'Portable Document Format (*.pdf)';
 '*.eps', 'Encapsulated Postscript (*.eps)';
 '*.svg', 'Scalable Vector Graphics (*.svg)';
-'*.jpg', 'JPEG (*.jpg) image';
-'*.png', 'Portable Network Graphics (*.png) image';
-'*.bmp', 'Bitmap (*.bmp) image';
+'*.jpg', 'JPEG (*.jpg)';
+'*.png', 'Portable Network Graphics (*.png)';
+'*.bmp', 'Bitmap (*.bmp)';
 '*.ps', 'PostScript (*.ps)';
-'*.tif', 'TIFF (*.tif) image'
+'*.tiff', 'TIFF (*.tiff)'
 };
 function labs   = default_labels
     labs  = struct( ...
@@ -3865,7 +3865,7 @@ function uisavefig(defname, hfig)
     if isempty(e), e = '.png'; end
     if strcmpi(e, '.eps'), e = '.epsc'; end
     if strcmpi(e, '.ps'), e = '.psc'; end
-    if strcmpi(e, '.tiff'), e = '.tif'; end
+    if strcmpi(e, '.tif'), e = '.tiff'; end
     if strcmpi(e, '.jpg'), e = '.jpeg'; end
     renderer = 'opengl';
 %     if ismember(e, {'.jpeg', '.tif', '.png', '.bmp'}), renderer = 'opengl'; end
@@ -3873,6 +3873,7 @@ function uisavefig(defname, hfig)
     setpapersize(hfig);
 %     print(hfig, fmt, strcat('-', renderer), strcat('-', 'noui'), fullfile(pname,n));
 %     print(hfig, fmt, strcat('-', 'noui'), fullfile(pname,n));
+
     print(hfig, fmt, fullfile(pname,n));
     fprintf('\nImage saved to %s\n', fullfile(pname, imname));
 function outmsg     = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)

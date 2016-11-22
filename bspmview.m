@@ -1929,7 +1929,7 @@ function cb_clustexplore(varargin)
             subname     = regexprep(subname, '_', ' ');
             conname     = replace(subdescrip(1:ncond), {'.+\d:', '- All Sessions$', '_'}, {'' '' ' '});
         otherwise
-            headsup('Unrecognized or unsupported design type! Click to return to the main window...');
+            headsup('Unrecognized or unsupported design type! Plotting currently works only with one or two-sample t-tests, and flexible factorial designs.');
             return;
     end
 
@@ -3943,6 +3943,7 @@ h(1) = figure(...
     'Name',titlestr,...
     'Visible','on',...
     'Toolbar','none');
+
 h(2) = uicontrol('parent', h(1), 'units', 'norm', 'style',  'text', 'backg', [0.8941    0.1020    0.1098]*.60,'foreg', [248/255 248/255 248/255], 'horiz', 'center', ...
     'pos', [.050 .375 .900 .525], 'fontname', 'arial', 'fontw', 'bold', 'fontsize', st.fonts.sz4, 'string', question, 'visible', 'on');
 h(3) = uicontrol('parent', h(1), 'units', 'norm', 'style', 'push', 'foreg', [0 0 0], 'horiz', 'center', ...

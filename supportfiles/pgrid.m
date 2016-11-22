@@ -12,16 +12,16 @@ function [phandle, pidx] = pgrid(nrow, ncol, varargin)
 %   ncol:   number of cols in grid
 % ________________________________________________________________________________________
 %  VARARGIN
-% | NAME            | DEFAULT       | DESCRIPTION 
+% | NAME            | DEFAULT       | DESCRIPTION
 % |-----------------|---------------|-----------------------------------------------------
-% | parent          | gcf           | parent object for grid 
-% | relwidth        | ones(1, ncol) | relative width of columns (arbitrary units)            
-% | relheight       | ones(1, nrow) | relative height of rows (arbitrary units)            
-% | marginsep       | 0.0100        | size of margin surrounding grid (normalized units)           
-% | panelsep        | 0.0100        | size of space between panels (normalized units)            
-% | backgroundcolor | [.08 .09 .09] | uipanel background color             
+% | parent          | gcf           | parent object for grid
+% | relwidth        | ones(1, ncol) | relative width of columns (arbitrary units)
+% | relheight       | ones(1, nrow) | relative height of rows (arbitrary units)
+% | marginsep       | 0.0100        | size of margin surrounding grid (normalized units)
+% | panelsep        | 0.0100        | size of space between panels (normalized units)
+% | backgroundcolor | [.08 .09 .09] | uipanel background color
 % | foregroundcolor | [.97 .97 .97] | uipanel foreground color
-% | bordertype      | 'none'        | etchedin, etchedout, beveledin, beveledout, line 
+% | bordertype      | 'none'        | etchedin, etchedout, beveledin, beveledout, line
 % | borderwidth     | 1             | uipanel border width in pixels
 % ________________________________________________________________________________________
 %
@@ -55,16 +55,17 @@ if isempty(relheight), relheight    = ones(1, nrow); end
 if length(relwidth)~=ncol, printmsg('Length of RELWIDTH must equal NCOL. Try again!'); phandle = []; pidx = []; return; end
 if length(relheight)~=nrow, printmsg('Length of RELHEIGHT must equal NROW. Try again!'); phandle = []; pidx = []; return; end
 
-% | Get normalized positions for each panel 
+% | Get normalized positions for each panel
 pos         = getpositions(relwidth, relheight, marginsep, panelsep);
 pidx        = pos(:,1:2);
 hpos        = pos(:,3:end);
 
 % | pgrid loop
 npanel      = size(hpos, 1);
-phandle     = gobjects(npanel, 1);
+% phandle     = gobjects(npanel, 1);
+phandle     = zeros(npanel, 1); 
 for i = 1:npanel
-    
+
     phandle(i)  =  uipanel( ...
                   'Parent'   ,     parent                                 ,...
                    'Units'   ,     'normalized'                           ,...
@@ -98,14 +99,14 @@ if nargin<5, top2bottomidx = 1; end
 if size(relheight,1) > 1, relheight = relheight'; end
 if size(relwidth, 1) > 1, relwidth = relwidth'; end
 ncol        = length(relwidth);
-nrow        = length(relheight); 
+nrow        = length(relheight);
 if top2bottomidx, relheight = relheight(end:-1:1); end
 
 % width
-rowwidth    = 1-(marginsep*2)-(uicontrolsep*(ncol-1));  
+rowwidth    = 1-(marginsep*2)-(uicontrolsep*(ncol-1));
 uiwidths    = (relwidth/sum(relwidth))*rowwidth;
 allsep      = [marginsep repmat(uicontrolsep, 1, ncol-1)];
-uilefts     = ([0 cumsum(uiwidths(1:end-1))]) + cumsum(allsep); 
+uilefts     = ([0 cumsum(uiwidths(1:end-1))]) + cumsum(allsep);
 
 % height
 colheight   = 1-(marginsep*2)-(uicontrolsep*(nrow-1));
@@ -119,9 +120,9 @@ if top2bottomidx, uibottoms = uibottoms(end:-1:1); end
 pos = zeros(ncol*nrow, 6);
 pos(:,1) = reshape(repmat(nrow:-1:1, ncol, 1), size(pos,1), 1);
 pos(:,2) = reshape(repmat(1:ncol, 1, nrow), size(pos,1), 1);
-pos(:,3) = uilefts(pos(:,2)); 
-pos(:,4) = uibottoms(pos(:,1)); 
-pos(:,5) = uiwidths(pos(:,2)); 
+pos(:,3) = uilefts(pos(:,2));
+pos(:,4) = uibottoms(pos(:,1));
+pos(:,5) = uiwidths(pos(:,2));
 pos(:,6) = uiheights(pos(:,1));
 pos      = sortrows(pos, 1);
 end
@@ -135,10 +136,10 @@ function argstruct = setargs(defaults, optargs)
 % SETARGS Name/value parsing and assignment of varargin with default values
 if nargin < 1, mfile_showhelp; return; end
 if nargin < 2, optargs = []; end
-defaults = reshape(defaults, 2, length(defaults)/2)'; 
+defaults = reshape(defaults, 2, length(defaults)/2)';
 if ~isempty(optargs)
     if mod(length(optargs), 2)
-        error('Optional inputs must be entered as Name, Value pairs, e.g., myfunction(''name'', value)'); 
+        error('Optional inputs must be entered as Name, Value pairs, e.g., myfunction(''name'', value)');
     end
     arg = reshape(optargs, 2, length(optargs)/2)';
     for i = 1:size(arg,1)
@@ -149,7 +150,7 @@ if ~isempty(optargs)
            error('Input "%s" does not match a valid input.', arg{i,1});
        else
            defaults{idx,2} = arg{i,2};
-       end  
+       end
     end
 end
 for i = 1:size(defaults,1), assignin('caller', defaults{i,1}, defaults{i,2}); end

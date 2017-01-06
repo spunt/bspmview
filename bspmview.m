@@ -382,7 +382,9 @@ urls = {
     'Aaron Schultz Software (MR Tools)' 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'
     'NeuroVault'                        'http://neurovault.org'
     'Human Connectome Project'          'http://www.humanconnectome.org/software/'
-    'Neuroimaging Data Model (NIDM)'    'http://nidm.nidash.org/'
+    'Brain Imaging Data Structure'      'http://bids.neuroimaging.io/'
+    'Neuroimaging Data Model'           'http://nidm.nidash.org/'
+    'NeuroLex'                          'http://neurolex.org/wiki/Main_Page'
 };
 urls = cell2struct(urls, {'label' 'url'}, 2);
 function fmt    = default_saveformats

@@ -410,8 +410,12 @@ if obj.cmapflag
         tickmark = [tickmark(1) 0 tickmark(2)]; 
     end
     ytick       = unique(sort([1 255 indice(:)']));
+    ytick(isnan(ytick)) = []; 
 %     ticklabel   = unique(sort([obj.colorlims(1) mean(obj.colorlims) obj.colorlims(2) obj.overlaythresh])');
-    set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick', ytick, 'YTickLabel',tickmark,'fontsize',16,'YColor','w');
+    try
+        set(gca,'YDir','normal','YAxisLocation','right','XTick',[],'YTick', ytick, 'YTickLabel',tickmark,'fontsize',16,'YColor','w');
+    catch
+    end
     shading interp
 
 end

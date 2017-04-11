@@ -58,7 +58,7 @@ function varargout = bspmview(ol, ul)
 %   Email:    bobspunt@gmail.com
 %	Created:  2014-09-27
 %   GitHub:   https://github.com/spunt/bspmview
-%   Version:  20161108
+%   Version:  20170411
 %
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function varargout = bspmview(ol, ul)
 %   along with this program.  If not, see: http://www.gnu.org/licenses/.
 % _________________________________________________________________________
 global bspmview_version
-bspmview_version='20161108';
+bspmview_version='20170411';
 
 % | CHECK FOR SPM FOLDER
 % | =======================================================================
@@ -106,6 +106,7 @@ if nargin < 1
     if isempty(ol), disp('Must select an overlay!'); return; end
 else
     if all([~ischar(ol) ~iscell(ol)]), disp('First argument must be a string or cell array!'); return; end
+    if strcmpi(ol, 'TEST'), ol = fullfile(supportdir, 'test_overlay', 'spmT_0001.nii'); end
     if iscell(ol), ol = char(ol); end
     if ~exist(ol, 'file'), disp('Overlay image file cannot be found!'); return; end
 end
@@ -470,6 +471,8 @@ function S = put_figure(ol, ul)
 
     default_preferences(1);
 
+
+
     % | Check for open GUI, close if one is found
     delete(findobj(0, 'tag', 'bspmview'));
 
@@ -526,6 +529,7 @@ function S = put_figure(ol, ul)
     [st.fig, st.figax, st.direct] = deal(S.hFig, S.hReg, '+/-');
     bspm_orthviews('Reset');
     st.cmap     = default_colormaps(64);
+
     load_overlay(ol, st.preferences.alphauncorrect, st.preferences.clusterextent);
     bspm_XYZreg('InitReg',S.hReg,st.ol.M,st.ol.DIM,[0;0;0]); % initialize registry object
     st.ho = bspm_orthviews('Image', ul, [.025 .025 .95 .95]);
@@ -1636,13 +1640,14 @@ function cb_montage(varargin)
     viewoptin   = strcat('|', viewopt);
     pref = menuN('Montage Settings', ...
                 {strcat('p', viewoptin{:}),'Select View'; ...
-              'x|hide colorbar|hide labels','Display Options'; ...
+              'x|hide colorbar|hide labels|white background (beta)','Display Options'; ...
               't|t-stat', 'Colorbar Title'; ...
               't|auto', 'N Slices Per Row'});
     if strcmpi(pref, 'cancel'), return; end
     theview = viewopt{pref{1}};
     if any(pref{2}==1), cbar = []; else cbar = 2; end
     if any(pref{2}==2), labels = 'none'; else labels = []; end
+    if any(pref{2}==3), whitebg = 1; else whitebg = 0; end
     cbartitle = pref{3};
     if strcmpi(pref{4}, 'auto'), xslices = []; else xslices = str2num(pref{4}); end
 
@@ -1782,6 +1787,8 @@ function cb_montage(varargin)
             'XTick',[]);
         tick = get(hc, 'ytick');
         if any(tick(2:end-1)==0), tick = [tick(1) 0 tick(end)]; else tick = tick([1 end]); end
+        tick(tick<0) = ceil(tick(tick<0));
+        tick(tick>0) = floor(tick(tick>0));
         set(hc, 'ytick', tick);
         if ~isempty(cbartitle), ht = title(cbartitle, 'units', 'norm', 'fontunits', get(hc, 'fontunits'), 'parent', hc, 'tag', 'cbartitle', 'color', [1 1 1], 'fontsize', 1.1*get(hc,'fontsize')); end
         tightfig;
@@ -1804,9 +1811,26 @@ function cb_montage(varargin)
        cpos([2 4]) = [.05 .85];
        set(hc, 'pos', cpos);
     end
+
     set(obj.figure, 'units', 'norm', 'visible', 'on');
     arrayset(findall(obj.figure, '-property', 'units'), 'units', 'norm');
     arrayset(findall(obj.figure, '-property', 'fontunits'), 'fontunits', 'norm');
+    if whitebg
+
+        ih = findall(obj.figure, 'Type', 'Image');
+        for i = 1:length(ih)
+            im = get(ih(i), 'CData');
+            im(repmat(all(im==0, 3), 1, 3)) = 1;
+            set(ih(i), 'CData', im);
+        end
+        th = findall(obj.figure, 'Type', 'Text');
+        set(th, 'Color', [0 0 0]);
+        set(hpan, 'Box', 'off');
+        set(hpan, 'XColor', [1 1 1], 'YColor', [1 1 1]);
+        set(hc, 'XColor', [0 0 0], 'YColor', [0 0 0]);
+        set(obj.figure, 'Color', [1 1 1]);
+
+    end
 %     setpapersize(obj.figure);
     drawnow;
 function cb_savemontage(varargin)
@@ -2730,7 +2754,9 @@ function load_overlay(fname, pval, k)
     global st
     if nargin<3, k = 5; end
     if nargin<2, pval = .001; end
+
     badfn = 1;
+
     while badfn
         oh = spm_vol(fname);
         od = spm_read_vols(oh);

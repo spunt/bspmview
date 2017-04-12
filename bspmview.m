@@ -3906,7 +3906,7 @@ function uisavefig(defname, hfig)
 %     print(hfig, fmt, strcat('-', renderer), strcat('-', 'noui'), fullfile(pname,n));
 %     print(hfig, fmt, strcat('-', 'noui'), fullfile(pname,n));
 
-    print(hfig, fmt, fullfile(pname,n));
+    print(hfig, fmt, fullfile(pname,imname));
     fprintf('\nImage saved to %s\n', fullfile(pname, imname));
 function outmsg     = printmsg(msg, msgtitle, msgborder, msgwidth, hideoutput)
 % PRINTMSG Create and print a formatted message with title

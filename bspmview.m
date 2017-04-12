@@ -106,9 +106,13 @@ if nargin < 1
     if isempty(ol), disp('Must select an overlay!'); return; end
 else
     if all([~ischar(ol) ~iscell(ol)]), disp('First argument must be a string or cell array!'); return; end
-    if strcmpi(ol, 'TEST'), ol = fullfile(supportdir, 'test_overlay', 'spmT_0001.nii'); end
+    if strcmpi(ol, 'TEST')
+        tmp{1} = fullfile(supportdir, 'test_overlay', 'spmT_0001.nii');
+        tmp{2} = fullfile(supportdir, 'test_overlay', 'spmT_0001.nii.gz');
+        if any(cellfun(@exist, tmp)), ol = tmp{find(cellfun(@exist, tmp))};
+        else disp('Overlay image file cannot be found!'); return; end
+    end
     if iscell(ol), ol = char(ol); end
-    if ~exist(ol, 'file'), disp('Overlay image file cannot be found!'); return; end
 end
 if nargin < 2
     ul = fullfile(supportdir, 'IIT_MeanT1_2x2x2.nii');

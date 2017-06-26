@@ -386,6 +386,7 @@ urls = {
     'Tom Nichols Software'              'http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/software/'
     'Aaron Schultz Software (MR Tools)' 'http://mrtools.mgh.harvard.edu/index.php/Main_Page'
     'NeuroVault'                        'http://neurovault.org'
+    'NeuroPowerTools'                   'http://neuropowertools.org'
     'Human Connectome Project'          'http://www.humanconnectome.org/software/'
     'Brain Imaging Data Structure'      'http://bids.neuroimaging.io/'
     'Neuroimaging Data Model'           'http://nidm.nidash.org/'

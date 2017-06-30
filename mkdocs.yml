@@ -1,0 +1,56 @@
+site_name: bspmview
+site_author: 'Bob Spunt'
+pages:
+  - Home: 'README.md'
+
+# Repository
+repo_name: 'spunt/bspmview'
+repo_url: 'https://github.com/spunt/bspmview'
+
+# Google Analytics
+google_analytics: ['UA-56476723-1', 'bobspunt.com']
+
+# Copyright
+copyright: Copyright &copy; 2017 <a href="https://twitter.com/bobspunt">Bob Spunt</a>
+
+# Theme (opt: material, readthedocs, bootstrap)
+theme: 'material'
+
+# red, pink, purple, deep purple, indigo, blue, light blue, cyan, teal,
+# green, light green, lime, yellow, amber, orange, deep orange,
+# brown, grey and blue grey
+
+# Options
+extra:
+  feature:
+    tabs: false
+  palette:
+    primary: 'blue grey'
+    accent: 'deep orange'
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+  social:
+    - type: 'github'
+      link: 'https://github.com/spunt/bspmview'
+    - type: 'twitter'
+      link: 'https://twitter.com/bobspunt'
+    - type: 'linkedin'
+      link: 'https://linkedin.com/in/bobspunt'
+
+# Additional stylesheets
+
+# If you want to tweak some colors or change the spacing of certain elements,
+# you can do this in an extra stylesheet in your docs directory:
+extra_css:
+  - 'stylesheets/extra.css'
+
+# Additional JavaScript¶
+extra_javascript:
+  - 'javascripts/extra.js'
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - codehilite(guess_lang=false)
+  - toc(permalink=true)

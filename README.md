@@ -1,3 +1,13 @@
+# **THIS REPOSITORY IS NO LONGER ACTIVELY MAINTAINED**
+
+- Use at your own risk!
+- Always independently verify the accuracy of any output you plan to use (e.g., use native SPM functionality/UI to check the statistical thresholding, automatic tables of local maxima, atlas labels)!
+- Good luck and stuff! 
+
+# **JUST A REMINDER THAT THIS REPOSITORY IS NO LONGER ACTIVELY MAINTAINED**
+
+---
+
 ### BSPMVIEW
 #### MATLAB Program for playing with fMRI statistical maps
 
